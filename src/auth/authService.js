@@ -16,7 +16,7 @@
 
 import { supabase, API_URL } from '../supabaseClient';
 
-const STORAGE_HISTORIAL_INVITADO = 'derma_historial_invitado';
+const STORAGE_HISTORIAL_INVITADO = 'physicalpicking_historial_invitado';
 
 /* ─── helper: llamadas autenticadas al backend propio ─── */
 async function apiFetch(path, options = {}) {

@@ -31,17 +31,19 @@ import {
 } from '../auth/authService';
 
 const TITULOS = {
-  1:  ['Registro',      'Datos del participante'],
-  2:  ['Mediciones',    'Variables fisicas'],
-  3:  ['Mediciones',    'Variables cognitivas'],
-  4:  ['Mediciones',    'Variables corporales'],
-  5:  ['Resultados',    'Perfil fisico'],
-  6:  ['Resultados',    'Perfil cognitivo'],
-  7:  ['Resultados',    'Ajustes corporales'],
-  8:  ['Resultados',    'Informe final'],
-  9:  ['Recomendacion', 'Recomendacion de deportes'],
-  10: ['Sistema',       'Historial'],
+  1:  ['Evaluacion',   'Datos del participante'],
+  2:  ['Evaluacion',   'Variables fisicas'],
+  3:  ['Evaluacion',   'Variables cognitivas'],
+  4:  ['Evaluacion',   'Variables corporales'],
+  5:  ['Analisis',     'Perfil fisico'],
+  6:  ['Analisis',     'Perfil cognitivo'],
+  7:  ['Analisis',     'Ajustes corporales'],
+  8:  ['Analisis',     'Informe final'],
+  9:  ['Resultado',    'Recomendacion de deportes'],
+  10: ['Registros',    'Historial'],
 };
+
+const TOTAL_PASOS = 9;
 
 export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarToast, onLogout }) {
   const [paso,        setPaso]      = useState(1);
@@ -49,6 +51,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
   const [sidebarOpen, setSidebar]   = useState(false);
   const [analisis,    setAnalisis]  = useState(estadoAnalisisInicial());
   const [historial,   setHistorial] = useState([]);
+  const [analisisGuardado, setAnalisisGuardado] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -70,9 +73,17 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
 
   function updateAnalisis(cambios) {
     setAnalisis(prev => ({ ...prev, ...cambios }));
+    // Cualquier modificacion de datos invalida el "guardado" previo:
+    // si el usuario cambia algo, al volver a guardar debe crear un
+    // registro nuevo, no confundirse con el analisis ya guardado.
+    setAnalisisGuardado(false);
   }
 
   async function guardarEnHistorial() {
+    if (analisisGuardado) {
+      mostrarToast('Este analisis ya fue guardado en el historial.', 'info');
+      return;
+    }
     if (!analisis.participante.nombre) {
       mostrarToast('Completa los datos del participante antes de guardar.', 'error');
       return;
@@ -101,12 +112,14 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
       mostrarToast(res.error || 'No se pudo guardar el analisis.', 'error');
       return;
     }
+    setAnalisisGuardado(true);
     setHistorial(await leerHistorial(usuarioActual?.id ?? null));
     mostrarToast('Analisis guardado en historial.', 'success');
   }
 
   function nuevoAnalisis() {
     setAnalisis(estadoAnalisisInicial());
+    setAnalisisGuardado(false);
     setPaso(1);
     setPasoMax(1);
     mostrarToast('Listo para un nuevo analisis.', 'info');
@@ -129,6 +142,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           onContinuar={() => avanzarA(9)}
           onGuardar={guardarEnHistorial}
           onNuevo={nuevoAnalisis}
+          analisisGuardado={analisisGuardado}
         />
       );
       case 9:  return (
@@ -136,6 +150,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           {...props}
           onGuardar={guardarEnHistorial}
           onNuevo={nuevoAnalisis}
+          analisisGuardado={analisisGuardado}
         />
       );
       case 10: return (
@@ -174,9 +189,12 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           <div className="topbar-info">
             <span className="tb-section">{seccion}</span>
             <span className="tb-title">{titulo}</span>
+            {paso <= TOTAL_PASOS && (
+              <span className="tb-paso">Paso {paso} de {TOTAL_PASOS}</span>
+            )}
           </div>
           <div className="step-dots">
-            {Array.from({ length: 9 }, (_, i) => {
+            {Array.from({ length: TOTAL_PASOS }, (_, i) => {
               const n = i + 1;
               return <div key={n} className={n < paso ? 'sd-dot done' : n === paso ? 'sd-dot active' : 'sd-dot'} />;
             })}

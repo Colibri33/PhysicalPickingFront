@@ -7,12 +7,15 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
   }
 
   function handleContinuar() {
-    if (!p.nombre.trim())    return mostrarToast('Ingresa el nombre del participante.', 'error');
-    if (!p.edad || isNaN(p.edad) || +p.edad < 1 || +p.edad > 120)
-      return mostrarToast('Ingresa una edad valida (1-120).', 'error');
-    if (!p.genero)           return mostrarToast('Selecciona el genero.', 'error');
-    if (!p.perfil)           return mostrarToast('Selecciona el tipo de perfil.', 'error');
-    mostrarToast(`Participante "${p.nombre}" registrado.`, 'success');
+    const nombre = p.nombre.trim();
+    if (!nombre)              return mostrarToast('Ingresa el nombre del participante.', 'error');
+    if (nombre.length > 120)  return mostrarToast('El nombre es demasiado largo (maximo 120 caracteres).', 'error');
+    if (!p.edad || isNaN(p.edad) || !Number.isInteger(+p.edad) || +p.edad < 1 || +p.edad > 120)
+      return mostrarToast('Ingresa una edad valida en anos completos (1-120).', 'error');
+    if (!p.genero)             return mostrarToast('Selecciona el genero.', 'error');
+    if (!p.perfil)             return mostrarToast('Selecciona el tipo de perfil.', 'error');
+    if (nombre !== p.nombre) updateAnalisis({ participante: { ...p, nombre } });
+    mostrarToast(`Participante "${nombre}" registrado.`, 'success');
     onContinuar();
   }
 
@@ -23,13 +26,13 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
       <div className="form-grid">
         <label className="field-label">
           Nombre
-          <input className="field-input" type="text" value={p.nombre}
+          <input className="field-input" type="text" value={p.nombre} maxLength={120}
             onChange={e => handleChange('nombre', e.target.value)} />
         </label>
 
         <label className="field-label">
           Edad
-          <input className="field-input" type="number" value={p.edad} min={1} max={120}
+          <input className="field-input" type="number" value={p.edad} min={1} max={120} step={1}
             onChange={e => handleChange('edad', e.target.value)} />
         </label>
 

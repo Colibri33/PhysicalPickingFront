@@ -41,6 +41,15 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
     setLoginPassword('');
   }
 
+  function handleInvitado() {
+    const confirmado = window.confirm(
+      'En modo invitado, tus datos se guardan SOLO en este navegador, no en un servidor. ' +
+      'Si borras los datos del navegador, cambias de navegador o de dispositivo, ' +
+      'perderas ese historial de forma permanente.\n\n¿Deseas continuar como invitado?'
+    );
+    if (confirmado) onInvitado();
+  }
+
   /* ────────────────────────────────── PANTALLA INICIAL ── */
   if (vista === 'inicio') return (
     <div className="auth-screen">
@@ -58,13 +67,15 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
           <button className="btn btn-outline" onClick={() => setVista('registro')}>
             Crear cuenta
           </button>
-          <button className="btn btn-ghost" onClick={onInvitado}>
+          <button className="btn btn-ghost" onClick={handleInvitado}>
             Continuar como invitado
           </button>
         </div>
 
         <p className="auth-note">
-          El modo invitado guarda los datos solo en este navegador.
+          El modo invitado guarda tus datos unicamente en este navegador (no en un
+          servidor). Si borras los datos del navegador, cambias de navegador o de
+          dispositivo, perderas ese historial de forma permanente.
         </p>
       </div>
     </div>

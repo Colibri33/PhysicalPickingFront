@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   SportAnalyzer Pro · logic/modelo.js  v5.0
+   PhysicalPicking · logic/modelo.js  v5.0
    Motor científico puro — sin React, sin DOM.
    v5: sin dermatoglifia · perfiles deportivos · ranking · interpretacion
    ═══════════════════════════════════════════════════════════════ */
@@ -95,21 +95,21 @@ export const PERFILES_DEPORTIVOS = [
  * La afinidad calculada indica tendencia, no aptitud ni selección.
  */
 export const DEPORTES = [
-  { nombre: 'Actividades aerobicas',     perfilIdeal: { resistencia: 85, potencia: 40, velocidad: 55, coordinativo: 50 } },
-  { nombre: 'Deportes de equipo',        perfilIdeal: { resistencia: 70, potencia: 60, velocidad: 70, coordinativo: 75 } },
-  { nombre: 'Deportes de raqueta',       perfilIdeal: { resistencia: 65, potencia: 60, velocidad: 70, coordinativo: 80 } },
-  { nombre: 'Artes marciales',           perfilIdeal: { resistencia: 65, potencia: 75, velocidad: 75, coordinativo: 75 } },
-  { nombre: 'Natacion y acuaticos',      perfilIdeal: { resistencia: 85, potencia: 65, velocidad: 70, coordinativo: 60 } },
-  { nombre: 'Atletismo velocidad',       perfilIdeal: { resistencia: 45, potencia: 80, velocidad: 90, coordinativo: 55 } },
-  { nombre: 'Atletismo resistencia',     perfilIdeal: { resistencia: 92, potencia: 40, velocidad: 55, coordinativo: 50 } },
-  { nombre: 'Deportes de fuerza',        perfilIdeal: { resistencia: 40, potencia: 90, velocidad: 50, coordinativo: 55 } },
-  { nombre: 'Gimnasia y acrobacias',     perfilIdeal: { resistencia: 55, potencia: 65, velocidad: 65, coordinativo: 90 } },
-  { nombre: 'Ciclismo y triathlon',      perfilIdeal: { resistencia: 88, potencia: 72, velocidad: 65, coordinativo: 50 } },
-  { nombre: 'Deportes de contacto',      perfilIdeal: { resistencia: 72, potencia: 78, velocidad: 80, coordinativo: 70 } },
-  { nombre: 'Deportes de precision',     perfilIdeal: { resistencia: 40, potencia: 40, velocidad: 50, coordinativo: 88 } },
-  { nombre: 'Danza y ritmo',             perfilIdeal: { resistencia: 65, potencia: 50, velocidad: 60, coordinativo: 88 } },
-  { nombre: 'Deportes de montana',       perfilIdeal: { resistencia: 80, potencia: 70, velocidad: 55, coordinativo: 75 } },
-  { nombre: 'Fitness funcional',         perfilIdeal: { resistencia: 68, potencia: 68, velocidad: 62, coordinativo: 68 } },
+  { nombre: 'Actividades aerobicas',     color: '#0f9d66', descripcion: 'Actividades de intensidad moderada y larga duracion (caminata rapida, aerobicos, eliptico) que priorizan la resistencia cardiovascular sostenida.', perfilIdeal: { resistencia: 85, potencia: 40, velocidad: 55, coordinativo: 50 } },
+  { nombre: 'Deportes de equipo',        color: '#16a34a', descripcion: 'Deportes colectivos con balon (futbol, baloncesto, balonmano) que exigen resistencia, velocidad y coordinacion en un contexto dinamico y cambiante.', perfilIdeal: { resistencia: 70, potencia: 60, velocidad: 70, coordinativo: 75 } },
+  { nombre: 'Deportes de raqueta',       color: '#0891b2', descripcion: 'Tenis, badminton, padel y disciplinas similares que demandan coordinacion ojo-mano, velocidad de desplazamiento y toma de decisiones bajo presion.', perfilIdeal: { resistencia: 65, potencia: 60, velocidad: 70, coordinativo: 80 } },
+  { nombre: 'Artes marciales',           color: '#b45309', descripcion: 'Disciplinas de combate que requieren explosividad, reflejos rapidos y capacidad de anticipar los movimientos del oponente.', perfilIdeal: { resistencia: 65, potencia: 75, velocidad: 75, coordinativo: 75 } },
+  { nombre: 'Natacion y acuaticos',      color: '#0284c7', descripcion: 'Disciplinas acuaticas que requieren resistencia aerobica sostenida, coordinacion de movimientos y flexibilidad articular.', perfilIdeal: { resistencia: 85, potencia: 65, velocidad: 70, coordinativo: 60 } },
+  { nombre: 'Atletismo velocidad',       color: '#ea580c', descripcion: 'Pruebas de velocidad y saltos que requieren maxima potencia explosiva y aceleracion en tiempo minimo.', perfilIdeal: { resistencia: 45, potencia: 80, velocidad: 90, coordinativo: 55 } },
+  { nombre: 'Atletismo resistencia',     color: '#059669', descripcion: 'Pruebas de medio fondo y fondo que priorizan la resistencia aerobica por encima de cualquier otra capacidad.', perfilIdeal: { resistencia: 92, potencia: 40, velocidad: 55, coordinativo: 50 } },
+  { nombre: 'Deportes de fuerza',        color: '#7c3aed', descripcion: 'Halterofilia, powerlifting y disciplinas de fuerza maxima, ideales para perfiles con alta capacidad de fuerza y potencia.', perfilIdeal: { resistencia: 40, potencia: 90, velocidad: 50, coordinativo: 55 } },
+  { nombre: 'Gimnasia y acrobacias',     color: '#db2777', descripcion: 'Disciplinas que exigen coordinacion fina, equilibrio y flexibilidad excepcionales.', perfilIdeal: { resistencia: 55, potencia: 65, velocidad: 65, coordinativo: 90 } },
+  { nombre: 'Ciclismo y triathlon',      color: '#d97706', descripcion: 'Disciplinas de resistencia combinada con potencia en los esfuerzos, adecuadas para perfiles con buena base aerobica y de fuerza.', perfilIdeal: { resistencia: 88, potencia: 72, velocidad: 65, coordinativo: 50 } },
+  { nombre: 'Deportes de contacto',      color: '#991b1b', descripcion: 'Disciplinas de contacto fisico directo que exigen potencia, resistencia y velocidad de reaccion.', perfilIdeal: { resistencia: 72, potencia: 78, velocidad: 80, coordinativo: 70 } },
+  { nombre: 'Deportes de precision',     color: '#1d4ed8', descripcion: 'Tiro deportivo, arqueria y disciplinas similares que dependen del control postural, la atencion sostenida y la anticipacion.', perfilIdeal: { resistencia: 40, potencia: 40, velocidad: 50, coordinativo: 88 } },
+  { nombre: 'Danza y ritmo',             color: '#c026d3', descripcion: 'Actividades ritmicas que exigen coordinacion, flexibilidad y atencion sostenida para sincronizar el movimiento con el ritmo.', perfilIdeal: { resistencia: 65, potencia: 50, velocidad: 60, coordinativo: 88 } },
+  { nombre: 'Deportes de montana',       color: '#65a30d', descripcion: 'Senderismo, escalada y actividades outdoor que combinan resistencia, fuerza funcional y coordinacion en terreno variable.', perfilIdeal: { resistencia: 80, potencia: 70, velocidad: 55, coordinativo: 75 } },
+  { nombre: 'Fitness funcional',         color: '#475569', descripcion: 'Entrenamiento integrado de fuerza, movilidad, resistencia y coordinacion; una excelente base o complemento para cualquier perfil.', perfilIdeal: { resistencia: 68, potencia: 68, velocidad: 62, coordinativo: 68 } },
 ];
 
 /* ════════════════════════════════════
@@ -228,6 +228,23 @@ export function calcularRankingDeportes(perfilesUsuario) {
       return { ...deporte, afinidad, brechas };
     })
     .sort((a, b) => b.afinidad - a.afinidad);
+}
+
+/*
+ * calcularFortalezasDeporte — a partir de las brechas ya calculadas
+ * por calcularRankingDeportes, deriva las etiquetas de "puntos fuertes"
+ * de un deporte para el perfil del usuario evaluado (perfil funcional
+ * con puntaje >= umbral). Es la MISMA fuente de datos que alimenta el
+ * ranking — no aplica reglas ni umbrales independientes por deporte.
+ */
+export function calcularFortalezasDeporte(brechas, umbral = 60) {
+  return Object.entries(brechas)
+    .filter(([, v]) => v.usuario >= umbral)
+    .sort((a, b) => b[1].usuario - a[1].usuario)
+    .map(([dim, v]) => {
+      const nombre = PERFILES_DEPORTIVOS.find(p => p.id === dim)?.nombre ?? dim;
+      return `${nombre} (${v.usuario}%)`;
+    });
 }
 
 /*

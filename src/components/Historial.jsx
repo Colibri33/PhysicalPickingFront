@@ -95,6 +95,15 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
           <button className="btn btn-ghost btn-danger" onClick={handleEliminarCuenta}>Eliminar mi cuenta y mis datos</button>
         </div>
       )}
+      {!usuarioActual && (
+        <div className="rango-note" style={{ marginBottom: '1rem' }}>
+          <span className="rango-note-icon">ℹ</span>
+          <span>
+            Estas en modo invitado: este historial vive solo en este navegador. Si lo
+            borras, cambias de navegador o de dispositivo, lo perderas de forma permanente.
+          </span>
+        </div>
+      )}
       {historial.length === 0 ? (
         <div className="empty-block">
           <p>No hay registros guardados.</p>

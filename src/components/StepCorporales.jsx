@@ -23,6 +23,23 @@ export default function StepCorporales({ analisis, updateAnalisis, onContinuar, 
   );
 
   function handleContinuar() {
+    // Los campos corporales son opcionales, pero si se completan deben
+    // ser fisicamente coherentes (no bloquea por vacio, si por absurdo).
+    const revisiones = [
+      { campo: 'peso',      etiqueta: 'Peso',            min: 1,   max: 400 },
+      { campo: 'talla',     etiqueta: 'Talla',           min: 30,  max: 250 },
+      { campo: 'grasa',     etiqueta: '% Grasa corporal', min: 0,   max: 75  },
+      { campo: 'muscular',  etiqueta: '% Masa muscular',  min: 0,   max: 75  },
+      { campo: 'grasaVisc', etiqueta: 'Grasa visceral',   min: 0,   max: 60  },
+    ];
+    for (const r of revisiones) {
+      const raw = c[r.campo];
+      if (raw === '' || raw === null || raw === undefined) continue;
+      const n = parseFloat(raw);
+      if (isNaN(n)) return mostrarToast(`${r.etiqueta}: debe ser un numero valido.`, 'error');
+      if (n < r.min || n > r.max)
+        return mostrarToast(`${r.etiqueta}: valor fuera de un rango fisicamente coherente (${r.min}-${r.max}).`, 'error');
+    }
     mostrarToast('Variables corporales guardadas. Calculando resultados...', 'success');
     onContinuar();
   }
