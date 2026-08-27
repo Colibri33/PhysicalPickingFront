@@ -22,7 +22,7 @@ const PERFIL_NOMBRES = {
   coordinativo: 'Coordinacion',
 };
 
-export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, analisisGuardado, guardando }) {
+export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, analisisGuardado }) {
   const consolidado        = calcularConsolidado(analisis.fisicas, analisis.cognitivas, analisis.corporales);
   const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.cognitivas, analisis.corporales);
   const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
@@ -104,8 +104,8 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       {/* Acciones */}
       <div className="action-row mt-lg">
         {onGuardar && (
-          <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">
-            {guardando ? 'Guardando...' : analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
+          <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado} type="button">
+            {analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
           </button>
         )}
         {onNuevo && (

@@ -58,8 +58,7 @@ export default function Sidebar({ paso, pasoMax, open, onClose, onNavegar, usuar
                     className={`nav-item${n === paso ? ' active' : ''}${!habilitado ? ' disabled' : ''}`}
                     disabled={!habilitado}
                     onClick={() => habilitado && onNavegar(n)}
-                    type="button"
-                  >
+                   type="button">
                     <span className="nav-num">{n}</span>
                     <span className="nav-label">{label}</span>
                   </button>

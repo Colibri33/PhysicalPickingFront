@@ -9,6 +9,29 @@
  * No son baremos de alto rendimiento; representan el espectro
  * real que abarca desde niveles bajos hasta niveles altos
  * en personas activas no necesariamente deportistas.
+ *
+ * IMPORTANTE — TRANSPARENCIA METODOLÓGICA: estos rangos son una
+ * calibración interna del proyecto (definida junto con el diseño de
+ * los perfiles funcionales), no provienen de una tabla de normas
+ * publicada, validada o citada de un protocolo especifico (p. ej.
+ * no son los baremos oficiales de un test de Cooper, 1RM, Course
+ * Navette, etc.). Se documentan aqui por transparencia: si este
+ * sistema se usa con fines clinicos, de investigacion o de seleccion
+ * deportiva formal, estos rangos deben ser revisados y sustituidos
+ * por normas validadas para la poblacion objetivo real.
+ *
+ * `paso` (step) define la precision del slider — no es parte del
+ * rango cientifico, es una decision de UX segun que tan fino tiene
+ * sentido medir cada unidad (enteros para repeticiones/kg, decimas
+ * para tiempos con cronometro, etc.).
+ *
+ * FUENTE UNICA DE VERDAD: estas son las unicas definiciones de
+ * rango/paso de variables fisicas del sistema. El backend
+ * (src/utils/validacion.js) MANTIENE UNA COPIA ESPEJO de estos
+ * mismos valores para poder validar sin depender de este modulo del
+ * frontend (son dos despliegues/repositorios separados sin build
+ * compartido) — si cambias un rango aqui, DEBES actualizar tambien
+ * el backend. Ver el comentario equivalente alla.
  */
 export const VARS_FISICAS = [
   { id: 'fuerza',       nombre: 'Fuerza maxima',   color: '#6d28d9', unidad: 'kg',           minimo: 10,   maximo: 100,  paso: 1,   direccion: 'mayor_mejor' },
@@ -27,6 +50,10 @@ export const VARS_FISICAS = [
  * con tiempos más altos que no son deportistas de elite.
  * Los porcentajes de decisión, atención y anticipación
  * parten desde 20% para no excluir perfiles bajos válidos.
+ *
+ * Mismas salvedades metodologicas que VARS_FISICAS arriba: son
+ * calibracion interna del proyecto, no una norma clinica publicada.
+ * Tambien son la fuente unica de verdad (espejadas en el backend).
  */
 export const VARS_COGNITIVAS = [
   { id: 'reaccion',     nombre: 'Velocidad de reaccion', color: '#0f766e', unidad: 'ms', minimo: 150, maximo: 650, paso: 1, direccion: 'menor_mejor' },
@@ -357,8 +384,9 @@ export function validarFormularioVariables(vars, reales) {
 
     const n = parseFloat(raw);
 
-    // No numérico → bloqueo
-    if (isNaN(n)) {
+    // No numérico, NaN o Infinito → bloqueo (nunca confiar solo en
+    // que el control de UI —slider o input— haya prevenido esto).
+    if (!Number.isFinite(n)) {
       errores.push(`${v.nombre}: debe ser un numero valido.`);
       return;
     }

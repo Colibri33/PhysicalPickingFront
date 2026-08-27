@@ -417,6 +417,7 @@ img { max-width: 100%; display: block; }
 .norm-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .norm-input:focus { outline: none; border-color: var(--primary); }
 
+/* Slider real (input type=range) — variables fisicas/cognitivas */
 .slider-row {
   display: flex; align-items: center; gap: .6rem; margin: .3rem 0 .15rem;
 }
@@ -427,17 +428,19 @@ img { max-width: 100%; display: block; }
 .slider-input {
   flex: 1; height: 4px; border-radius: 99px; appearance: none;
   background: var(--border); outline: none; cursor: pointer;
+  touch-action: pan-y; /* permite scroll vertical en movil sin interferir el drag horizontal */
 }
 .slider-input::-webkit-slider-thumb {
-  appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  appearance: none; width: 20px; height: 20px; border-radius: 50%;
   background: currentColor; border: 3px solid #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,.3); cursor: pointer;
 }
 .slider-input::-moz-range-thumb {
-  width: 18px; height: 18px; border-radius: 50%;
+  width: 20px; height: 20px; border-radius: 50%;
   background: currentColor; border: 3px solid #fff;
   box-shadow: 0 1px 4px rgba(0,0,0,.3); cursor: pointer;
 }
+.slider-input:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .slider-valor-row {
   display: flex; align-items: center; justify-content: space-between; gap: .5rem;
 }

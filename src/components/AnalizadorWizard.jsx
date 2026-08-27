@@ -52,8 +52,6 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
   const [analisis,    setAnalisis]  = useState(estadoAnalisisInicial());
   const [historial,   setHistorial] = useState([]);
   const [analisisGuardado, setAnalisisGuardado] = useState(false);
-  const [analisisGuardadoId, setAnalisisGuardadoId] = useState(null);
-  const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -79,72 +77,49 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
     // si el usuario cambia algo, al volver a guardar debe crear un
     // registro nuevo, no confundirse con el analisis ya guardado.
     setAnalisisGuardado(false);
-    setAnalisisGuardadoId(null);
   }
 
   async function guardarEnHistorial() {
-    // Bloqueo real contra doble guardado: por estado ya confirmado
-    // (analisisGuardado) y por una peticion ya en curso (guardando),
-    // para evitar dobles clics mientras la respuesta del backend
-    // todavia no llega.
     if (analisisGuardado) {
       mostrarToast('Este analisis ya fue guardado en el historial.', 'info');
       return;
     }
-    if (guardando) return;
-
     if (!analisis.participante.nombre) {
       mostrarToast('Completa los datos del participante antes de guardar.', 'error');
       return;
     }
+    const consolidado        = calcularConsolidado(analisis.fisicas, analisis.cognitivas, analisis.corporales);
+    const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.cognitivas, analisis.corporales);
+    const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
+    const interpretacion     = generarInterpretacion(consolidado, perfilesDeportivos, analisis.cognitivas, rankingDeportes);
 
-    setGuardando(true);
-    try {
-      const consolidado        = calcularConsolidado(analisis.fisicas, analisis.cognitivas, analisis.corporales);
-      const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.cognitivas, analisis.corporales);
-      const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
-      const interpretacion     = generarInterpretacion(consolidado, perfilesDeportivos, analisis.cognitivas, rankingDeportes);
-
-      const registro = {
-        id: Date.now(),
-        fecha: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
-        participante: { ...analisis.participante },
-        realesF:    { ...analisis.realesF },
-        realesC:    { ...analisis.realesC },
-        fisicas:    { ...analisis.fisicas },
-        cognitivas: { ...analisis.cognitivas },
-        corporales: { ...analisis.corporales },
-        consolidado,
-        perfilesDeportivos,
-        rankingDeportes: rankingDeportes.slice(0, 5),
-        interpretacion,
-      };
-
-      // El guardado SOLO se confirma (analisisGuardado = true) si el
-      // backend responde exitosamente con el registro persistido.
-      // No se simula ni se asume exito de antemano.
-      const res = await guardarRegistroHistorial(usuarioActual?.id ?? null, registro);
-      if (!res || res.ok === false) {
-        mostrarToast(res?.error || 'No se pudo guardar el analisis. Intenta de nuevo.', 'error');
-        return; // analisisGuardado permanece false: se puede reintentar
-      }
-
-      setAnalisisGuardado(true);
-      setAnalisisGuardadoId(res.resultado?.id ?? registro.id);
-
-      // Recarga real del historial desde la fuente de verdad (backend
-      // o localStorage segun el modo) para reflejar el registro nuevo.
-      setHistorial(await leerHistorial(usuarioActual?.id ?? null));
-      mostrarToast('Analisis guardado en historial.', 'success');
-    } finally {
-      setGuardando(false);
+    const registro = {
+      id: Date.now(),
+      fecha: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
+      participante: { ...analisis.participante },
+      realesF:    { ...analisis.realesF },
+      realesC:    { ...analisis.realesC },
+      fisicas:    { ...analisis.fisicas },
+      cognitivas: { ...analisis.cognitivas },
+      corporales: { ...analisis.corporales },
+      consolidado,
+      perfilesDeportivos,
+      rankingDeportes: rankingDeportes.slice(0, 5),
+      interpretacion,
+    };
+    const res = await guardarRegistroHistorial(usuarioActual?.id ?? null, registro);
+    if (res && res.ok === false) {
+      mostrarToast(res.error || 'No se pudo guardar el analisis.', 'error');
+      return;
     }
+    setAnalisisGuardado(true);
+    setHistorial(await leerHistorial(usuarioActual?.id ?? null));
+    mostrarToast('Analisis guardado en historial.', 'success');
   }
 
   function nuevoAnalisis() {
     setAnalisis(estadoAnalisisInicial());
     setAnalisisGuardado(false);
-    setAnalisisGuardadoId(null);
     setPaso(1);
     setPasoMax(1);
     mostrarToast('Listo para un nuevo analisis.', 'info');
@@ -168,7 +143,6 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           onGuardar={guardarEnHistorial}
           onNuevo={nuevoAnalisis}
           analisisGuardado={analisisGuardado}
-          guardando={guardando}
         />
       );
       case 9:  return (
@@ -177,7 +151,6 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           onGuardar={guardarEnHistorial}
           onNuevo={nuevoAnalisis}
           analisisGuardado={analisisGuardado}
-          guardando={guardando}
         />
       );
       case 10: return (

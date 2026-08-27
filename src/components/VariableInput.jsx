@@ -1,7 +1,13 @@
-/* ─── VariableInput.jsx v6 — slider real ───
-   Fila de ingreso de un valor real mediante <input type="range">,
-   con previsualizacion en vivo del % normalizado. Usada tanto en
-   StepFisicas como en StepCognitivas.
+/* ─── VariableInput.jsx v7 — slider real ───
+   Fila de ingreso de un valor REAL de test (no normalizado) mediante
+   <input type="range">. El slider trabaja exactamente en la misma
+   unidad y escala que el test (kg, segundos, metros, repeticiones,
+   ms, %) — la normalizacion a 0-100 ocurre despues, en el Step
+   correspondiente (StepFisicas/StepCognitivas), igual que antes con
+   el input numerico. Este componente NO cambia el significado ni la
+   estructura de los datos, solo la forma de capturarlos.
+
+   Usada tanto en StepFisicas como en StepCognitivas.
 
    IMPORTANTE sobre la validacion de "campo obligatorio": un slider
    HTML siempre tiene un valor numerico (no puede estar "vacio"), asi
@@ -10,13 +16,15 @@
    usuario efectivamente mueve el slider al menos una vez. Antes de
    eso se muestra visualmente en el punto medio del rango pero el
    campo sigue contando como "sin responder" para la validacion
-   (analisis.realesF[id] permanece '' hasta el primer cambio real).
+   (analisis.realesF[id] permanece '' hasta el primer cambio real,
+   igual que con el input numerico anterior).
 */
 import { normalizarValor } from '../logic/modelo';
 
 export default function VariableInput({ variable: v, valor, onChange, error }) {
   const respondido = valor !== '' && valor !== null && valor !== undefined;
   const paso = v.paso ?? 1;
+  const decimales = paso < 1 ? 1 : 0;
   const medio = Math.round(((v.minimo + v.maximo) / 2) / paso) * paso;
   const valorMostrado = respondido ? parseFloat(valor) : medio;
 
@@ -47,20 +55,25 @@ export default function VariableInput({ variable: v, valor, onChange, error }) {
           onChange={e => onChange(v.id, e.target.value)}
           style={{ accentColor: v.color }}
           aria-label={v.nombre}
+          aria-valuemin={v.minimo}
+          aria-valuemax={v.maximo}
+          aria-valuenow={valorMostrado}
         />
         <span className="slider-edge">{v.maximo} {v.unidad}</span>
       </div>
 
       <div className="slider-valor-row">
         <span className="slider-valor" style={{ color: respondido ? v.color : '#8792a8' }}>
-          {respondido ? `Valor actual: ${valorMostrado} ${v.unidad}` : 'Desliza para fijar un valor'}
+          {respondido
+            ? `Valor actual: ${valorMostrado.toFixed(decimales)} ${v.unidad}`
+            : 'Desliza para fijar un valor'}
         </span>
         <span className="norm-preview" style={{ color: pct !== null ? v.color : '#8792a8' }}>
           {pct !== null ? `${pct}%` : '—%'}
         </span>
       </div>
 
-      {/* Barra de progreso */}
+      {/* Barra de progreso (previsualizacion del % normalizado) */}
       <div className="norm-bar-track">
         <div
           className="norm-bar-fill"
