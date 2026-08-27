@@ -127,7 +127,7 @@ export default function ResultadosCorporales({ analisis, onContinuar }) {
         })}
       </div>
 
-      <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar}>
+      <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar} type="button">
         Ver perfil consolidado →
       </button>
     </div>

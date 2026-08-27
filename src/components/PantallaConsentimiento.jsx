@@ -115,6 +115,7 @@ export default function PantallaConsentimiento({ onAceptado, mostrarToast }) {
           className="btn btn-primary btn-full mt-lg"
           onClick={handleContinuar}
           disabled={enviando}
+          type="button"
         >
           {enviando ? 'Guardando...' : 'Acepto y continuar'}
         </button>

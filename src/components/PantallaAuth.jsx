@@ -61,13 +61,13 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
         <p className="auth-subtitle">Sistema de evaluacion multivariable del rendimiento deportivo</p>
 
         <div className="auth-btns">
-          <button className="btn btn-primary" onClick={() => setVista('login')}>
+          <button className="btn btn-primary" onClick={() => setVista('login')} type="button">
             Iniciar sesion
           </button>
-          <button className="btn btn-outline" onClick={() => setVista('registro')}>
+          <button className="btn btn-outline" onClick={() => setVista('registro')} type="button">
             Crear cuenta
           </button>
-          <button className="btn btn-ghost" onClick={handleInvitado}>
+          <button className="btn btn-ghost" onClick={handleInvitado} type="button">
             Continuar como invitado
           </button>
         </div>
@@ -85,7 +85,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
   if (vista === 'login') return (
     <div className="auth-screen">
       <div className="auth-card">
-        <button className="auth-back" onClick={() => setVista('inicio')}>← Volver</button>
+        <button className="auth-back" onClick={() => setVista('inicio')} type="button">← Volver</button>
         <h2 className="auth-title">Iniciar sesion</h2>
 
         <form onSubmit={handleLogin} className="auth-form">
@@ -120,7 +120,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
 
         <p className="auth-switch">
           ¿No tienes cuenta?{' '}
-          <button className="link-btn" onClick={() => setVista('registro')}>Registrate</button>
+          <button className="link-btn" onClick={() => setVista('registro')} type="button">Registrate</button>
         </p>
       </div>
     </div>
@@ -130,7 +130,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <button className="auth-back" onClick={() => setVista('inicio')}>← Volver</button>
+        <button className="auth-back" onClick={() => setVista('inicio')} type="button">← Volver</button>
         <h2 className="auth-title">Crear cuenta</h2>
 
         <form onSubmit={handleRegistro} className="auth-form">
@@ -176,7 +176,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
 
         <p className="auth-switch">
           ¿Ya tienes cuenta?{' '}
-          <button className="link-btn" onClick={() => setVista('login')}>Inicia sesion</button>
+          <button className="link-btn" onClick={() => setVista('login')} type="button">Inicia sesion</button>
         </p>
       </div>
     </div>

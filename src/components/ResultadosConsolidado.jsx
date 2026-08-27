@@ -19,7 +19,7 @@ import {
 
 function signo(d) { const r = Math.round(d * 10)/10; return r > 0 ? `+${r}` : `${r}`; }
 
-export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, onContinuar, analisisGuardado }) {
+export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, onContinuar, analisisGuardado, guardando }) {
   const consolidado        = calcularConsolidado(analisis.fisicas, analisis.cognitivas, analisis.corporales);
   const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.cognitivas, analisis.corporales);
   const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
@@ -191,13 +191,13 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
 
       {/* ── Acciones ── */}
       <div className="action-row mt-lg">
-        <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado}>
-          {analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
+        <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">
+          {guardando ? 'Guardando...' : analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
         </button>
         {onContinuar && (
-          <button className="btn btn-primary" onClick={onContinuar}>Ver recomendacion deportiva →</button>
+          <button className="btn btn-primary" onClick={onContinuar} type="button">Ver recomendacion deportiva →</button>
         )}
-        <button className="btn btn-outline" onClick={onNuevo}>＋ Nuevo analisis</button>
+        <button className="btn btn-outline" onClick={onNuevo} type="button">＋ Nuevo analisis</button>
       </div>
     </div>
   );

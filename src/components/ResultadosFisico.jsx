@@ -26,7 +26,7 @@ export default function ResultadosFisico({ analisis, onContinuar }) {
         ))}
       </div>
 
-      <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar}>
+      <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar} type="button">
         Ver perfil cognitivo →
       </button>
     </div>

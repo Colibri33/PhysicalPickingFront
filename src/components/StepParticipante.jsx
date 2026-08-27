@@ -65,7 +65,7 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
         </label>
       </div>
 
-      <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar}>
+      <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
         Continuar →
       </button>
     </div>

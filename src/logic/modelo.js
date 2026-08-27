@@ -11,14 +11,14 @@
  * en personas activas no necesariamente deportistas.
  */
 export const VARS_FISICAS = [
-  { id: 'fuerza',       nombre: 'Fuerza maxima',   color: '#6d28d9', unidad: 'kg',           minimo: 10,   maximo: 100,  direccion: 'mayor_mejor' },
-  { id: 'fuerzaExp',    nombre: 'Fuerza explosiva', color: '#9333ea', unidad: 'cm',           minimo: 5,    maximo: 65,   direccion: 'mayor_mejor' },
-  { id: 'resistencia',  nombre: 'Resistencia',      color: '#0f9d66', unidad: 'metros',       minimo: 800,  maximo: 3200, direccion: 'mayor_mejor' },
-  { id: 'velocidad',    nombre: 'Velocidad',         color: '#0284c7', unidad: 'segundos',     minimo: 4.0,  maximo: 8.0,  direccion: 'menor_mejor' },
-  { id: 'agilidad',     nombre: 'Agilidad',          color: '#0891b2', unidad: 'segundos',     minimo: 14,   maximo: 26,   direccion: 'menor_mejor' },
-  { id: 'flexibilidad', nombre: 'Flexibilidad',      color: '#db2777', unidad: 'cm',           minimo: -20,  maximo: 30,   direccion: 'mayor_mejor' },
-  { id: 'coordinacion', nombre: 'Coordinacion',      color: '#d97706', unidad: 'repeticiones', minimo: 3,    maximo: 45,   direccion: 'mayor_mejor' },
-  { id: 'equilibrio',   nombre: 'Equilibrio',        color: '#7c3aed', unidad: 'segundos',     minimo: 3,    maximo: 45,   direccion: 'mayor_mejor' },
+  { id: 'fuerza',       nombre: 'Fuerza maxima',   color: '#6d28d9', unidad: 'kg',           minimo: 10,   maximo: 100,  paso: 1,   direccion: 'mayor_mejor' },
+  { id: 'fuerzaExp',    nombre: 'Fuerza explosiva', color: '#9333ea', unidad: 'cm',           minimo: 5,    maximo: 65,   paso: 1,   direccion: 'mayor_mejor' },
+  { id: 'resistencia',  nombre: 'Resistencia',      color: '#0f9d66', unidad: 'metros',       minimo: 800,  maximo: 3200, paso: 10,  direccion: 'mayor_mejor' },
+  { id: 'velocidad',    nombre: 'Velocidad',         color: '#0284c7', unidad: 'segundos',     minimo: 4.0,  maximo: 8.0,  paso: 0.1, direccion: 'menor_mejor' },
+  { id: 'agilidad',     nombre: 'Agilidad',          color: '#0891b2', unidad: 'segundos',     minimo: 14,   maximo: 26,   paso: 0.1, direccion: 'menor_mejor' },
+  { id: 'flexibilidad', nombre: 'Flexibilidad',      color: '#db2777', unidad: 'cm',           minimo: -20,  maximo: 30,   paso: 1,   direccion: 'mayor_mejor' },
+  { id: 'coordinacion', nombre: 'Coordinacion',      color: '#d97706', unidad: 'repeticiones', minimo: 3,    maximo: 45,   paso: 1,   direccion: 'mayor_mejor' },
+  { id: 'equilibrio',   nombre: 'Equilibrio',        color: '#7c3aed', unidad: 'segundos',     minimo: 3,    maximo: 45,   paso: 1,   direccion: 'mayor_mejor' },
 ];
 
 /*
@@ -29,10 +29,10 @@ export const VARS_FISICAS = [
  * parten desde 20% para no excluir perfiles bajos válidos.
  */
 export const VARS_COGNITIVAS = [
-  { id: 'reaccion',     nombre: 'Velocidad de reaccion', color: '#0f766e', unidad: 'ms', minimo: 150, maximo: 650, direccion: 'menor_mejor' },
-  { id: 'decision',     nombre: 'Toma de decisiones',    color: '#1d4ed8', unidad: '%',  minimo: 20,  maximo: 100, direccion: 'mayor_mejor' },
-  { id: 'atencion',     nombre: 'Atencion',              color: '#b45309', unidad: '%',  minimo: 20,  maximo: 100, direccion: 'mayor_mejor' },
-  { id: 'anticipacion', nombre: 'Anticipacion',          color: '#7e22ce', unidad: '%',  minimo: 20,  maximo: 100, direccion: 'mayor_mejor' },
+  { id: 'reaccion',     nombre: 'Velocidad de reaccion', color: '#0f766e', unidad: 'ms', minimo: 150, maximo: 650, paso: 1, direccion: 'menor_mejor' },
+  { id: 'decision',     nombre: 'Toma de decisiones',    color: '#1d4ed8', unidad: '%',  minimo: 20,  maximo: 100, paso: 1, direccion: 'mayor_mejor' },
+  { id: 'atencion',     nombre: 'Atencion',              color: '#b45309', unidad: '%',  minimo: 20,  maximo: 100, paso: 1, direccion: 'mayor_mejor' },
+  { id: 'anticipacion', nombre: 'Anticipacion',          color: '#7e22ce', unidad: '%',  minimo: 20,  maximo: 100, paso: 1, direccion: 'mayor_mejor' },
 ];
 
 /* ── Ajuste cognitivo por variable fisica ── */

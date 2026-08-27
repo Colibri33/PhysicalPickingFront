@@ -1,15 +1,26 @@
-/* ─── VariableInput.jsx ───
-   Fila de ingreso de un valor real con previsualización en vivo del % normalizado.
-   Usada tanto en StepFisicas como en StepCognitivas.
+/* ─── VariableInput.jsx v6 — slider real ───
+   Fila de ingreso de un valor real mediante <input type="range">,
+   con previsualizacion en vivo del % normalizado. Usada tanto en
+   StepFisicas como en StepCognitivas.
+
+   IMPORTANTE sobre la validacion de "campo obligatorio": un slider
+   HTML siempre tiene un valor numerico (no puede estar "vacio"), asi
+   que para no romper la regla de "todos los campos son obligatorios"
+   el valor NO se escribe en el estado del analisis hasta que el
+   usuario efectivamente mueve el slider al menos una vez. Antes de
+   eso se muestra visualmente en el punto medio del rango pero el
+   campo sigue contando como "sin responder" para la validacion
+   (analisis.realesF[id] permanece '' hasta el primer cambio real).
 */
 import { normalizarValor } from '../logic/modelo';
 
 export default function VariableInput({ variable: v, valor, onChange, error }) {
-  /* Calcular preview en tiempo real sin mutar el estado */
-  let pct = null;
-  if (valor !== '' && valor !== null && !isNaN(parseFloat(valor))) {
-    pct = normalizarValor(parseFloat(valor), v.minimo, v.maximo, v.direccion);
-  }
+  const respondido = valor !== '' && valor !== null && valor !== undefined;
+  const paso = v.paso ?? 1;
+  const medio = Math.round(((v.minimo + v.maximo) / 2) / paso) * paso;
+  const valorMostrado = respondido ? parseFloat(valor) : medio;
+
+  const pct = respondido ? normalizarValor(valorMostrado, v.minimo, v.maximo, v.direccion) : null;
 
   return (
     <div className={`norm-row${error ? ' norm-row--error' : ''}`}>
@@ -24,18 +35,26 @@ export default function VariableInput({ variable: v, valor, onChange, error }) {
         </span>
       </div>
 
-      <div className="norm-input-row">
+      <div className="slider-row">
+        <span className="slider-edge">{v.minimo} {v.unidad}</span>
         <input
-          type="number"
-          className="norm-input"
-          value={valor ?? ''}
-          placeholder={`ej. ${Math.round((v.minimo + v.maximo) / 2)}`}
-          step="any"
+          type="range"
+          className="slider-input"
+          min={v.minimo}
+          max={v.maximo}
+          step={paso}
+          value={valorMostrado}
           onChange={e => onChange(v.id, e.target.value)}
-          style={{ borderColor: error ? '#ef4444' : undefined }}
+          style={{ accentColor: v.color }}
+          aria-label={v.nombre}
         />
-        <span className="norm-unit">{v.unidad}</span>
-        <span className="norm-arrow">→</span>
+        <span className="slider-edge">{v.maximo} {v.unidad}</span>
+      </div>
+
+      <div className="slider-valor-row">
+        <span className="slider-valor" style={{ color: respondido ? v.color : '#8792a8' }}>
+          {respondido ? `Valor actual: ${valorMostrado} ${v.unidad}` : 'Desliza para fijar un valor'}
+        </span>
         <span className="norm-preview" style={{ color: pct !== null ? v.color : '#8792a8' }}>
           {pct !== null ? `${pct}%` : '—%'}
         </span>

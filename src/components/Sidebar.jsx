@@ -37,13 +37,13 @@ export default function Sidebar({ paso, pasoMax, open, onClose, onNavegar, usuar
     <nav className={`sidebar${open ? ' open' : ''}`}>
       <div className="sidebar-header">
         <span className="sidebar-logo">PhysicalPicking</span>
-        <button className="sidebar-close" onClick={onClose}>✕</button>
+        <button className="sidebar-close" onClick={onClose} type="button">✕</button>
       </div>
       <div className="sidebar-user">
         {usuarioActual
           ? (<><span className="su-nombre">{usuarioActual.nombre}</span><span className="su-email">{usuarioActual.email}</span></>)
           : <span className="su-invitado">Modo invitado</span>}
-        <button className="su-logout" onClick={onLogout}>Cerrar sesion</button>
+        <button className="su-logout" onClick={onLogout} type="button">Cerrar sesion</button>
       </div>
 
       {GRUPOS_SIDEBAR.map(grupo => (
@@ -58,6 +58,7 @@ export default function Sidebar({ paso, pasoMax, open, onClose, onNavegar, usuar
                     className={`nav-item${n === paso ? ' active' : ''}${!habilitado ? ' disabled' : ''}`}
                     disabled={!habilitado}
                     onClick={() => habilitado && onNavegar(n)}
+                    type="button"
                   >
                     <span className="nav-num">{n}</span>
                     <span className="nav-label">{label}</span>

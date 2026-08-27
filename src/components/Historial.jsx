@@ -11,7 +11,7 @@ function ModalDetalle({ registro: r, onClose }) {
   return (
     <div className="modal-veil" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>✕</button>
+        <button className="modal-close" onClick={onClose} type="button">✕</button>
         <h2 className="modal-title">{r.participante.nombre}</h2>
         <div className="modal-meta-grid">
           {[['Edad', `${r.participante.edad} años`], ['Perfil', cap(r.participante.perfil)], ['Fecha', r.fecha]]
@@ -91,8 +91,8 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
 
       {usuarioActual && (
         <div className="action-row mt-lg" style={{ marginBottom: '1rem' }}>
-          <button className="btn btn-ghost" onClick={handleExportar}>Descargar mis datos (Habeas Data)</button>
-          <button className="btn btn-ghost btn-danger" onClick={handleEliminarCuenta}>Eliminar mi cuenta y mis datos</button>
+          <button className="btn btn-ghost" onClick={handleExportar} type="button">Descargar mis datos (Habeas Data)</button>
+          <button className="btn btn-ghost btn-danger" onClick={handleEliminarCuenta} type="button">Eliminar mi cuenta y mis datos</button>
         </div>
       )}
       {!usuarioActual && (
@@ -107,13 +107,13 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
       {historial.length === 0 ? (
         <div className="empty-block">
           <p>No hay registros guardados.</p>
-          <button className="btn btn-outline" onClick={onNuevo}>Iniciar primer analisis</button>
+          <button className="btn btn-outline" onClick={onNuevo} type="button">Iniciar primer analisis</button>
         </div>
       ) : (
         <>
           <div className="hist-list">
             {historial.map((r, i) => (
-              <button key={r.id} className="hist-card" onClick={() => setDetalle(r)}>
+              <button key={r.id} className="hist-card" onClick={() => setDetalle(r)} type="button">
                 <span className="hist-num">#{historial.length - i}</span>
                 <div className="hist-info">
                   <div className="hist-name">{r.participante.nombre}</div>
@@ -127,8 +127,8 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
             ))}
           </div>
           <div className="action-row mt-lg">
-            <button className="btn btn-outline btn-danger" onClick={onLimpiar}>Limpiar historial</button>
-            <button className="btn btn-outline" onClick={onNuevo}>＋ Nuevo analisis</button>
+            <button className="btn btn-outline btn-danger" onClick={onLimpiar} type="button">Limpiar historial</button>
+            <button className="btn btn-outline" onClick={onNuevo} type="button">＋ Nuevo analisis</button>
           </div>
         </>
       )}

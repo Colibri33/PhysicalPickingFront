@@ -36,7 +36,7 @@ export default function ResultadosCognitivo({ analisis, onContinuar }) {
         </p>
       </div>
 
-      <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar}>
+      <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar} type="button">
         Ver ajustes corporales →
       </button>
     </div>
