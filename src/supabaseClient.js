@@ -1,9 +1,9 @@
-/* ═══════════════════════════════════════════════════════════════
+/* 
    supabaseClient.js
    Cliente de Supabase para el navegador. Usa la ANON KEY (pública
-   por diseño, protegida por Row Level Security en Postgres) — NUNCA
+   por diseño, protegida por Row Level Security en Postgres)NUNCA
    la service role key, que solo vive en el backend.
-   ═══════════════════════════════════════════════════════════════ */
+*/
 
 import { createClient } from '@supabase/supabase-js';
 

@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { login, registrar } from '../auth/authService';
 
-export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast }) {
+export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast, onOlvideContrasena, onVerTerminos, onVerPrivacidad }) {
   const [vista, setVista] = useState('inicio'); // 'inicio' | 'login' | 'registro'
 
   /* ── Login state ── */
@@ -77,6 +77,12 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
           servidor). Si borras los datos del navegador, cambias de navegador o de
           dispositivo, perderas ese historial de forma permanente.
         </p>
+
+        <p className="auth-legal-links">
+          <button type="button" className="link-inline" onClick={onVerTerminos}>Términos y Condiciones</button>
+          {' · '}
+          <button type="button" className="link-inline" onClick={onVerPrivacidad}>Política de Datos</button>
+        </p>
       </div>
     </div>
   );
@@ -117,6 +123,10 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast 
             {enviando ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
+        <p className="auth-switch">
+          <button className="link-btn" onClick={onOlvideContrasena} type="button">¿Olvidaste tu contraseña?</button>
+        </p>
 
         <p className="auth-switch">
           ¿No tienes cuenta?{' '}

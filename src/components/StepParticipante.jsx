@@ -1,4 +1,12 @@
-/* ─── StepParticipante.jsx ─── */
+/* ─── StepParticipante.jsx ───
+   PhysicalPicking es exclusivamente para participantes adultos de
+   18 a 30 anos (poblacion objetivo para la bateria EUROFIT que se
+   incorporara en la siguiente fase). Todos los campos son
+   obligatorios y se validan antes de avanzar. */
+const EDAD_MIN = 18;
+const EDAD_MAX = 30;
+export { EDAD_MIN, EDAD_MAX };
+
 export default function StepParticipante({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const p = analisis.participante;
 
@@ -7,13 +15,22 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
   }
 
   function handleContinuar() {
-    const nombre = p.nombre.trim();
+    const nombre = (p.nombre || '').trim();
     if (!nombre)              return mostrarToast('Ingresa el nombre del participante.', 'error');
     if (nombre.length > 120)  return mostrarToast('El nombre es demasiado largo (maximo 120 caracteres).', 'error');
-    if (!p.edad || isNaN(p.edad) || !Number.isInteger(+p.edad) || +p.edad < 1 || +p.edad > 120)
-      return mostrarToast('Ingresa una edad valida en anos completos (1-120).', 'error');
-    if (!p.genero)             return mostrarToast('Selecciona el genero.', 'error');
-    if (!p.perfil)             return mostrarToast('Selecciona el tipo de perfil.', 'error');
+
+    if (p.edad === '' || p.edad === null || p.edad === undefined)
+      return mostrarToast('Ingresa la edad del participante.', 'error');
+    const edadNum = Number(p.edad);
+    if (isNaN(edadNum) || !Number.isInteger(edadNum))
+      return mostrarToast('La edad debe ser un numero entero.', 'error');
+    if (edadNum < EDAD_MIN || edadNum > EDAD_MAX)
+      return mostrarToast(`PhysicalPicking evalua unicamente participantes de ${EDAD_MIN} a ${EDAD_MAX} anos. Edad ingresada: ${edadNum}.`, 'error');
+
+    if (!p.genero)  return mostrarToast('Selecciona el genero.', 'error');
+    if (!p.perfil)  return mostrarToast('Selecciona el tipo de perfil.', 'error');
+    if (!(p.deporte || '').trim()) return mostrarToast('Ingresa la actividad o deporte del participante.', 'error');
+
     if (nombre !== p.nombre) updateAnalisis({ participante: { ...p, nombre } });
     mostrarToast(`Participante "${nombre}" registrado.`, 'success');
     onContinuar();
@@ -22,6 +39,10 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
   return (
     <div className="panel-card">
       <h2 className="panel-title">Datos del participante</h2>
+      <p className="panel-desc">
+        PhysicalPicking evalua participantes adultos entre {EDAD_MIN} y {EDAD_MAX} años.
+        Todos los campos son obligatorios.
+      </p>
 
       <div className="form-grid">
         <label className="field-label">
@@ -31,8 +52,8 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
         </label>
 
         <label className="field-label">
-          Edad
-          <input className="field-input" type="number" value={p.edad} min={1} max={120} step={1}
+          Edad ({EDAD_MIN}–{EDAD_MAX} años)
+          <input className="field-input" type="number" value={p.edad} min={EDAD_MIN} max={EDAD_MAX} step={1}
             onChange={e => handleChange('edad', e.target.value)} />
         </label>
 
@@ -53,13 +74,13 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
             onChange={e => handleChange('perfil', e.target.value)}>
             <option value="">Seleccionar…</option>
             <option value="deportivo">Deportivo</option>
-            <option value="academico">Academico</option>
+            <option value="entrenador">Entrenador / profesional</option>
             <option value="general">General</option>
           </select>
         </label>
 
         <label className="field-label" style={{ gridColumn: '1/-1' }}>
-          Actividad / deporte <span className="field-hint">(opcional)</span>
+          Actividad / deporte
           <input className="field-input" type="text" value={p.deporte}
             onChange={e => handleChange('deporte', e.target.value)} />
         </label>

@@ -1,9 +1,9 @@
-/* ═══════════════════════════════════════════════════════════════
+/*
    PhysicalPicking · styles.css
    Mobile-first. Sin frameworks externos.
-   ═══════════════════════════════════════════════════════════════ */
+*/
 
-/* ── Variables ── */
+/*Variables*/
 :root {
   --ink1:    #1c1f26;
   --ink2:    #454c5e;
@@ -22,7 +22,7 @@
   --font-mono: 'JetBrains Mono', 'Fira Mono', monospace;
 }
 
-/* ── Reset base ── */
+/*Reset base*/
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 16px; }
 body {
@@ -36,23 +36,23 @@ button { cursor: pointer; font-family: inherit; }
 input, select { font-family: inherit; }
 img { max-width: 100%; display: block; }
 
-/* ─────────────────────────────────────────────
+/* 
    APP ROOT
-───────────────────────────────────────────── */
+*/
 .app-root { min-height: 100vh; }
 
-/* ─────────────────────────────────────────────
+/*
    LAYOUT (sidebar + main)
-───────────────────────────────────────────── */
+ */
 .app-layout {
   display: flex;
   min-height: 100vh;
   position: relative;
 }
 
-/* ─────────────────────────────────────────────
+/* 
    SIDEBAR
-───────────────────────────────────────────── */
+*/
 .sidebar {
   width: var(--sidebar-w);
   background: var(--ink1);
@@ -139,9 +139,9 @@ img { max-width: 100%; display: block; }
   .sidebar-close { display: none; }
 }
 
-/* ─────────────────────────────────────────────
+/* 
    MAIN CONTENT
-───────────────────────────────────────────── */
+ */
 .main-content {
   flex: 1;
   display: flex;
@@ -149,9 +149,9 @@ img { max-width: 100%; display: block; }
   min-width: 0;
 }
 
-/* ─────────────────────────────────────────────
+/*
    TOPBAR
-───────────────────────────────────────────── */
+ */
 .topbar {
   background: var(--white);
   border-bottom: 1px solid var(--border);
@@ -188,9 +188,9 @@ img { max-width: 100%; display: block; }
 .sd-dot.active { background: var(--primary); }
 .sd-dot.done   { background: var(--success); }
 
-/* ─────────────────────────────────────────────
+/*
    PANEL AREA
-───────────────────────────────────────────── */
+*/
 .panel-area {
   flex: 1;
   padding: 1.2rem;
@@ -199,9 +199,9 @@ img { max-width: 100%; display: block; }
   margin: 0 auto;
 }
 
-/* ─────────────────────────────────────────────
+/*
    PANEL CARD
-───────────────────────────────────────────── */
+*/
 .panel-card {
   background: var(--white);
   border-radius: var(--radius);
@@ -218,9 +218,9 @@ img { max-width: 100%; display: block; }
   margin-bottom: 1.2rem; line-height: 1.5;
 }
 
-/* ─────────────────────────────────────────────
+/*
    FORMS
-───────────────────────────────────────────── */
+ */
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -241,9 +241,9 @@ img { max-width: 100%; display: block; }
 }
 .field-input:focus { outline: none; border-color: var(--primary); background: #fff; }
 
-/* ─────────────────────────────────────────────
+/*
    BOTONES
-───────────────────────────────────────────── */
+ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
   gap: .4rem; padding: .65rem 1.3rem;
@@ -266,32 +266,34 @@ img { max-width: 100%; display: block; }
   display: flex; gap: .75rem; flex-wrap: wrap;
 }
 
-/* ─────────────────────────────────────────────
+/*
    SPACING UTILITIES
-───────────────────────────────────────────── */
+*/
 .mt-lg { margin-top: 1.5rem; }
 
-/* ─────────────────────────────────────────────
+/* 
    TOAST
-───────────────────────────────────────────── */
+ */
 .toast {
-  position: fixed; bottom: 1.2rem; right: 1.2rem;
-  padding: .75rem 1.2rem; border-radius: 8px;
-  font-size: .84rem; font-weight: 600;
-  box-shadow: 0 4px 16px rgba(0,0,0,.14);
+  position: fixed; top: 40%; left: 50%;
+  transform: translate(-50%, -50%);
+  padding: .85rem 1.4rem; border-radius: 10px;
+  font-size: .88rem; font-weight: 600;
+  text-align: center;
+  box-shadow: 0 8px 28px rgba(0,0,0,.22);
   z-index: 9999;
-  opacity: 0; pointer-events: none;
-  transition: opacity .25s;
-  max-width: 90vw;
+  opacity: 0; pointer-events: none; /* nunca bloquea la interfaz, solo informa */
+  transition: opacity .25s, transform .25s;
+  max-width: min(90vw, 420px);
 }
-.toast.show { opacity: 1; pointer-events: auto; }
+.toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 .toast.success { background: #dcfce7; color: #166534; }
 .toast.error   { background: #fee2e2; color: #991b1b; }
 .toast.info    { background: #dbeafe; color: #1e40af; }
 
-/* ─────────────────────────────────────────────
+/* 
    AUTH SCREEN
-───────────────────────────────────────────── */
+ */
 .auth-screen {
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
@@ -333,10 +335,37 @@ img { max-width: 100%; display: block; }
 .auth-input:focus { outline: none; border-color: var(--primary); background: #fff; }
 .auth-switch    { font-size: .8rem; color: var(--ink3); text-align: center; }
 .link-btn       { background: none; border: none; color: var(--primary); font-size: .8rem; font-weight: 600; text-decoration: underline; }
+.link-inline    { background: none; border: none; padding: 0; color: var(--primary); font-weight: 700; text-decoration: underline; cursor: pointer; font-size: inherit; }
+.auth-legal-links { font-size: .72rem; color: var(--ink3); text-align: center; margin-top: 1rem; }
 
-/* ─────────────────────────────────────────────
+/*
+   PAGINA LEGAL (Terminos / Politica de Datos)
+*/
+.legal-screen {
+  min-height: 100vh; padding: 2rem 1.2rem;
+  background: linear-gradient(135deg, #f0f4ff 0%, #f7f8fb 100%);
+  display: flex; justify-content: center;
+}
+.legal-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 14px;
+  padding: 2rem 2.2rem; width: 100%; max-width: 720px;
+  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  height: fit-content;
+}
+.legal-volver  { background: none; border: none; color: var(--ink3); font-size: .82rem; padding: 0; margin-bottom: 1rem; display: block; }
+.legal-volver:hover { color: var(--ink1); }
+.legal-title    { font-size: .78rem; font-weight: 800; letter-spacing: .1em; color: var(--primary); margin-bottom: .25rem; }
+.legal-subtitle { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--ink1); }
+.legal-seccion  { margin-bottom: 1.3rem; }
+.legal-seccion h3 { font-size: .92rem; font-weight: 700; color: var(--ink1); margin-bottom: .4rem; }
+.legal-seccion p, .legal-seccion li { font-size: .85rem; color: var(--ink2); line-height: 1.55; }
+.legal-seccion ul { padding-left: 1.2rem; margin-top: .3rem; }
+.legal-pendiente { color: #b45309; font-style: italic; }
+.legal-fecha { font-size: .74rem; color: var(--ink3); margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+
+/*
    UPLOAD (huella)
-───────────────────────────────────────────── */
+ */
 .upload-area {
   border: 2px dashed var(--border); border-radius: var(--radius);
   padding: 2.5rem 1.5rem; text-align: center; cursor: pointer;
@@ -354,9 +383,9 @@ img { max-width: 100%; display: block; }
 .preview-img      { max-height: 200px; width: auto; border-radius: 8px; border: 1px solid var(--border); }
 .preview-filename { font-size: .78rem; color: var(--ink3); font-family: var(--font-mono); }
 
-/* ─────────────────────────────────────────────
+/*
    PATRÓN DERMATOGLÍFICO
-───────────────────────────────────────────── */
+*/
 .patron-grid { display: flex; gap: .8rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
 .patron-tile {
   flex: 1; min-width: 90px;
@@ -380,9 +409,9 @@ img { max-width: 100%; display: block; }
 .patron-alert-icon { font-size: 1.4rem; flex-shrink: 0; }
 .patron-alert strong { display: block; margin-bottom: .25rem; }
 
-/* ─────────────────────────────────────────────
+/*
    VARIABLE INPUT (normalizacion)
-───────────────────────────────────────────── */
+*/
 .norm-formulario { display: flex; flex-direction: column; gap: 1.2rem; }
 
 .norm-row {
@@ -454,9 +483,9 @@ img { max-width: 100%; display: block; }
 .norm-bar-track { height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .norm-bar-fill  { height: 100%; border-radius: 99px; transition: width .3s ease; }
 
-/* ─────────────────────────────────────────────
+/*
    BARRA DE RESULTADO
-───────────────────────────────────────────── */
+*/
 .bars-list { display: flex; flex-direction: column; gap: .85rem; }
 
 .bar-row { display: flex; flex-direction: column; gap: .3rem; }
@@ -471,9 +500,9 @@ img { max-width: 100%; display: block; }
 .bar-track  { height: 7px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .bar-fill   { height: 100%; border-radius: 99px; transition: width .45s ease; }
 
-/* ─────────────────────────────────────────────
+/*
    PARTICIPANT STRIP
-───────────────────────────────────────────── */
+*/
 .participant-strip {
   display: flex; flex-wrap: wrap; gap: .5rem 1rem;
   background: var(--bg); border-radius: 8px;
@@ -484,9 +513,9 @@ img { max-width: 100%; display: block; }
 .ps-lbl  { font-family: var(--font-mono); font-size: .6rem; color: var(--ink3); text-transform: uppercase; letter-spacing: .07em; }
 .ps-val  { font-weight: 700; font-size: .82rem; color: var(--ink1); }
 
-/* ─────────────────────────────────────────────
+/*
    IMC DISPLAY
-───────────────────────────────────────────── */
+ */
 .imc-display {
   display: flex; align-items: center; gap: .6rem;
   background: #f0fdf4; border: 1px solid #bbf7d0;
@@ -495,9 +524,9 @@ img { max-width: 100%; display: block; }
 .imc-val { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: #166534; }
 .imc-cat { font-size: .82rem; color: #166534; }
 
-/* ─────────────────────────────────────────────
+/*
    CORPORALES GRID
-───────────────────────────────────────────── */
+ */
 .corp-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -510,9 +539,9 @@ img { max-width: 100%; display: block; }
 .cdg-lbl { font-family: var(--font-mono); font-size: .62rem; color: var(--ink3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .2rem; }
 .cdg-val { font-weight: 700; font-size: .88rem; color: var(--ink1); }
 
-/* ─────────────────────────────────────────────
+/*
    AJUSTE TABLE
-───────────────────────────────────────────── */
+ */
 .section-subtitle {
   font-size: .85rem; font-weight: 700; color: var(--ink2);
   font-family: var(--font-mono); text-transform: uppercase;
@@ -535,9 +564,9 @@ img { max-width: 100%; display: block; }
 .td-neu  { color: var(--ink3); font-family: var(--font-mono); }
 .td-var  { font-weight: 600; }
 
-/* ─────────────────────────────────────────────
+/* 
    COMPARE BARS
-───────────────────────────────────────────── */
+ */
 .compare-list { display: flex; flex-direction: column; gap: 1rem; }
 .compare-row  { display: flex; flex-direction: column; gap: .35rem; }
 .compare-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .3rem; }
@@ -562,9 +591,9 @@ img { max-width: 100%; display: block; }
 }
 .compare-bar--adj { opacity: 1; }
 
-/* ─────────────────────────────────────────────
+/*
    CONSOLIDADO
-───────────────────────────────────────────── */
+*/
 .summary-strip {
   display: grid; grid-template-columns: repeat(3, 1fr);
   gap: .8rem; margin-bottom: 1.2rem;
@@ -604,9 +633,9 @@ img { max-width: 100%; display: block; }
 .cr-mini-track { height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .cr-mini-fill  { height: 100%; border-radius: 99px; transition: width .45s ease; }
 
-/* ─────────────────────────────────────────────
+/*
    RADAR
-───────────────────────────────────────────── */
+ */
 .radar-wrap {
   display: flex; flex-direction: column; align-items: center; gap: 1rem;
 }
@@ -616,9 +645,9 @@ img { max-width: 100%; display: block; }
 .rk-item   { display: flex; align-items: center; gap: .5rem; font-size: .8rem; }
 .rk-dot    { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-/* ─────────────────────────────────────────────
+/*
    PATRON RESULT (consolidado)
-───────────────────────────────────────────── */
+*/
 .patron-result {
   background: #f0f4ff; border: 1px solid #c7d7fd;
   border-radius: var(--radius); padding: 1rem;
@@ -635,9 +664,9 @@ img { max-width: 100%; display: block; }
 .dp-desc      { font-size: .8rem; color: var(--ink2); line-height: 1.45; }
 .dp-nota      { font-size: .76rem; color: var(--warn); font-style: italic; }
 
-/* ─────────────────────────────────────────────
+/*
    INFO BLOCK
-───────────────────────────────────────────── */
+ */
 .info-block {
   background: #f0f4ff; border-radius: 8px;
   padding: .9rem 1rem; border: 1px solid #c7d7fd;
@@ -645,9 +674,9 @@ img { max-width: 100%; display: block; }
 .info-title { font-weight: 700; font-size: .84rem; margin-bottom: .3rem; color: var(--primary); }
 .info-desc  { font-size: .8rem; color: var(--ink2); line-height: 1.45; }
 
-/* ─────────────────────────────────────────────
+/* 
    HISTORIAL
-───────────────────────────────────────────── */
+*/
 .historial-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 1.2rem;
@@ -682,9 +711,9 @@ img { max-width: 100%; display: block; }
 .empty-char { font-size: 3rem; }
 .empty-block p { color: var(--ink3); font-size: .88rem; }
 
-/* ─────────────────────────────────────────────
+/* 
    MODAL
-───────────────────────────────────────────── */
+*/
 .modal-veil {
   position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
@@ -722,9 +751,9 @@ img { max-width: 100%; display: block; }
 .modal-bar-track{ height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
 .modal-bar-fill { height: 100%; border-radius: 99px; transition: width .4s ease; }
 
-/* ─────────────────────────────────────────────
+/*
    PERFILES DEPORTIVOS
-───────────────────────────────────────────── */
+ */
 .perfiles-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -753,9 +782,9 @@ img { max-width: 100%; display: block; }
 }
 .perfil-desc { font-size: .76rem; color: var(--ink3); line-height: 1.4; }
 
-/* ─────────────────────────────────────────────
+/*
    RANKING DEPORTES
-───────────────────────────────────────────── */
+*/
 .ranking-list { display: flex; flex-direction: column; gap: .55rem; }
 
 .ranking-item {
@@ -777,9 +806,9 @@ img { max-width: 100%; display: block; }
 .rank-bar-fill  { height: 100%; border-radius: 99px; transition: width .45s ease; }
 .rank-pct { font-family: var(--font-mono); font-size: .78rem; font-weight: 700; min-width: 36px; text-align: right; }
 
-/* ─────────────────────────────────────────────
+/*
    INTERPRETACION AUTOMATICA
-───────────────────────────────────────────── */
+*/
 .interp-block {
   background: #f0f4ff;
   border: 1px solid #c7d7fd;
@@ -821,9 +850,9 @@ img { max-width: 100%; display: block; }
 .hist-top-deporte { font-size: .74rem; color: var(--primary); margin-top: .15rem; }
 .ht-sport { background: #e0f2fe; color: #0369a1; }
 
-/* ─────────────────────────────────────────────
+/*
    RANGO NOTE (info de rangos de referencia)
-───────────────────────────────────────────── */
+*/
 .rango-note {
   display: flex; align-items: flex-start; gap: .6rem;
   background: #fffbeb; border: 1px solid #fde68a;
@@ -833,9 +862,9 @@ img { max-width: 100%; display: block; }
 }
 .rango-note-icon { font-size: 1rem; flex-shrink: 0; margin-top: .05rem; }
 
-/* ─────────────────────────────────────────────
+/*
    WARN LIST (advertencias de valores fuera de rango)
-───────────────────────────────────────────── */
+*/
 .warn-list {
   background: #fffbeb; border: 1px solid #fde68a;
   border-radius: 8px; padding: .85rem 1rem;
@@ -844,9 +873,9 @@ img { max-width: 100%; display: block; }
 .warn-list strong { display: block; margin-bottom: .45rem; font-size: .82rem; }
 .warn-list ul { list-style: disc; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .25rem; }
 
-/* ─────────────────────────────────────────────
+/*
    RANKING DISCLAIMER
-───────────────────────────────────────────── */
+*/
 .ranking-disclaimer {
   display: flex; align-items: flex-start; gap: .6rem;
   background: #f0f4ff; border: 1px solid #c7d7fd;
@@ -856,9 +885,9 @@ img { max-width: 100%; display: block; }
 }
 .ranking-disclaimer-icon { font-size: 1rem; flex-shrink: 0; }
 
-/* ═══════════════════════════════════════════════════════════
+/*
    RECOMENDACION DE DEPORTES (Paso 9)
-═══════════════════════════════════════════════════════════ */
+*/
 
 /* Banner perfil dominante */
 .rec-perfil-banner {
