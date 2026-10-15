@@ -4,20 +4,37 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PhysicalPicking</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235B3FE0'/%3E%3Ctext x='16' y='23' font-size='19' text-anchor='middle' fill='white'%3E%E2%97%8E%3C/text%3E%3C/svg%3E" />
+  <meta name="theme-color" content="#5B3FE0" />
+  <!-- Fuentes en modo no bloqueante: la app pinta de inmediato con las
+       fuentes del sistema y cambia a las de marca cuando llegan.
+       Evita el aviso "Slow network / Fallback font" y el ingreso lento
+       en conexiones móviles. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.cdnfonts.com" crossorigin />
   <link
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
-    rel="stylesheet"
+    rel="stylesheet" media="print" onload="this.media='all'"
   />
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </noscript>
   <!-- Bremlin (titulos) y Creato Display (texto) son las fuentes de marca.
        Bremlin es de uso PERSONAL solamente (Grezline Studio) — compra la
        licencia comercial (grezlinestudio.com) antes de publicar a producción.
        Creato Display es SIL OFL, libre para uso comercial.
        Si no cargan (red restringida, CDN caido), el stack cae a
        Fredoka/Poppins, que se ven razonablemente similares. -->
-  <link href="https://fonts.cdnfonts.com/css/bremlin" rel="stylesheet" />
-  <link href="https://fonts.cdnfonts.com/css/creato-display" rel="stylesheet" />
+  <link href="https://fonts.cdnfonts.com/css/bremlin" rel="stylesheet" media="print" onload="this.media='all'" />
+  <link href="https://fonts.cdnfonts.com/css/creato-display" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript>
+    <link href="https://fonts.cdnfonts.com/css/bremlin" rel="stylesheet" />
+    <link href="https://fonts.cdnfonts.com/css/creato-display" rel="stylesheet" />
+  </noscript>
 </head>
 <body>
   <div id="root"></div>

@@ -16,22 +16,39 @@
 
 import { supabase, API_URL } from '../supabaseClient';
 import { migrarRegistroLegado } from '../logic/registroLegado';
+import { errorRedAmigable } from '../utils/red';
 
 const STORAGE_HISTORIAL_INVITADO = 'physicalpicking_historial_invitado';
+
+/* Tiempo máximo de espera para el backend propio. En el celular el
+   backend debe tener URL pública: si apunta a localhost, el fetch
+   falla de inmediato y este mensaje lo explica en vez de
+   mostrar el críptico "Failed to fetch". */
+const API_TIMEOUT_MS = 12000;
 
 /* ─── helper: llamadas autenticadas al backend propio ─── */
 async function apiFetch(path, options = {}) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  const controlador = new AbortController();
+  const id = setTimeout(() => controlador.abort(), API_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      signal: controlador.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch (e) {
+    throw new Error(errorRedAmigable(e));
+  } finally {
+    clearTimeout(id);
+  }
 
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error || 'Error de red.');
@@ -58,9 +75,14 @@ export async function registrar(nombre, email, password) {
     email: email.trim().toLowerCase(),
     password,
     options: { data: { nombre: nombre.trim() } },
-  });
+  }).catch(e => ({ data: null, error: e }));
 
-  if (error) return { ok: false, error: traducirErrorSupabase(error) };
+  if (error) {
+    if (error instanceof TypeError || error.name === 'AbortError') {
+      return { ok: false, error: errorRedAmigable(error) };
+    }
+    return { ok: false, error: traducirErrorSupabase(error) };
+  }
   return { ok: true, usuario: mapearUsuario(data.user, nombre) };
 }
 
@@ -75,9 +97,14 @@ export async function login(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({
     email: email.trim().toLowerCase(),
     password,
-  });
+  }).catch(e => ({ data: null, error: e }));
 
-  if (error) return { ok: false, error: traducirErrorSupabase(error) };
+  if (error) {
+    if (error instanceof TypeError || error.name === 'AbortError') {
+      return { ok: false, error: errorRedAmigable(error) };
+    }
+    return { ok: false, error: traducirErrorSupabase(error) };
+  }
   const nombre = data.user.user_metadata?.nombre || data.user.email;
   return { ok: true, usuario: mapearUsuario(data.user, nombre) };
 }
@@ -106,10 +133,14 @@ export async function solicitarRecuperacionContrasena(email) {
   if (!correo) return { ok: false, error: 'Ingresa tu correo electronico.' };
 
   const redirectTo = `${window.location.origin}/?vista=nueva-contrasena`;
-  const { error } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo });
+  const { error } = await supabase.auth.resetPasswordForEmail(correo, { redirectTo })
+    .catch(e => ({ error: e }));
 
+  if (error && (error instanceof TypeError || error.name === 'AbortError')) {
+    return { ok: false, error: errorRedAmigable(error) };
+  }
   // No exponemos el error real de Supabase (podria filtrar si el
-  // correo existe); solo distinguimos errores de red/servicio.
+  // correo existe); solo distinguimos errores de servicio.
   if (error && error.status && error.status >= 500) {
     return { ok: false, error: 'No se pudo enviar el correo de recuperacion. Intenta de nuevo en unos minutos.' };
   }
@@ -128,8 +159,14 @@ export async function actualizarContrasena(nuevaContrasena, confirmarContrasena)
   if (nuevaContrasena !== confirmarContrasena) {
     return { ok: false, error: 'Las contrasenas no coinciden.' };
   }
-  const { error } = await supabase.auth.updateUser({ password: nuevaContrasena });
-  if (error) return { ok: false, error: traducirErrorSupabase(error) };
+  const { error } = await supabase.auth.updateUser({ password: nuevaContrasena })
+    .catch(e => ({ error: e }));
+  if (error) {
+    if (error instanceof TypeError || error.name === 'AbortError') {
+      return { ok: false, error: errorRedAmigable(error) };
+    }
+    return { ok: false, error: traducirErrorSupabase(error) };
+  }
   return { ok: true };
 }
 
@@ -328,6 +365,10 @@ function mapearUsuario(usuarioSupabase, nombre) {
 
 function traducirErrorSupabase(error) {
   const msg = error.message || '';
+  // Supabase a veces devuelve el fallo de red como error normal.
+  if (/failed to fetch|networkerror|network request failed|load failed/i.test(msg)) {
+    return errorRedAmigable(error);
+  }
   if (msg.includes('already registered')) return 'Ya existe una cuenta con ese email.';
   if (msg.includes('Invalid login credentials')) return 'Email o contrasena incorrectos.';
   if (msg.includes('Password should be')) return 'La contrasena no cumple los requisitos minimos.';
