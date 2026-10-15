@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { login, registrar } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
+import CampoContrasena from './CampoContrasena';
 
 export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast, onOlvideContrasena, onVerTerminos, onVerPrivacidad }) {
   const [vista, setVista] = useState('inicio'); // 'inicio' | 'login' | 'registro'
@@ -112,9 +113,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
 
           <label className="auth-label">
             Contrasena
-            <input
-              className="auth-input"
-              type="password"
+            <CampoContrasena
               value={loginPassword}
               onChange={e => setLoginPassword(e.target.value)}
               placeholder="••••••"
@@ -173,9 +172,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
 
           <label className="auth-label">
             Contrasena <span className="auth-hint">(min. 6 caracteres)</span>
-            <input
-              className="auth-input"
-              type="password"
+            <CampoContrasena
               value={regPassword}
               onChange={e => setRegPassword(e.target.value)}
               placeholder="••••••"

@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { solicitarRecuperacionContrasena, actualizarContrasena } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
+import CampoContrasena from './CampoContrasena';
 
 export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, mostrarToast }) {
   const [email, setEmail] = useState('');
@@ -55,13 +56,13 @@ export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, m
           <form onSubmit={handleRestablecer}>
             <label className="field-label">
               Nueva contraseña <span className="field-hint">(min. 6 caracteres)</span>
-              <input className="field-input" type="password" value={nueva}
-                onChange={e => setNueva(e.target.value)} required />
+              <CampoContrasena classNameInput="field-input" value={nueva}
+                onChange={e => setNueva(e.target.value)} required autoComplete="new-password" />
             </label>
             <label className="field-label">
               Confirmar nueva contraseña
-              <input className="field-input" type="password" value={confirmar}
-                onChange={e => setConfirmar(e.target.value)} required />
+              <CampoContrasena classNameInput="field-input" value={confirmar}
+                onChange={e => setConfirmar(e.target.value)} required autoComplete="new-password" />
             </label>
             <button className="btn btn-primary" type="submit" disabled={enviando}>
               {enviando ? 'Actualizando...' : 'Actualizar contraseña'}

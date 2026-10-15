@@ -304,8 +304,8 @@ export function limpiarHistorialInvitado() {
 }
 
 /**
- * exportarMisDatos — derecho de ACCESO (ARCO): descarga todo lo
- * que tenemos del usuario en un JSON.
+ * exportarMisDatos — derecho de ACCESO (ARCO): obtiene todo lo
+ * que tenemos del usuario. El front lo presenta como PDF legible.
  */
 export async function exportarMisDatos() {
   return apiFetch('/arco/exportar');
