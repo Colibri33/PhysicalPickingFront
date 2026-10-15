@@ -98,12 +98,14 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
         <button className="auth-back" onClick={() => setVista('inicio')} type="button">← Volver</button>
         <h2 className="auth-title">Iniciar sesion</h2>
 
-        <form onSubmit={handleLogin} className="auth-form">
+        <form onSubmit={handleLogin} className="auth-form" autoComplete="on">
           <label className="auth-label">
             Email
             <input
               className="auth-input"
               type="email"
+              name="email"
+              id="login-email"
               value={loginEmail}
               onChange={e => setLoginEmail(e.target.value)}
               placeholder="tu@email.com"
@@ -114,6 +116,8 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
           <label className="auth-label">
             Contrasena
             <CampoContrasena
+              name="password"
+              id="login-password"
               value={loginPassword}
               onChange={e => setLoginPassword(e.target.value)}
               placeholder="••••••"
@@ -146,15 +150,17 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
         <button className="auth-back" onClick={() => setVista('inicio')} type="button">← Volver</button>
         <h2 className="auth-title">Crear cuenta</h2>
 
-        <form onSubmit={handleRegistro} className="auth-form">
+        <form onSubmit={handleRegistro} className="auth-form" autoComplete="on">
           <label className="auth-label">
             Nombre
             <input
               className="auth-input"
               type="text"
+              name="name"
               value={regNombre}
               onChange={e => setRegNombre(e.target.value)}
               placeholder="Tu nombre"
+              autoComplete="name"
             />
           </label>
 
@@ -163,6 +169,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
             <input
               className="auth-input"
               type="email"
+              name="email"
               value={regEmail}
               onChange={e => setRegEmail(e.target.value)}
               placeholder="tu@email.com"
@@ -173,6 +180,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
           <label className="auth-label">
             Contrasena <span className="auth-hint">(min. 6 caracteres)</span>
             <CampoContrasena
+              name="new-password"
               value={regPassword}
               onChange={e => setRegPassword(e.target.value)}
               placeholder="••••••"

@@ -248,7 +248,7 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
 
       {usuarioActual && (
         <div className="action-row mt-lg" style={{ marginBottom: '1rem' }}>
-          <button className="btn btn-ghost" onClick={handleExportar} type="button">Descargar mis datos (Habeas Data · PDF)</button>
+          <button className="btn btn-ghost" onClick={handleExportar} type="button">Descargar mis datos (PDF)</button>
           <button className="btn btn-ghost btn-danger" onClick={handleEliminarCuenta} type="button">Eliminar mi cuenta y mis datos</button>
         </div>
       )}

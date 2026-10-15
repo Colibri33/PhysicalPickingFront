@@ -16,7 +16,13 @@ const DATOS_EJEMPLO = {
     {
       fecha: '01/02/2026',
       participante: { nombre: 'Ana', edad: 25, genero: 'femenino', perfil: 'deportivo', deporte: 'natación' },
-      interpretacion: { recomendacion: 'Perfil de resistencia.' },
+      parq: { resultado: 'apto' },
+      consolidado: {
+        fuerza: { base: 60, ajAntrop: 5, total: 65 },
+        resistencia: { base: 70, ajAntrop: 0, total: 70 },
+      },
+      ipaq: { resultado: { categoria: 'moderado', met: { total: 1200 } } },
+      interpretacion: { parrafo: 'Perfil con buena base aeróbica.', recomendacion: 'Perfil de resistencia.' },
       evaluacion: { etapas: { ranking: { familias: [
         { id: 'natacion', nombre: 'Natación', porcentaje: 82 },
         { id: 'atletismo', nombre: 'Atletismo', porcentaje: 64 },
@@ -37,6 +43,10 @@ describe('informeMisDatosPdf', () => {
     assert.equal(r.familias.length, 2);
     assert.equal(r.familias[0].nombre, 'Natación');
     assert.equal(r.recomendacion, 'Perfil de resistencia.');
+    assert.equal(r.parq, 'apto');
+    assert.ok(r.ipaq.includes('moderado'));
+    assert.equal(r.variables.length, 2);
+    assert.equal(r.variables[0].nombre, 'Fuerza prensil');
   });
 
   it('tolera registros vacíos o con forma antigua', () => {
