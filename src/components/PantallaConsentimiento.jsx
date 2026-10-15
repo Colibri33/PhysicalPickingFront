@@ -59,7 +59,7 @@ export default function PantallaConsentimiento({ onAceptado, mostrarToast, onVer
               Política de Tratamiento de Datos Personales
             </button>{' '}
             de PhysicalPicking, incluyendo el tratamiento de mis datos de
-            condición física y cognitiva para generar mi informe y guardar mi
+            condición física para generar mi informe y guardar mi
             historial.
           </span>
         </label>

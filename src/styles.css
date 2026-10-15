@@ -487,7 +487,7 @@ img { max-width: 100%; display: block; }
 .norm-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .norm-input:focus { outline: none; border-color: var(--primary); }
 
-/* Slider real (input type=range) — variables fisicas/cognitivas */
+/* Slider real (input type=range) — variables fisicas */
 .slider-row {
   display: flex; align-items: center; gap: .6rem; margin: .3rem 0 .15rem;
 }
@@ -566,9 +566,9 @@ img { max-width: 100%; display: block; }
 .imc-cat { font-size: .82rem; color: #166534; }
 
 /*
-   CORPORALES GRID
+   ANTROPOMETRICAS GRID
  */
-.corp-grid {
+.antrop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: .65rem;
@@ -654,7 +654,7 @@ img { max-width: 100%; display: block; }
 .consol-table-wrap { overflow-x: auto; }
 .consol-header, .consol-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 2fr;
+  grid-template-columns: 2fr 1fr 1fr 2fr;
   gap: .3rem; padding: .55rem .5rem;
   align-items: center;
 }
@@ -1031,4 +1031,57 @@ img { max-width: 100%; display: block; }
   border-radius: 20px; padding: .1rem .4rem;
   margin-left: .5rem; letter-spacing: .04em;
   text-transform: uppercase; vertical-align: middle;
+}
+
+/*
+   CUESTIONARIOS PAR-Q+ / BREQ-3 / BBAQ-21
+*/
+.parq-lista, .breq-lista { display: flex; flex-direction: column; gap: .9rem; margin-bottom: 1rem; }
+.parq-pregunta, .breq-pregunta {
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: var(--bg); padding: .85rem 1rem;
+  display: flex; flex-direction: column; gap: .6rem;
+}
+.parq-texto, .breq-texto { font-size: .85rem; color: var(--ink1); line-height: 1.5; }
+.parq-opciones, .breq-opciones {
+  display: flex; align-items: center; gap: .5rem; flex-wrap: wrap;
+}
+.parq-opcion, .breq-opcion {
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: #fff; padding: .45rem .95rem;
+  font-size: .82rem; font-weight: 600; color: var(--ink2);
+  transition: border-color .15s, background .15s, color .15s;
+}
+.parq-opcion:hover, .breq-opcion:hover { border-color: var(--primary); color: var(--primary); }
+.parq-opcion.seleccionada, .breq-opcion.seleccionada {
+  border-color: var(--primary); background: #e8effe; color: var(--primary);
+}
+.parq-detalle { margin-top: .1rem; }
+.parq-resultado {
+  border-radius: 8px; padding: .85rem 1rem; font-size: .84rem; line-height: 1.5;
+  margin-bottom: 1rem; border: 1px solid;
+}
+.parq-apto { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+.parq-consultar { background: #fffbeb; border-color: #fde68a; color: #78350f; }
+.breq-extremo { font-size: .68rem; color: var(--ink3); }
+.breq-opciones-4 .breq-opcion { padding: .45rem .7rem; }
+.breq-resumen { display: flex; flex-direction: column; gap: .6rem; margin: 1rem 0; }
+.breq-barra-fila { display: flex; flex-direction: column; gap: .3rem; }
+.breq-rai { font-size: .82rem; color: var(--ink2); line-height: 1.5; }
+
+/*
+   PREGUNTA FALTANTE (cuestionarios: al intentar continuar con
+   preguntas visibles sin responder se resaltan en rojo con shake).
+*/
+@keyframes faltaShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+.pregunta-faltante {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 2px rgba(255, 93, 108, .25);
+  animation: faltaShake .45s ease;
 }

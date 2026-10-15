@@ -1,24 +1,170 @@
-/* ─── StepFisicas.jsx v5.1 ─── */
+/* ─── StepFisicas.jsx v7 ───
+   Batería física: dinamometría (suma ambas manos), salto, flexibilidad,
+   equilibrio bilateral y resistencia aeróbica (Léger, último
+   nivel/palier alcanzado, solo si el PAR-Q+ lo autoriza; estimación de
+   VO2max pendiente). */
 import { useState } from 'react';
 import VariableInput from './VariableInput';
-import { VARS_FISICAS, validarFormularioVariables, normalizarValor } from '../logic/modelo';
+import { VARS_FISICAS, EQUILIBRIO_POR_PIERNA_MAX, FUERZA_POR_MANO_MAX, validarFormularioVariables, normalizarValor, esNivelLegerValido } from '../logic/modelo';
+import { evaluarParq } from '../logic/parq';
+
+const LEGER_PALIER_MAX = 21;
+
+function InputFuerza({ realesF, onCambio, error }) {
+  const der = realesF.fuerzaDer;
+  const izq = realesF.fuerzaIzq;
+  const total = realesF.fuerza;
+  const v = VARS_FISICAS.find(x => x.id === 'fuerza');
+  return (
+    <div className={`norm-row${error ? ' norm-row--error' : ''}`}>
+      <div className="norm-meta">
+        <span className="norm-name">Fuerza prensil (suma ambas manos)</span>
+        <span className="norm-rango">
+          {v.minimo} – {v.maximo} {v.unidad} · <span className="norm-dir">↑ mayor = mejor</span>
+        </span>
+      </div>
+      <p className="panel-desc" style={{ margin: 0 }}>
+        Mejor intento de cada mano (dinamometría). El resultado es la suma de ambas manos (baremo AFISAL sobre la suma).
+      </p>
+      <div className="norm-input-row">
+        <label className="field-label">
+          Mano derecha (kg)
+          <input
+            className="norm-input" type="number" min={0} max={FUERZA_POR_MANO_MAX} step={1}
+            value={der ?? ''} onChange={e => onCambio('fuerzaDer', e.target.value)}
+          />
+        </label>
+        <label className="field-label">
+          Mano izquierda (kg)
+          <input
+            className="norm-input" type="number" min={0} max={FUERZA_POR_MANO_MAX} step={1}
+            value={izq ?? ''} onChange={e => onCambio('fuerzaIzq', e.target.value)}
+          />
+        </label>
+        <span className="norm-unit">Suma: <strong>{total === '' || total == null ? '—' : `${total} kg`}</strong></span>
+      </div>
+      {error && <p className="norm-error">{error}</p>}
+    </div>
+  );
+}
+
+function InputEquilibrio({ realesF, onCambio, error }) {
+  const der = realesF.equilibrioDer;
+  const izq = realesF.equilibrioIzq;
+  const total = realesF.equilibrio;
+  const v = VARS_FISICAS.find(x => x.id === 'equilibrio');
+  return (
+    <div className={`norm-row${error ? ' norm-row--error' : ''}`}>
+      <div className="norm-meta">
+        <span className="norm-name">Equilibrio (suma ambas piernas)</span>
+        <span className="norm-rango">
+          0 – {v.maximo} {v.unidad} · <span className="norm-dir">↓ menor = mejor</span>
+        </span>
+      </div>
+      <p className="panel-desc" style={{ margin: 0 }}>
+        2 intentos, uno por pierna. Cuenta cada vez que se baja el pie durante 1 minuto por pierna.
+      </p>
+      <div className="norm-input-row">
+        <label className="field-label">
+          Pierna derecha (intentos)
+          <input
+            className="norm-input" type="number" min={0} max={EQUILIBRIO_POR_PIERNA_MAX} step={1}
+            value={der ?? ''} onChange={e => onCambio('equilibrioDer', e.target.value)}
+          />
+        </label>
+        <label className="field-label">
+          Pierna izquierda (intentos)
+          <input
+            className="norm-input" type="number" min={0} max={EQUILIBRIO_POR_PIERNA_MAX} step={1}
+            value={izq ?? ''} onChange={e => onCambio('equilibrioIzq', e.target.value)}
+          />
+        </label>
+        <span className="norm-unit">Total: <strong>{total === '' || total == null ? '—' : `${total} intentos`}</strong></span>
+      </div>
+      {error && <p className="norm-error">{error}</p>}
+    </div>
+  );
+}
 
 export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const [errores,       setErrores]       = useState({});
   const [advertencias,  setAdvertencias]  = useState([]);
+  // Léger solo si el PAR-Q+ no lo contraindica (R-SEG-01).
+  const legerAutorizado = evaluarParq((analisis.parq ?? {}).respuestas ?? {}) === 'apto';
+  // Resistencia aeróbica: el nivel/palier vive en `realesF.resistencia`
+  // (variable de la batería) y se espeja en `leger.palier` para el flujo
+  // de evaluación (compatibilidad con registros anteriores).
+  const palier = analisis.leger?.palier ?? analisis.realesF?.resistencia ?? '';
 
   function handleChange(id, valor) {
-    updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor } });
-    if (errores[id]) setErrores(e => { const c = { ...e }; delete c[id]; return c; });
+    // Capturas bilaterales: se guardan los parciales y el derivado (suma).
+    if (id === 'equilibrioDer' || id === 'equilibrioIzq') {
+      const parciales = { equilibrioDer: analisis.realesF.equilibrioDer, equilibrioIzq: analisis.realesF.equilibrioIzq, [id]: valor };
+      const num = k => {
+        const n = Number(parciales[k]);
+        return (parciales[k] === '' || parciales[k] == null || !Number.isInteger(n) || n < 0 || n > EQUILIBRIO_POR_PIERNA_MAX) ? null : n;
+      };
+      const d = num('equilibrioDer');
+      const q = num('equilibrioIzq');
+      updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor, equilibrio: (d !== null && q !== null) ? String(d + q) : '' } });
+    } else if (id === 'fuerzaDer' || id === 'fuerzaIzq') {
+      const parciales = { fuerzaDer: analisis.realesF.fuerzaDer, fuerzaIzq: analisis.realesF.fuerzaIzq, [id]: valor };
+      const num = k => {
+        const n = Number(parciales[k]);
+        return (parciales[k] === '' || parciales[k] == null || !Number.isFinite(n) || n < 0 || n > FUERZA_POR_MANO_MAX) ? null : n;
+      };
+      const d = num('fuerzaDer');
+      const q = num('fuerzaIzq');
+      updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor, fuerza: (d !== null && q !== null) ? String(Math.round((d + q) * 10) / 10) : '' } });
+    } else if (id === 'resistencia') {
+      // Resistencia aeróbica: espejar en `leger.palier` para el flujo.
+      updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor }, leger: { palier: valor } });
+    } else {
+      updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor } });
+    }
+    if (errores[id] || errores.equilibrio || errores.fuerza || errores.leger || errores.resistencia) {
+      setErrores(e => { const c = { ...e }; delete c[id]; delete c.equilibrio; delete c.fuerza; delete c.leger; delete c.resistencia; return c; });
+    }
     // Limpiar advertencia del campo al modificarlo
     setAdvertencias(prev => prev.filter(a => !a.startsWith(VARS_FISICAS.find(v => v.id === id)?.nombre)));
   }
 
-  function handleContinuar() {
-    const { ok, errores: lista, advertencias: warns } = validarFormularioVariables(VARS_FISICAS, analisis.realesF);
+  function handleLeger(valor) {
+    if (errores.leger || errores.resistencia) setErrores(e => { const c = { ...e }; delete c.leger; delete c.resistencia; return c; });
+    updateAnalisis({ leger: { palier: valor }, realesF: { ...analisis.realesF, resistencia: valor } });
+  }
 
-    if (!ok) {
-      const mapa = {};
+  function handleContinuar() {
+    // Parciales bilaterales (el derivado lo valida el formulario).
+    const mapaExtra = {};
+    for (const k of ['equilibrioDer', 'equilibrioIzq']) {
+      const raw = analisis.realesF[k];
+      const n = Number(raw);
+      if (raw === '' || raw == null || !Number.isInteger(n) || n < 0 || n > EQUILIBRIO_POR_PIERNA_MAX) {
+        mapaExtra.equilibrio = `Equilibrio: registra los intentos de cada pierna (entero 0-${EQUILIBRIO_POR_PIERNA_MAX}).`;
+      }
+    }
+    for (const k of ['fuerzaDer', 'fuerzaIzq']) {
+      const raw = analisis.realesF[k];
+      const n = Number(raw);
+      if (raw === '' || raw == null || !Number.isFinite(n) || n < 0 || n > FUERZA_POR_MANO_MAX) {
+        mapaExtra.fuerza = `Fuerza prensil: registra el mejor intento de cada mano (0-${FUERZA_POR_MANO_MAX} kg).`;
+      }
+    }
+    const { ok, errores: lista, advertencias: warns } = validarFormularioVariables(
+      // Resistencia aeróbica (Léger) se valida aparte: obligatoria solo si está autorizada.
+      VARS_FISICAS.filter(v => v.id !== 'resistencia'),
+      analisis.realesF,
+    );
+
+    // Resistencia aeróbica (Léger): obligatoria solo si está autorizada.
+    // Se registra el último nivel/palier alcanzado (0-21, admite medios niveles).
+    const palierNum = Number(palier);
+    const palierOk = !legerAutorizado || (palier !== '' && esNivelLegerValido(palierNum));
+    if (!palierOk) mapaExtra.leger = `Resistencia aeróbica (Léger): registra el último nivel alcanzado (0-${LEGER_PALIER_MAX}, admite medios niveles como 3.5).`;
+
+    if (!ok || mapaExtra.equilibrio || mapaExtra.fuerza || mapaExtra.leger) {
+      const mapa = { ...mapaExtra };
       lista.forEach(msg => {
         const v = VARS_FISICAS.find(v => msg.startsWith(v.nombre));
         if (v) mapa[v.id] = msg;
@@ -30,16 +176,23 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
 
     setAdvertencias(warns);
 
-    // Normalizar y guardar porcentajes (clamp maneja valores fuera de rango)
+    // Normalizar y guardar porcentajes (clamp maneja valores fuera de rango).
+    // Resistencia aeróbica: si no está autorizada queda sin dato (0 en el
+    // cálculo heredado; en el flujo definitivo queda sin dato y no penaliza).
     const fisicas = {};
     VARS_FISICAS.forEach(v => {
+      if (v.id === 'resistencia' && !legerAutorizado) {
+        fisicas[v.id] = 0;
+        return;
+      }
       fisicas[v.id] = normalizarValor(
-        parseFloat(analisis.realesF[v.id]),
+        parseFloat(v.id === 'resistencia' ? palier : analisis.realesF[v.id]),
         v.minimo, v.maximo, v.direccion
       );
     });
 
-    updateAnalisis({ fisicas });
+    // Espejar el nivel en ambos almacenamientos antes de continuar.
+    updateAnalisis({ realesF: { ...analisis.realesF, resistencia: legerAutorizado ? palier : '' }, fisicas });
 
     if (warns.length > 0) {
       mostrarToast(`${warns.length} valor(es) fuera del rango de referencia — se aplicó clamp.`, 'info');
@@ -51,11 +204,11 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
 
   return (
     <div className="panel-card">
-      <h2 className="panel-title">Capacidades fisicas</h2>
+      <h2 className="panel-title">Batería física</h2>
       <p className="panel-desc">
-        Ingresa el resultado real de cada prueba. El sistema lo convierte automáticamente
-        a una escala 0–100 para orientar el perfil funcional del evaluado.
-        Todos los campos son obligatorios.
+        Dinamometría (suma ambas manos), salto vertical, flexibilidad, equilibrio
+        monopodal y resistencia aeróbica (Léger, último nivel alcanzado — solo si
+        el PAR-Q+ lo autoriza). Todos los campos visibles son obligatorios.
       </p>
 
       <div className="rango-note">
@@ -67,16 +220,44 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       </div>
 
       <div className="norm-formulario">
-        {VARS_FISICAS.map(v => (
-          <VariableInput
-            key={v.id}
-            variable={v}
-            valor={analisis.realesF[v.id]}
-            onChange={handleChange}
-            error={errores[v.id]}
-          />
+        {VARS_FISICAS.filter(v => v.id !== 'resistencia').map(v => (
+          v.id === 'equilibrio'
+            ? <InputEquilibrio key={v.id} realesF={analisis.realesF} onCambio={handleChange} error={errores[v.id]} />
+            : v.id === 'fuerza'
+              ? <InputFuerza key={v.id} realesF={analisis.realesF} onCambio={handleChange} error={errores[v.id]} />
+              : <VariableInput
+                  key={v.id}
+                  variable={v}
+                  valor={analisis.realesF[v.id]}
+                  onChange={handleChange}
+                  error={errores[v.id]}
+                />
         ))}
       </div>
+
+      {legerAutorizado ? (
+        <div className={`norm-row mt-lg${errores.leger ? ' norm-row--error' : ''}`}>
+          <div className="norm-meta">
+            <span className="norm-name">Resistencia aeróbica (Léger course navette 20 m) — último nivel alcanzado</span>
+            <span className="norm-rango">0 – {LEGER_PALIER_MAX} · prueba máxima autorizada por PAR-Q+</span>
+          </div>
+          <div className="norm-input-row">
+            <input
+              className="norm-input" type="number" min={0} max={LEGER_PALIER_MAX} step={0.5}
+              value={palier} onChange={e => handleLeger(e.target.value)}
+              aria-label="Último nivel Léger alcanzado"
+            />
+            <span className="norm-unit">nivel</span>
+          </div>
+          <p className="panel-desc" style={{ margin: 0 }}>La estimación de VO2max y sus baremos propios están pendientes: el nivel se conserva sin calificar.</p>
+          {errores.leger && <p className="norm-error">{errores.leger}</p>}
+        </div>
+      ) : (
+        <div className="rango-note mt-lg">
+          <span className="rango-note-icon">ℹ</span>
+          <span>Resistencia aeróbica (Léger) no autorizada automáticamente por el PAR-Q+: esta prueba máxima se omite y quedará sin dato (no penaliza).</span>
+        </div>
+      )}
 
       {advertencias.length > 0 && (
         <div className="warn-list">

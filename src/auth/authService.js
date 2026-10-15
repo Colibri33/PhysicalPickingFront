@@ -15,6 +15,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { supabase, API_URL } from '../supabaseClient';
+import { migrarRegistroLegado } from '../logic/registroLegado';
 
 const STORAGE_HISTORIAL_INVITADO = 'physicalpicking_historial_invitado';
 
@@ -180,7 +181,7 @@ export async function tieneConsentimientoVigente() {
  * de un registro ya guardado (nombre, edad, genero, perfil,
  * deporte). El `payload` completo se reenvia porque el backend
  * vuelve a cifrar todo el registro; los resultados de las pruebas
- * (fisicas/cognitivas/consolidado/ranking) NO se recalculan aqui
+ * (fisicas/antropometricas/consolidado/ranking) NO se recalculan aqui
  * porque esos campos de identificacion no participan en el motor de
  * calculo (confirmado en logic/modelo.js) — no hay riesgo de que el
  * historial quede con datos que no correspondan al calculo.
@@ -281,7 +282,7 @@ export async function guardarRegistroHistorial(usuarioId, registro) {
 export async function leerHistorial(usuarioId) {
   if (usuarioId === null) {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]');
+      return JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]').map(migrarRegistroLegado);
     } catch {
       return [];
     }
@@ -289,7 +290,7 @@ export async function leerHistorial(usuarioId) {
 
   try {
     const { historial } = await apiFetch('/resultados');
-    return historial;
+    return historial.map(migrarRegistroLegado);
   } catch {
     return [];
   }

@@ -1,29 +1,51 @@
-/* ResultadosConsolidado.jsx v5
-   Informe final completo:
-   1. Tabla desglosada base/ajCog/ajCorp/total
+/* ResultadosConsolidado.jsx v7
+   Informe final:
+   0. Estado del flujo de evaluacion (src/evaluacion): seguridad y pendientes
+   1. Tabla desglosada base/ajAntrop/total (descriptivo heredado)
    2. Radar chart variables fisicas
-   3. Perfiles deportivos (resistencia, potencia, velocidad, coordinacion)
-   4. Ranking de deportes
-   5. Interpretacion automatica
+   3. Compatibilidad por familia del DecisionEngine (matriz + Mitchell)
+   4. Interpretacion desde brechas del motor
 */
+import { useMemo } from 'react';
 import ParticipantStrip from './ParticipantStrip';
 import RadarChart       from './RadarChart';
-import BarraVariable    from './BarraVariable';
+import EstadoFlujoEvaluacion from './EstadoFlujoEvaluacion';
 import {
-  VARS_FISICAS, VARS_COGNITIVAS, PERFILES_DEPORTIVOS,
+  VARS_FISICAS,
   calcularConsolidado,
-  calcularPerfilesDeportivos,
-  calcularRankingDeportes,
-  generarInterpretacion,
 } from '../logic/modelo';
+import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
+import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
 
 function signo(d) { const r = Math.round(d * 10)/10; return r > 0 ? `+${r}` : `${r}`; }
 
+const ETIQUETAS_CAPACIDAD = {
+  fuerza: 'Fuerza',
+  fuerza_explosiva: 'Fuerza explosiva',
+  vo2max: 'Resistencia aeróbica',
+  flexibilidad: 'Flexibilidad',
+  equilibrio: 'Equilibrio',
+};
+
+function motivoMitchell(familiaId, capacidad) {
+  const fam = MATRIZ_DEMANDA.find(f => f.id === familiaId);
+  const m = /^(I+)([ABC])$/.exec(fam?.mitchell ?? '');
+  if (!m) return null;
+  if (capacidad === 'vo2max' && m[2] === 'C') return 'demanda metabólica (Mitchell dinámico C)';
+  if (capacidad === 'fuerza' && m[1] === 'III') return 'demanda de fuerza estática (Mitchell estático III)';
+  return null;
+}
+
 export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, onContinuar, analisisGuardado, guardando }) {
-  const consolidado        = calcularConsolidado(analisis.fisicas, analisis.cognitivas, analisis.corporales);
-  const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.cognitivas, analisis.corporales);
-  const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
-  const interpretacion     = generarInterpretacion(consolidado, perfilesDeportivos, analisis.cognitivas, rankingDeportes);
+  const consolidado        = calcularConsolidado(analisis.fisicas, analisis.antropometricas);
+  const flujo = useMemo(
+    () => ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis)),
+    [analisis],
+  );
+  const ranking = flujo.etapas.ranking.familias;
+  const lider = ranking?.[0] ?? null;
+  const top = flujo.etapas.ranking.recomendada ?? lider;
+  const liderProvisional = lider && lider.firme === false;
 
   const datosRadar = Object.fromEntries(VARS_FISICAS.map(v => [v.id, consolidado[v.id].total]));
   const totales    = VARS_FISICAS.map(v => consolidado[v.id].total);
@@ -37,9 +59,11 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
       <h2 className="panel-title">Informe de orientacion de perfil</h2>
       <p className="panel-desc">
         Este informe describe la <strong>tendencia funcional</strong> del evaluado basada en
-        sus capacidades físicas, cognitivas y corporales. No clasifica por baremos deportivos
+        sus capacidades físicas y antropometricas. No clasifica por baremos deportivos
         ni determina un deporte específico — orienta el perfil general.
       </p>
+
+      <EstadoFlujoEvaluacion analisis={analisis} />
 
       {/* ── Tarjetas de resumen ── */}
       <div className="summary-strip">
@@ -66,18 +90,16 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         <div className="consol-header">
           <span className="cr-var">Variable</span>
           <span className="cr-num">Base</span>
-          <span className="cr-delta">Δ Cog.</span>
-          <span className="cr-delta">Δ Corp.</span>
+          <span className="cr-delta">Δ Antrop.</span>
           <span className="cr-total">Total</span>
         </div>
         {VARS_FISICAS.map(v => {
-          const { base, ajCog, ajCorp, total } = consolidado[v.id];
+          const { base, ajAntrop, total } = consolidado[v.id];
           return (
             <div key={v.id} className="consol-row">
               <span className="cr-var">{v.nombre}</span>
               <span className="cr-num">{base}%</span>
-              <span className={`cr-delta ${ajCog>0?'delta-pos':ajCog<0?'delta-neg':'delta-neu'}`}>{ajCog!==0?signo(ajCog):'0'}</span>
-              <span className={`cr-delta ${ajCorp>0?'delta-pos':ajCorp<0?'delta-neg':'delta-neu'}`}>{ajCorp!==0?signo(ajCorp):'0'}</span>
+              <span className={`cr-delta ${ajAntrop>0?'delta-pos':ajAntrop<0?'delta-neg':'delta-neu'}`}>{ajAntrop!==0?signo(ajAntrop):'0'}</span>
               <div className="cr-total">
                 <span className="cr-total-num" style={{ color: v.color }}>{total}%</span>
                 <div className="cr-mini-track">
@@ -103,90 +125,103 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         </div>
       </div>
 
-      {/* ── Perfiles funcionales ── */}
-      <h3 className="section-subtitle mt-lg">Tendencias de perfil funcional</h3>
-      <div className="perfiles-grid">
-        {PERFILES_DEPORTIVOS.map(p => {
-          const val = perfilesDeportivos[p.id];
-          return (
-            <div key={p.id} className="perfil-card">
-              <div className="perfil-header">
-                <span className="perfil-nombre">{p.nombre}</span>
-                <span className="perfil-pct" style={{ color: p.color }}>{val}%</span>
-              </div>
-              <div className="perfil-bar-track">
-                <div className="perfil-bar-fill" style={{ width: `${val}%`, background: p.color }} />
-              </div>
-              <p className="perfil-desc">{p.descripcion}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── Cognitivas resumen ── */}
-      <h3 className="section-subtitle mt-lg">Perfil cognitivo</h3>
-      <div className="bars-list">
-        {VARS_COGNITIVAS.map(v => (
-          <BarraVariable key={v.id} nombre={v.nombre} pct={analisis.cognitivas[v.id]} color={v.color}
-            subtexto={analisis.realesC[v.id] !== '' ? `${analisis.realesC[v.id]} ${v.unidad}` : undefined}
-          />
-        ))}
-      </div>
-
-      {/* ── Orientación de actividades ── */}
-      <h3 className="section-subtitle mt-lg">Orientacion de actividades fisicas</h3>
+      {/* ── Compatibilidad por familia (DecisionEngine) ── */}
+      <h3 className="section-subtitle mt-lg">Compatibilidad por familia deportiva</h3>
       <div className="ranking-disclaimer">
         <span className="ranking-disclaimer-icon">ℹ</span>
         <span>
-          Esta orientación muestra afinidad de perfil con familias de actividad, no aptitud
-          ni selección. Es una tendencia, no una determinación absoluta.
+          Porcentaje de requisitos cumplidos por familia (demanda = nivel mínimo).
+          Sin dato en una capacidad no penaliza el porcentaje: baja la cobertura.
+          Una familia con su demanda definitoria sin evaluar es provisional y no
+          encabeza como recomendación firme. Mitchell solo prioriza brechas,
+          no modifica el porcentaje.
         </span>
       </div>
-      <div className="ranking-list">
-        {rankingDeportes.slice(0, 8).map((d, i) => (
-          <div key={d.nombre} className={`ranking-item${i < 3 ? ' ranking-top' : ''}`}>
-            <span className="rank-pos">#{i + 1}</span>
-            <span className="rank-nombre">{d.nombre}</span>
-            <div className="rank-bar-wrap">
-              <div className="rank-bar-track">
-                <div className="rank-bar-fill" style={{ width: `${d.afinidad}%`, background: i === 0 ? '#5B3FE0' : i === 1 ? '#2F5CE8' : '#22D3EE' }} />
+      {!ranking ? (
+        <p className="empty-text">Ranking pendiente: requiere el DecisionEngine.</p>
+      ) : (
+        <div className="ranking-list">
+          {ranking.map((f, i) => (
+            <div key={f.id} className={`ranking-item${i < 3 ? ' ranking-top' : ''}`}>
+              <span className="rank-pos">#{i + 1}</span>
+              <span className="rank-nombre">{f.nombre ?? f.id}{f.firme === false ? ' (provisional)' : ''}</span>
+              <div className="rank-bar-wrap">
+                <div className="rank-bar-track">
+                  <div className="rank-bar-fill" style={{ width: `${f.porcentaje ?? 0}%`, background: i === 0 ? '#5B3FE0' : i === 1 ? '#2F5CE8' : '#22D3EE' }} />
+                </div>
+                <span className="rank-pct">{f.porcentaje ?? '—'}{f.porcentaje !== null && f.porcentaje !== undefined ? '%' : ''}</span>
               </div>
-              <span className="rank-pct">{d.afinidad}%</span>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Interpretación automática ── */}
-      <h3 className="section-subtitle mt-lg">Interpretacion del perfil funcional</h3>
-      <div className="interp-block">
-        <p className="interp-parrafo">{interpretacion.parrafo}</p>
-
-        {interpretacion.recomendacion && (
-          <div className="interp-recomendacion">
-            <span className="interp-label">Recomendacion deportiva</span>
-            <p>{interpretacion.recomendacion}</p>
-          </div>
-        )}
-
-        <div className="interp-cols">
-          {interpretacion.fortalezas.length > 0 && (
-            <div className="interp-col fortalezas">
-              <span className="interp-col-title">Fortalezas</span>
-              <ul>
-                {interpretacion.fortalezas.map((f, i) => <li key={i}>{f}</li>)}
-              </ul>
-            </div>
-          )}
-          {interpretacion.debilidades.length > 0 && (
-            <div className="interp-col debilidades">
-              <span className="interp-col-title">Areas de mejora</span>
-              <ul>
-                {interpretacion.debilidades.map((d, i) => <li key={i}>{d}</li>)}
-              </ul>
-            </div>
-          )}
+          ))}
         </div>
+      )}
+
+      {/* ── Interpretación desde brechas del motor ── */}
+      <h3 className="section-subtitle mt-lg">Interpretacion de la compatibilidad</h3>
+      <div className="interp-block">
+        {!top ? (
+          <p className="interp-parrafo">Sin compatibilidad calculada todavía.</p>
+        ) : (
+          <>
+            <p className="interp-parrafo">
+              Mayor compatibilidad firme: {top.nombre ?? top.id}
+              {top.porcentaje !== null && top.porcentaje !== undefined ? ` (${top.porcentaje}%, cobertura ${Math.round((top.cobertura ?? 0) * 5)}/5)` : ' (sin datos suficientes)'}.
+            </p>
+            {liderProvisional && (
+              <div className="interp-recomendacion">
+                <span className="interp-label">Recomendación provisional</span>
+                <p style={{ fontSize: '.82rem' }}>
+                  {lider.nombre ?? lider.id} lidera por compatibilidad ({lider.porcentaje ?? '—'}%) pero tiene
+                  sin evaluar su demanda definitoria ({(lider.carencias ?? []).map(c => `${ETIQUETAS_CAPACIDAD[c.capacidad] ?? c.capacidad} (demanda ${c.demanda})`).join(', ')}):
+                  no es una recomendación firme.
+                </p>
+              </div>
+            )}
+            {(top.carencias ?? []).length > 0 && (
+              <div className="interp-recomendacion">
+                <span className="interp-label">Demandas sin evaluar</span>
+                <ul>
+                  {top.carencias.map((c, i) => (
+                    <li key={i} style={{ fontSize: '.82rem' }}>
+                      {ETIQUETAS_CAPACIDAD[c.capacidad] ?? c.capacidad}: demanda {c.demanda} sin dato.
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {top.brechas?.filter(b => b.relevanteMitchell).length > 0 && (
+              <div className="interp-recomendacion">
+                <span className="interp-label">Brechas fisiológicas relevantes (Mitchell)</span>
+                <ul>
+                  {top.brechas.filter(b => b.relevanteMitchell).map((b, i) => (
+                    <li key={i} style={{ fontSize: '.82rem' }}>
+                      {ETIQUETAS_CAPACIDAD[b.capacidad] ?? b.capacidad}: nivel {b.nivel}, demanda {b.demanda}
+                      {motivoMitchell(top.id ?? top.familiaId, b.capacidad) ? ` — ${motivoMitchell(top.id ?? top.familiaId, b.capacidad)}` : ''}.
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className="interp-cols">
+              {top.brechas?.filter(b => b.severa).length > 0 && (
+                <div className="interp-col debilidades">
+                  <span className="interp-col-title">Brechas severas</span>
+                  <ul>
+                    {top.brechas.filter(b => b.severa).map((b, i) => (
+                      <li key={i}>{ETIQUETAS_CAPACIDAD[b.capacidad] ?? b.capacidad} — demanda {b.demanda}, nivel {b.nivel}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {(!top.brechas || top.brechas.length === 0) && (
+                <div className="interp-col fortalezas">
+                  <span className="interp-col-title">Sin brechas</span>
+                  <ul><li>Cumple todos los requisitos evaluados de la familia.</li></ul>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ── Acciones ── */}

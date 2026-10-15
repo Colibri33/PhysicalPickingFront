@@ -44,7 +44,7 @@ function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostra
 
     // Nombre/edad/genero/perfil/deporte NO participan en el motor de
     // calculo (logic/modelo.js) — no hace falta recalcular fisicas,
-    // cognitivas, consolidado ni ranking al editar solo estos campos.
+    // antropometricas, consolidado ni ranking al editar solo estos campos.
     const registroActualizado = { ...registro, participante: { ...form, nombre, edad: edadNum } };
 
     setGuardando(true);
@@ -165,6 +165,25 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               </div>
             )}
 
+            {Array.isArray(r.evaluacion?.etapas?.ranking?.familias) && r.evaluacion.etapas.ranking.familias.length > 0 && (
+              <>
+                <p className="modal-section-title">Compatibilidad por familia (DecisionEngine)</p>
+                <div className="modal-bars" style={{ marginBottom: '1rem' }}>
+                  {r.evaluacion.etapas.ranking.familias.slice(0, 5).map(f => (
+                    <div key={f.id} className="modal-bar-row">
+                      <div className="modal-bar-meta">
+                        <span>{f.nombre ?? f.id}</span>
+                        <strong>{f.porcentaje ?? '—'}{f.porcentaje !== null && f.porcentaje !== undefined ? '%' : ''}</strong>
+                      </div>
+                      <div className="modal-bar-track">
+                        <div className="modal-bar-fill" style={{ width: `${f.porcentaje ?? 0}%`, background: '#5B3FE0' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <p className="modal-section-title">Perfil consolidado final</p>
             <div className="modal-bars">
               {VARS_FISICAS.map(v => {
@@ -249,19 +268,25 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
       ) : (
         <>
           <div className="hist-list">
-            {historial.map((r, i) => (
+            {historial.map((r, i) => {
+              const topMotor = r.evaluacion?.etapas?.ranking?.recomendada ?? r.evaluacion?.etapas?.ranking?.familias?.[0] ?? null;
+              const topHeredado = r.rankingDeportes?.[0] ?? null;
+              const topNombre = topMotor?.nombre ?? topMotor?.id ?? topHeredado?.nombre ?? null;
+              const topPct = topMotor?.porcentaje ?? topHeredado?.afinidad ?? null;
+              return (
               <button key={r.id} className="hist-card" onClick={() => setDetalle(r)} type="button">
                 <span className="hist-num">#{historial.length - i}</span>
                 <div className="hist-info">
                   <div className="hist-name">{r.participante.nombre}</div>
                   <div className="hist-meta">{r.participante.edad} años · {r.participante.perfil} · {r.fecha}</div>
-                  {r.rankingDeportes?.[0] && (
-                    <div className="hist-top-deporte">{r.rankingDeportes[0].nombre} — {r.rankingDeportes[0].afinidad}%</div>
+                  {topNombre && (
+                    <div className="hist-top-deporte">{topNombre}{topPct !== null && topPct !== undefined ? ` — ${topPct}%` : ''}</div>
                   )}
                 </div>
                 <span className="hist-tag ht-sport">Ver</span>
               </button>
-            ))}
+              );
+            })}
           </div>
           <div className="action-row mt-lg">
             <button className="btn btn-outline btn-danger" onClick={onLimpiar} type="button">Limpiar historial</button>

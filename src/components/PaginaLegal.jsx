@@ -29,7 +29,7 @@ function TerminosCondiciones() {
       <Seccion titulo="1. Objeto">
         <p>
           PhysicalPicking es un sistema de evaluacion multivariable que analiza
-          variables fisicas y cognitivas de participantes adultos (18 a 30 años)
+          variables fisicas y antropometricas de participantes adultos (18 a 30 años)
           para generar un perfil funcional y una orientacion de afinidad hacia
           familias de actividad fisica y deportiva.
         </p>
@@ -97,7 +97,7 @@ function PoliticaPrivacidad() {
         <ul>
           <li><strong>Datos de cuenta:</strong> nombre, correo electronico, contraseña (almacenada como hash, nunca en texto plano).</li>
           <li><strong>Datos del participante evaluado:</strong> nombre, edad (18-30 años), genero, tipo de perfil, actividad o deporte.</li>
-          <li><strong>Datos de las pruebas:</strong> mediciones fisicas (fuerza, velocidad, resistencia, agilidad, flexibilidad, coordinacion, equilibrio) y cognitivas (tiempo de reaccion, decision, atencion, anticipacion), y el resultado/interpretacion generado.</li>
+          <li><strong>Datos de las pruebas:</strong> mediciones fisicas (fuerza prensil, fuerza explosiva, resistencia aeróbica, flexibilidad, equilibrio), variables antropometricas, cuestionarios (PAR-Q+, BREQ-3, BBAQ-21, IPAQ, PSQI) y el resultado/interpretacion generado.</li>
           <li><strong>Metadatos tecnicos:</strong> direccion IP y fecha/hora al momento de aceptar el consentimiento, para dejar evidencia de la autorizacion.</li>
         </ul>
       </Seccion>
@@ -105,7 +105,7 @@ function PoliticaPrivacidad() {
       <Seccion titulo="3. Que datos se consideran personales y cuales sensibles">
         <p>
           El nombre, correo, edad, genero y actividad son <strong>datos
-          personales</strong>. Las mediciones fisicas y cognitivas de las
+          personales</strong>. Las mediciones fisicas y antropometricas de las
           pruebas se relacionan con la condicion fisica del participante y se
           tratan con el mismo estandar de proteccion reforzada aplicable a
           <strong> datos sensibles de salud/condicion fisica</strong>, aunque no
@@ -116,7 +116,7 @@ function PoliticaPrivacidad() {
       <Seccion titulo="4. Para que se utilizan">
         <ul>
           <li>Crear y administrar tu cuenta.</li>
-          <li>Aplicar las pruebas fisicas y cognitivas que selecciones.</li>
+          <li>Aplicar las pruebas fisicas y antropometricas que selecciones.</li>
           <li>Calcular tu perfil funcional y la orientacion de afinidad deportiva.</li>
           <li>Guardar tu historial de evaluaciones para tu propia consulta.</li>
           <li>Atender solicitudes de acceso, correccion o eliminacion de tus datos.</li>

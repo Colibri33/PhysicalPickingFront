@@ -1,33 +1,39 @@
-/* Sidebar.jsx v7 — 9 pasos agrupados en secciones + historial */
+/* Sidebar.jsx v11 — 13 pasos + historial */
+export const PASO_HISTORIAL = 14;
+
 const GRUPOS_SIDEBAR = [
   {
     titulo: 'Evaluacion',
     pasos: [
       { n: 1, label: 'Datos del participante' },
-      { n: 2, label: 'Variables fisicas' },
-      { n: 3, label: 'Variables cognitivas' },
-      { n: 4, label: 'Variables corporales' },
+      { n: 2, label: 'PAR-Q+' },
+      { n: 3, label: 'Complementarias PP' },
+      { n: 4, label: 'Antropometricas' },
+      { n: 5, label: 'Actividad física (IPAQ)' },
+      { n: 6, label: 'Sueño (PSQI/ICSP-VC)' },
+      { n: 7, label: 'Motivación (BREQ-3)' },
+      { n: 8, label: 'Barreras (BBAQ-21)' },
+      { n: 9, label: 'Batería física' },
     ],
   },
   {
     titulo: 'Analisis',
     pasos: [
-      { n: 5, label: 'Perfil fisico' },
-      { n: 6, label: 'Perfil cognitivo' },
-      { n: 7, label: 'Ajustes corporales' },
-      { n: 8, label: 'Informe final' },
+      { n: 10, label: 'Perfil fisico' },
+      { n: 11, label: 'Ajustes antropometricos' },
+      { n: 12, label: 'Informe final' },
     ],
   },
   {
     titulo: 'Resultado',
     pasos: [
-      { n: 9, label: 'Recomendacion deportiva' },
+      { n: 13, label: 'Recomendacion deportiva' },
     ],
   },
   {
     titulo: 'Registros',
     pasos: [
-      { n: 10, label: 'Historial' },
+      { n: PASO_HISTORIAL, label: 'Historial' },
     ],
   },
 ];
@@ -51,7 +57,7 @@ export default function Sidebar({ paso, pasoMax, open, onClose, onNavegar, usuar
           <span className="nav-grupo-titulo">{grupo.titulo}</span>
           <ul className="nav-list">
             {grupo.pasos.map(({ n, label }) => {
-              const habilitado = n <= pasoMax || n === 10;
+              const habilitado = n <= pasoMax || n === PASO_HISTORIAL;
               return (
                 <li key={n}>
                   <button

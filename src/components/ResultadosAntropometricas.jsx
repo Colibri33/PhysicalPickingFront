@@ -1,8 +1,9 @@
-/* ─── ResultadosCorporales.jsx ─── */
+/* ─── ResultadosAntropometricas.jsx (antes ResultadosCorporales.jsx) ─── */
 import {
   VARS_FISICAS,
-  REGLAS_AJUSTE_CORPORAL,
-  calcularAjustesCorporales,
+  REGLAS_AJUSTE_ANTROPOMETRICO,
+  calcularAjustesAntropometricos,
+  prepararAntropometricas,
   clamp,
 } from '../logic/modelo';
 
@@ -12,36 +13,32 @@ function signo(d) {
 }
 
 
-export default function ResultadosCorporales({ analisis, onContinuar }) {
-  const c    = analisis.corporales;
-  const corp = {
-    grasa:      parseFloat(c.grasa)     || null,
-    muscular:   parseFloat(c.muscular)  || null,
-    grasaVisc:  parseFloat(c.grasaVisc) || null,
-    imc:        c.imc,
-  };
+export default function ResultadosAntropometricas({ analisis, onContinuar }) {
+  const c      = analisis.antropometricas;
+  const antrop = prepararAntropometricas(c);
 
-  const ajCorp = calcularAjustesCorporales(corp);
+  const ajAntrop = calcularAjustesAntropometricos(antrop);
 
-  const reglasActivas = REGLAS_AJUSTE_CORPORAL.filter(r => {
-    try { return r.condicion(corp); } catch { return false; }
+  const reglasActivas = REGLAS_AJUSTE_ANTROPOMETRICO.filter(r => {
+    try { return r.condicion(antrop); } catch { return false; }
   });
 
   const etiquetas = {
     peso:       'Peso (kg)',
     talla:      'Talla (cm)',
-    grasa:      '% Grasa corporal',
-    muscular:   '% Masa muscular',
-    grasaVisc:  'Grasa visceral (nivel)',
     imc:        'IMC calculado',
+    cintura:    'Cintura (cm)',
+    cadera:     'Cadera (cm)',
+    icc:        'ICC calculado',
+    grasaVisc:  'Grasa visceral (nivel)',
   };
 
   return (
     <div className="panel-card">
-      <h2 className="panel-title">Ajustes corporales</h2>
+      <h2 className="panel-title">Ajustes antropometricos</h2>
 
       {/* Grid de datos ingresados */}
-      <div className="corp-grid">
+      <div className="antrop-grid">
         {Object.entries(etiquetas).map(([k, lbl]) => {
           const val = c[k];
           const display = (val !== null && val !== '' && val !== undefined)
@@ -60,7 +57,7 @@ export default function ResultadosCorporales({ analisis, onContinuar }) {
       <h3 className="section-subtitle mt-lg">Reglas de ajuste activadas</h3>
       {reglasActivas.length === 0 ? (
         <p className="empty-text">
-          No se activaron reglas de ajuste. Los datos corporales están en rangos normales
+          No se activaron reglas de ajuste. Los datos antropometricos están en rangos normales
           o no fueron completados.
         </p>
       ) : (
@@ -90,12 +87,12 @@ export default function ResultadosCorporales({ analisis, onContinuar }) {
         </div>
       )}
 
-      {/* Comparación base → ajustado corporalmente */}
-      <h3 className="section-subtitle mt-lg">Base normalizada → tras ajuste corporal</h3>
+      {/* Comparación base → ajustado antropometricamente */}
+      <h3 className="section-subtitle mt-lg">Base normalizada → tras ajuste antropometrico</h3>
       <div className="compare-list">
         {VARS_FISICAS.map(v => {
           const base = analisis.fisicas[v.id];
-          const adj  = Math.round(clamp(base + (ajCorp[v.id] || 0), 0, 100));
+          const adj  = Math.round(clamp(base + (ajAntrop[v.id] || 0), 0, 100));
           const diff = adj - base;
           return (
             <div key={v.id} className="compare-row">

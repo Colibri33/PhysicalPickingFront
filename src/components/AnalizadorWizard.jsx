@@ -1,19 +1,27 @@
-/* AnalizadorWizard.jsx v6
+/* AnalizadorWizard.jsx v7
    - Sin dermatoglifia
    - Sin somatotipo
-   - Paso 9: Recomendación de deportes (nuevo paso final)
+   - Sin modulo cognitivo (v7); "corporales" → "antropometricas"
+   - Paso 7: Recomendación de deportes (paso final)
+   - Al guardar se adjunta `evaluacion`: salida trazable del flujo de
+     src/evaluacion (validacion → ... → informe). El calculo heredado
+     (consolidado/perfiles/ranking) se conserva sin cambios de forma.
    - Navegación automática al completar cada bloque
    - Panel lateral conservado
 */
 import { useState, useEffect } from 'react';
-import Sidebar               from './Sidebar';
+import Sidebar, { PASO_HISTORIAL } from './Sidebar';
 import StepParticipante      from './StepParticipante';
+import StepParq              from './StepParq';
+import StepComplementarias   from './StepComplementarias';
+import StepBreq              from './StepBreq';
+import StepBarreras          from './StepBarreras';
+import StepIpaq              from './StepIpaq';
+import StepPsqi              from './StepPsqi';
 import StepFisicas           from './StepFisicas';
-import StepCognitivas        from './StepCognitivas';
-import StepCorporales        from './StepCorporales';
+import StepAntropometricas   from './StepAntropometricas';
 import ResultadosFisico      from './ResultadosFisico';
-import ResultadosCognitivo   from './ResultadosCognitivo';
-import ResultadosCorporales  from './ResultadosCorporales';
+import ResultadosAntropometricas from './ResultadosAntropometricas';
 import ResultadosConsolidado from './ResultadosConsolidado';
 import RecomendacionDeportes from './RecomendacionDeportes';
 import Historial             from './Historial';
@@ -24,6 +32,13 @@ import {
   calcularRankingDeportes,
   generarInterpretacion,
 } from '../logic/modelo';
+import { evaluarParq } from '../logic/parq';
+import { calcularBreq } from '../logic/breq';
+import { calcularBarreras } from '../logic/barreras';
+import { calcularIpaq } from '../logic/ipaq';
+import { calcularPsqi } from '../logic/psqi';
+import { MODULO_COMPLEMENTARIAS } from '../evaluacion/modulos/complementarias/physicalpicking.js';
+import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import {
   guardarRegistroHistorial,
   leerHistorial,
@@ -32,18 +47,22 @@ import {
 
 const TITULOS = {
   1:  ['Evaluacion',   'Datos del participante'],
-  2:  ['Evaluacion',   'Variables fisicas'],
-  3:  ['Evaluacion',   'Variables cognitivas'],
-  4:  ['Evaluacion',   'Variables corporales'],
-  5:  ['Analisis',     'Perfil fisico'],
-  6:  ['Analisis',     'Perfil cognitivo'],
-  7:  ['Analisis',     'Ajustes corporales'],
-  8:  ['Analisis',     'Informe final'],
-  9:  ['Resultado',    'Recomendacion de deportes'],
-  10: ['Registros',    'Historial'],
+  2:  ['Evaluacion',   'PAR-Q+ (aptitud para la actividad física)'],
+  3:  ['Evaluacion',   'Complementarias PhysicalPicking (no es PAR-Q+)'],
+  4:  ['Evaluacion',   'Variables antropometricas'],
+  5:  ['Evaluacion',   'Actividad física actual (IPAQ corto)'],
+  6:  ['Evaluacion',   'Calidad de sueño (PSQI/ICSP-VC)'],
+  7:  ['Evaluacion',   'Motivación hacia el ejercicio (BREQ-3)'],
+  8:  ['Evaluacion',   'Barreras hacia la actividad física (BBAQ-21)'],
+  9:  ['Evaluacion',   'Batería física'],
+  10: ['Analisis',     'Perfil fisico'],
+  11: ['Analisis',     'Ajustes antropometricos'],
+  12: ['Analisis',     'Informe final'],
+  13: ['Resultado',    'Recomendacion de deportes'],
+  [PASO_HISTORIAL]: ['Registros', 'Historial'],
 };
 
-const TOTAL_PASOS = 9;
+const TOTAL_PASOS = 13;
 
 export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarToast, onLogout }) {
   const [paso,        setPaso]      = useState(1);
@@ -61,7 +80,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
   }, [usuarioActual]);
 
   function irA(n) {
-    if (n > pasoMax && n !== 10) return;
+    if (n > pasoMax && n !== PASO_HISTORIAL) return;
     setPaso(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -98,24 +117,33 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
 
     setGuardando(true);
     try {
-      const consolidado        = calcularConsolidado(analisis.fisicas, analisis.cognitivas, analisis.corporales);
-      const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.cognitivas, analisis.corporales);
+      const consolidado        = calcularConsolidado(analisis.fisicas, analisis.antropometricas);
+      const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.antropometricas);
       const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
-      const interpretacion     = generarInterpretacion(consolidado, perfilesDeportivos, analisis.cognitivas, rankingDeportes);
+      const interpretacion     = generarInterpretacion(consolidado, perfilesDeportivos, rankingDeportes);
+      const evaluacion         = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
 
       const registro = {
         id: Date.now(),
         fecha: new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' }),
         participante: { ...analisis.participante },
+        parq:     { ...(analisis.parq ?? { respuestas: {}, detalles: {} }),     resultado: evaluarParq((analisis.parq ?? {}).respuestas ?? {}) },
+        complementarias: { ...(analisis.complementarias ?? { respuestas: {} }),
+          resultado: MODULO_COMPLEMENTARIAS.evaluar((analisis.complementarias ?? {}).respuestas ?? {}).resultadoEvaluacion },
+        breq:     { ...(analisis.breq ?? { respuestas: {} }),     resultado: calcularBreq((analisis.breq ?? {}).respuestas ?? {}) },
+        barreras: { ...(analisis.barreras ?? { respuestas: {} }), resultado: calcularBarreras((analisis.barreras ?? {}).respuestas ?? {}) },
+        ipaq:     { ...(analisis.ipaq ?? { respuestas: {} }),     resultado: calcularIpaq((analisis.ipaq ?? {}).respuestas ?? {}) },
+        psqi:     { ...(analisis.psqi ?? { respuestas: {} }),     resultado: calcularPsqi((analisis.psqi ?? {}).respuestas ?? {}) },
+        leger:    { ...(analisis.leger ?? { palier: '' }) },
         realesF:    { ...analisis.realesF },
-        realesC:    { ...analisis.realesC },
         fisicas:    { ...analisis.fisicas },
-        cognitivas: { ...analisis.cognitivas },
-        corporales: { ...analisis.corporales },
+        antropometricas: { ...analisis.antropometricas },
+        cuestionarios:   { ...analisis.cuestionarios },
         consolidado,
         perfilesDeportivos,
         rankingDeportes: rankingDeportes.slice(0, 5),
         interpretacion,
+        evaluacion,
       };
 
       // analisisGuardado SOLO se confirma tras respuesta exitosa real
@@ -147,23 +175,27 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
   function renderPaso() {
     switch (paso) {
       case 1:  return <StepParticipante      {...props} onContinuar={() => avanzarA(2)} />;
-      case 2:  return <StepFisicas           {...props} onContinuar={() => avanzarA(3)} />;
-      case 3:  return <StepCognitivas        {...props} onContinuar={() => avanzarA(4)} />;
-      case 4:  return <StepCorporales        {...props} onContinuar={() => avanzarA(5)} />;
-      case 5:  return <ResultadosFisico      {...props} onContinuar={() => avanzarA(6)} />;
-      case 6:  return <ResultadosCognitivo   {...props} onContinuar={() => avanzarA(7)} />;
-      case 7:  return <ResultadosCorporales  {...props} onContinuar={() => avanzarA(8)} />;
-      case 8:  return (
+      case 2:  return <StepParq              {...props} onContinuar={() => avanzarA(3)} />;
+      case 3:  return <StepComplementarias   {...props} onContinuar={() => avanzarA(4)} />;
+      case 4:  return <StepAntropometricas   {...props} onContinuar={() => avanzarA(5)} />;
+      case 5:  return <StepIpaq              {...props} onContinuar={() => avanzarA(6)} />;
+      case 6:  return <StepPsqi              {...props} onContinuar={() => avanzarA(7)} />;
+      case 7:  return <StepBreq              {...props} onContinuar={() => avanzarA(8)} />;
+      case 8:  return <StepBarreras          {...props} onContinuar={() => avanzarA(9)} />;
+      case 9:  return <StepFisicas           {...props} onContinuar={() => avanzarA(10)} />;
+      case 10: return <ResultadosFisico      {...props} onContinuar={() => avanzarA(11)} />;
+      case 11: return <ResultadosAntropometricas {...props} onContinuar={() => avanzarA(12)} />;
+      case 12: return (
         <ResultadosConsolidado
           {...props}
-          onContinuar={() => avanzarA(9)}
+          onContinuar={() => avanzarA(13)}
           onGuardar={guardarEnHistorial}
           onNuevo={nuevoAnalisis}
           analisisGuardado={analisisGuardado}
           guardando={guardando}
         />
       );
-      case 9:  return (
+      case 13:  return (
         <RecomendacionDeportes
           {...props}
           onGuardar={guardarEnHistorial}
@@ -172,7 +204,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           guardando={guardando}
         />
       );
-      case 10: return (
+      case PASO_HISTORIAL: return (
         <Historial
           historial={historial}
           usuarioActual={usuarioActual}

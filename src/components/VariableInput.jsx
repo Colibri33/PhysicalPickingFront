@@ -3,11 +3,11 @@
    <input type="range">. El slider trabaja exactamente en la misma
    unidad y escala que el test (kg, segundos, metros, repeticiones,
    ms, %) — la normalizacion a 0-100 ocurre despues, en el Step
-   correspondiente (StepFisicas/StepCognitivas), igual que antes con
+   correspondiente (StepFisicas), igual que antes con
    el input numerico. Este componente NO cambia el significado ni la
    estructura de los datos, solo la forma de capturarlos.
 
-   Usada tanto en StepFisicas como en StepCognitivas.
+   Usada en StepFisicas.
 
    IMPORTANTE sobre la validacion de "campo obligatorio": un slider
    HTML siempre tiene un valor numerico (no puede estar "vacio"), asi
