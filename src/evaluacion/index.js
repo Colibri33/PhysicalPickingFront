@@ -21,6 +21,7 @@ import { MODULOS } from './modulos/registro.js';
 import { ejecutarModulo } from './modulos/ejecutarModulo.js';
 import { crearRegistroBaremos } from './normalizacion/baremos.js';
 import { BAREMOS_AFISAL } from './normalizacion/afisal.js';
+import { BAREMOS_LEGER } from './normalizacion/leger.js';
 import { construirPerfilFuncional } from './perfil/construirPerfilFuncional.js';
 import { aplicarReglasPreparacionSeguridad } from './reglas/preparacionSeguridad.js';
 import { construirEntradaDecisionEngine, ejecutarDecisionEngine, obtenerDecisionEngine, registrarDecisionEngine } from './decision/decisionEnginePort.js';
@@ -55,7 +56,7 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
   // 1. Datos ingresados (copia inmutable)
   const datos = clonar(datosIngresados ?? {});
   const contexto = contextoDesdeParticipante(datos.participante);
-  const baremos = opciones.baremos instanceof Map ? opciones.baremos : crearRegistroBaremos(opciones.baremos ?? BAREMOS_AFISAL);
+  const baremos = opciones.baremos instanceof Map ? opciones.baremos : crearRegistroBaremos(opciones.baremos ?? [...BAREMOS_AFISAL, ...BAREMOS_LEGER]);
 
   // 2-4. Validacion → evaluacion → normalizacion por modulo
   const resultados = {};

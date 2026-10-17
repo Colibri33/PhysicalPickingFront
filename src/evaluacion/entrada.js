@@ -11,6 +11,35 @@
    niveles como 3.5). Valores >21 en `realesF.resistencia` son la antigua
    resistencia en metros (retirada) y se ignoran para el flujo. */
 import { esNivelLegerValido } from '../logic/modelo.js';
+import { CONDICIONES } from '../logic/parq.js';
+
+/* Convierte el formato plano de respuestas de StepParq
+   { g1:'si'|'no', ..., c1:'si'|'no', c1a:'si'|'no', ... }
+   al formato anidado booleano que espera MODULO_PARQ del flujo:
+   { p1..p7: boolean, seguimiento: { c1..c10: { aplica: boolean, respuestas: {...} } } } */
+function mapearParqAFlujo(flat = {}) {
+  const respuestas = {};
+  for (let i = 1; i <= 7; i++) {
+    const v = flat[`g${i}`];
+    if (v === 'si' || v === 'no') respuestas[`p${i}`] = v === 'si';
+  }
+  const seguimiento = {};
+  for (const c of CONDICIONES) {
+    const v = flat[c.id];
+    const aplica = v === 'si' || v === 'no';
+    const resp = {};
+    if (aplica) {
+      for (const h of (c.hijas ?? [])) {
+        const hv = flat[h.id];
+        if (hv === 'si' || hv === 'no') resp[h.id] = hv === 'si';
+      }
+    }
+    seguimiento[c.id] = { aplica, respuestas: resp };
+  }
+  const out = { ...respuestas };
+  out.seguimiento = seguimiento;
+  return out;
+}
 
 export function datosEntradaDesdeAnalisis(analisis) {
   const cuestionarios = { ...(analisis?.cuestionarios ?? {}) };
@@ -24,6 +53,15 @@ export function datosEntradaDesdeAnalisis(analisis) {
   }
   if (analisis?.complementarias?.respuestas && Object.keys(analisis.complementarias.respuestas).length > 0) {
     cuestionarios.complementarias = { ...(cuestionarios.complementarias ?? {}), ...analisis.complementarias.respuestas };
+  }
+  if (analisis?.parq?.respuestas && Object.keys(analisis.parq.respuestas).length > 0) {
+    cuestionarios.parq = mapearParqAFlujo(analisis.parq.respuestas);
+  }
+  if (analisis?.breq?.respuestas && Object.keys(analisis.breq.respuestas).length > 0) {
+    cuestionarios.breq3 = { ...(cuestionarios.breq3 ?? {}), ...analisis.breq.respuestas };
+  }
+  if (analisis?.barreras?.respuestas && Object.keys(analisis.barreras.respuestas).length > 0) {
+    cuestionarios.bbaq21 = { ...(cuestionarios.bbaq21 ?? {}), ...analisis.barreras.respuestas };
   }
   const legerRaw = analisis?.leger?.palier;
   const realesRaw = analisis?.realesF?.resistencia;

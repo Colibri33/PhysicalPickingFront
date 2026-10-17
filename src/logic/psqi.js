@@ -26,37 +26,37 @@ export const OPCIONES_PROBLEMA = [
 ];
 
 export const OPCIONES_CALIDAD = [
-  { valor: 0, etiqueta: 'Muy buena' },
-  { valor: 1, etiqueta: 'Bastante buena' },
-  { valor: 2, etiqueta: 'Bastante mala' },
-  { valor: 3, etiqueta: 'Muy mala' },
+  { valor: 0, etiqueta: 'Bastante bueno' },
+  { valor: 1, etiqueta: 'Bueno' },
+  { valor: 2, etiqueta: 'Malo' },
+  { valor: 3, etiqueta: 'Bastante malo' },
 ];
 
 export const OPCIONES_CONVIVENCIA = [
-  { valor: 0, etiqueta: 'No tengo pareja ni compañero/a de habitación' },
-  { valor: 1, etiqueta: 'Sí tengo, pero duerme en otra habitación' },
-  { valor: 2, etiqueta: 'Sí tengo, pero duerme en la misma habitación y distinta cama' },
-  { valor: 3, etiqueta: 'Sí tengo y duerme en la misma cama' },
+  { valor: 0, etiqueta: 'Solo' },
+  { valor: 1, etiqueta: 'Con alguien en otra habitación' },
+  { valor: 2, etiqueta: 'En la misma habitación, pero en otra cama' },
+  { valor: 3, etiqueta: 'En la misma cama' },
 ];
 
 export const ITEMS_PSQI_HABITOS = [
-  { id: 'p1', texto: '¿A qué hora se acostó normalmente por la noche? Escriba la hora habitual en que se acuesta.' },
-  { id: 'p2', texto: '¿Cuánto tiempo se demoró en quedarse dormido en promedio? Escriba el tiempo en minutos.' },
-  { id: 'p3', texto: '¿A qué hora se levantó habitualmente por la mañana? Escriba la hora habitual de levantarse.' },
-  { id: 'p4', texto: '¿Cuántas horas durmió cada noche? (El tiempo puede ser diferente al que usted permanezca en la cama.) Escriba las horas que crea que durmió.' },
+  { id: 'p1', texto: 'Durante el último mes, ¿cuál ha sido, normalmente, su hora de acostarse?' },
+  { id: 'p2', texto: 'Durante el último mes, ¿cuánto tiempo habrá tardado en dormirse, normalmente, las noches del último mes? (Apunte el tiempo en minutos)' },
+  { id: 'p3', texto: 'Durante el último mes, ¿a qué hora se ha levantado habitualmente por la mañana?' },
+  { id: 'p4', texto: 'Durante el último mes, ¿cuántas horas calcula que habrá dormido verdaderamente cada noche durante el último mes? (El tiempo puede ser diferente al que usted permanezca en la cama)' },
 ];
 
 export const ITEMS_PSQI_PERTURBACIONES = [
-  { id: 'p5a', texto: 'No poder quedarse dormido en la primera media hora' },
+  { id: 'p5a', texto: 'No poder conciliar el sueño en la primera media hora' },
   { id: 'p5b', texto: 'Despertarse durante la noche o de madrugada' },
-  { id: 'p5c', texto: 'Tener que levantarse para ir al baño' },
+  { id: 'p5c', texto: 'Tener que levantarse para ir al servicio' },
   { id: 'p5d', texto: 'No poder respirar bien' },
   { id: 'p5e', texto: 'Toser o roncar ruidosamente' },
   { id: 'p5f', texto: 'Sentir frío' },
-  { id: 'p5g', texto: 'Sentir calor' },
-  { id: 'p5h', texto: 'Tener ‘malos sueños’ o pesadillas' },
-  { id: 'p5i', texto: 'Tener dolores' },
-  { id: 'p5j', texto: 'Otras razones (por favor, descríbalas)' },
+  { id: 'p5g', texto: 'Sentir demasiado calor' },
+  { id: 'p5h', texto: 'Tener pesadillas o «malos sueños»' },
+  { id: 'p5i', texto: 'Sufrir dolores' },
+  { id: 'p5j', texto: 'Otras razones (por favor, descríbalas a continuación)' },
 ];
 
 export const ITEMS_PSQI_COMPANERO = [

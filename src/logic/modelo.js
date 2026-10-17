@@ -157,17 +157,19 @@ export function normalizarFormulario(vars, reales) {
 }
 
 export function calcularIMC(peso, talla) {
-  if (!peso || !talla || talla <= 0) return { valor: null, categoria: '' };
+  if (!peso || !talla || talla <= 0) return { valor: null, categoria: '', nivel: null };
   const tallaM = talla / 100;
   const imc = peso / (tallaM * tallaM);
   let categoria = '';
-  if (imc < 18.5) categoria = 'Bajo peso';
-  else if (imc < 25) categoria = 'Peso normal';
-  else if (imc < 30) categoria = 'Sobrepeso';
-  else if (imc < 35) categoria = 'Obesidad grado I';
-  else if (imc < 40) categoria = 'Obesidad grado II';
-  else categoria = 'Obesidad grado III';
-  return { valor: parseFloat(imc.toFixed(1)), categoria };
+  let nivel = null;
+  // Baremos OMS sin distincion de sexo.
+  if (imc < 18.5) { categoria = 'Bajo peso'; nivel = 'Bajo'; }
+  else if (imc < 25) { categoria = 'Rango normal'; nivel = 'Promedio'; }
+  else if (imc < 30) { categoria = 'Pre obesidad'; nivel = 'Aumentado'; }
+  else if (imc < 35) { categoria = 'Obesidad clase I'; nivel = 'Moderado'; }
+  else if (imc < 40) { categoria = 'Obesidad clase II'; nivel = 'Severo'; }
+  else { categoria = 'Obesidad clase III'; nivel = 'Muy severo'; }
+  return { valor: parseFloat(imc.toFixed(1)), categoria, nivel };
 }
 
 /*

@@ -4,27 +4,27 @@
    Asignacion item→dimension y umbral segun cuestionario CDC de 21 items; confirmar con fuente academica. */
 
 export const ITEMS_BARRERAS = [
-  { id: '1',  texto: 'Mi día es tan ocupado ahora que no creo que pueda apartar tiempo para hacer actividad física en mi horario normal.' },
-  { id: '2',  texto: 'A ninguno de mis familiares o amigos les gusta hacer actividad física, así que no tengo oportunidad de hacer ejercicio.' },
+  { id: '1',  texto: 'Mi día es tan ocupado ahora que no creo que pueda apartar tiempo para realizar actividad física en mi horario normal.' },
+  { id: '2',  texto: 'A ninguno de mis familiares o amigos les gusta realizar actividad física, así que no tengo oportunidad de hacer ejercicio.' },
   { id: '3',  texto: 'Estoy muy cansado después del trabajo como para hacer ejercicio.' },
-  { id: '4',  texto: 'He estado pensando en hacer ejercicio, pero no he sido capaz de dar el primer paso.' },
+  { id: '4',  texto: 'He estado pensando en empezar a hacer ejercicio, pero no he sido capaz de dar el primer paso.' },
   { id: '5',  texto: 'Hacer ejercicio puede ser riesgoso a mi edad.' },
-  { id: '6',  texto: 'No hago suficiente ejercicio porque nunca he aprendido ningún deporte.' },
+  { id: '6',  texto: 'No hago ejercicio lo suficiente porque nunca he aprendido ningún deporte.' },
   { id: '7',  texto: 'No tengo acceso a caminos para trotar, piscinas, senderos para bicicleta, etc.' },
   { id: '8',  texto: 'Hacer actividad física me quita mucho tiempo de las otras obligaciones que tengo como mi trabajo, familia, horario, etc.' },
   { id: '9',  texto: 'Me da pena cómo me voy a ver cuando haga ejercicio en frente de otras personas.' },
-  { id: '10', texto: 'Yo ni siquiera duermo lo suficiente. No me podría levantar más temprano ni acostarme más tarde para hacer ejercicio.' },
+  { id: '10', texto: 'Yo ni siquiera duermo lo suficiente. No me podría levantar más temprano o acostarme más tarde para hacer ejercicio.' },
   { id: '11', texto: 'Es más fácil para mí encontrar excusas para no hacer ejercicio que ponerme a hacerlo.' },
-  { id: '12', texto: 'Conozco muchas personas que se han lastimado porque se han esforzado demasiado al hacer ejercicio.' },
+  { id: '12', texto: 'Conozco muchas personas que se han lastimado porque han hecho mucho ejercicio.' },
   { id: '13', texto: 'Realmente, no me veo aprendiendo un nuevo deporte a mi edad.' },
   { id: '14', texto: 'Es simplemente muy costoso. Uno tiene que tomar una clase, inscribirse en un club o comprar el equipo adecuado.' },
   { id: '15', texto: 'Tengo muy poco tiempo libre durante el día para hacer ejercicio.' },
-  { id: '16', texto: 'Mis actividades sociales habituales con mis familiares y amigos no incluyen la actividad física.' },
-  { id: '17', texto: 'Estoy muy cansado durante la semana y necesito descansar durante el fin de semana para recuperarme.' },
-  { id: '18', texto: 'Quiero hacer más ejercicio, pero parece que no puedo mantenerme motivado para seguir haciéndolo.' },
-  { id: '19', texto: 'Me da miedo lesionarme o que me dé un ataque al corazón.' },
+  { id: '16', texto: 'Mis actividades sociales habituales con mis familiares y amigos no incluyen actividades físicas.' },
+  { id: '17', texto: 'Estoy muy cansada (o) durante la semana y necesito descansar durante el fin de semana para recuperarme.' },
+  { id: '18', texto: 'Quiero hacer más ejercicio, pero parece que no puedo obligarme a hacerlo.' },
+  { id: '19', texto: 'Me da miedo lesionarme o que me dé un ataque cardiaco.' },
   { id: '20', texto: 'No soy lo suficientemente bueno en ninguna actividad física como para entretenerme.' },
-  { id: '21', texto: 'Si hubiese un lugar para hacer ejercicio y duchas en el trabajo, tendría más probabilidad de hacer ejercicio.' },
+  { id: '21', texto: 'Si hubiese un lugar para hacer ejercicio y duchas en el trabajo, tendría más probabilidad de hacer ejercicios.' },
 ];
 
 export const DIMENSIONES_BARRERAS = {

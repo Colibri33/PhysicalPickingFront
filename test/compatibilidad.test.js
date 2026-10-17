@@ -70,8 +70,13 @@ test('empate al 100% sin VO2: gana la firme (velocidad sobre fondo/ciclismo)', (
   };
   const ord = ordenarFamilias(niveles, MATRIZ_DEMANDA);
   const top3 = ord.slice(0, 3).map(r => r.familiaId);
-  assert.deepEqual(top3, ['atletismo_velocidad', 'ciclismo', 'atletismo_fondo']);
+  // Las firmes van primero: velocidad (firme), voleibol (firme), deportes_fuerza (firme).
+  // Fondo y ciclismo son provisionales (carencia en vo2max Muy alta) y van después.
+  assert.deepEqual(top3, ['atletismo_velocidad', 'voleibol', 'deportes_fuerza']);
   assert.equal(ord[0].firme, true);
+  // Las provisionales (fondo, ciclismo) no están entre las 3 primeras firmes.
+  const provisionalEnTop3 = ord.slice(0, 3).some(r => r.firme === false);
+  assert.equal(provisionalEnTop3, false);
 });
 
 test('sin ningún dato: compatibilidad null, cobertura 0', () => {

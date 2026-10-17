@@ -207,7 +207,7 @@ test('entrada: analisis.ipaq/psqi de la UI se sincronizan a cuestionarios del fl
   assert.equal(entrada.cuestionarios.psqi.p9, 1);
 });
 
-test('entrada: complementarias y leger se sincronizan; vo2max conserva palier sin estimar', async () => {
+test('entrada: complementarias y leger se sincronizan; vo2max se califica con baremo integrado', async () => {
   const { datosEntradaDesdeAnalisis } = await import('../src/evaluacion/entrada.js');
   const entrada = datosEntradaDesdeAnalisis({
     participante, realesF, antropometricas: {},
@@ -222,17 +222,19 @@ test('entrada: complementarias y leger se sincronizan; vo2max conserva palier si
   assert.deepEqual(entrada.leger, { palier: 8 });
   const r = ejecutarFlujoEvaluacion(entrada, { ahora: AHORA }).etapas.modulos.fisica_vo2max;
   assert.equal(r.resultadoEvaluacion.palier, 8);
-  assert.equal(r.estado, 'pendiente_baremo');
-  assert.ok(r.advertencias.some(a => a.includes('pendientes')));
+  assert.equal(r.estado, 'completo');
+  // Palier 8, nivelEntero 8, V = 12 km/h, VO2 = 6×12 − 24,4 = 47,6. Mujer 22: Muy alto (>46,25).
+  assert.equal(r.nivel, 'Muy alto');
+  assert.equal(r.resultadoEvaluacion.valor, 47.6);
 });
 
 test('AFISAL por defecto: dinamometria, salto, flexibilidad y equilibrio califican por sexo/edad', () => {
   // Mujer 22 años. Fuerza 90 kg (suma) → Muy alto (>72); salto 40 cm → Medio (36-41);
   // flexibilidad 35 cm → Bajo (31-37); equilibrio 3 intentos → Alto (2-4).
-  // Resistencia aeróbica: nivel 8 conservado sin calificar (baremo pendiente).
+  // Sin dato de resistencia aeróbica: vo2max queda sin datos.
   const datos = {
     participante,
-    realesF: { ...realesF, fuerza: '90', fuerzaExp: '40', flexibilidad: '35', equilibrio: '3' },
+    realesF: { ...realesF, fuerza: '90', fuerzaExp: '40', flexibilidad: '35', equilibrio: '3', resistencia: '' },
     antropometricas: { peso: '60', talla: '165' },
     cuestionarios: {},
   };
@@ -241,18 +243,19 @@ test('AFISAL por defecto: dinamometria, salto, flexibilidad y equilibrio calific
   assert.equal(r.fisica_fuerza_explosiva.nivel, 'Medio');
   assert.equal(r.fisica_flexibilidad.nivel, 'Bajo');
   assert.equal(r.fisica_equilibrio.nivel, 'Alto');
-  assert.equal(r.fisica_vo2max.estado, 'pendiente_baremo');
-  assert.equal(r.fisica_vo2max.resultadoEvaluacion.palier, 8);
+  assert.equal(r.fisica_vo2max.estado, 'sin_datos');
+  assert.equal(r.fisica_vo2max.nivel, null);
 });
 
-test('ranking: fondo al 100% sin VO2 es provisional; la firme es velocidad', () => {
-  // Mujer 22: fuerza 45 (Bajo), salto 45 (Alto), flex 40 (Medio),
-  // equilibrio 6 (Medio), Léger nivel 3.5 con PAR-Q+ apto (autoriza, pero
-  // el baremo de VO2 sigue pendiente → nivel null). Caso reportado.
+test('ranking: fondo con VO2 Bajo tiene brecha severa; velocidad es la firme', () => {
+  // Mujer 22: fuerza 80 (Bajo), salto 50 (Muy alto), flex 40 (Medio),
+  // equilibrio 6 (Medio), Léger 3.5 → VO2 32,6 → Bajo.
+  // Velocidad exige: fuerza Baja ✓, explosiva Muy alta ✓, vo2max Baja ✓, flex Media ✓, equil Media ✓ → 100% firme.
+  // Fondo exige vo2max Muy alta → brecha severa (Bajo no cumple Muy alta).
   const datos = {
     participante,
     realesF: {
-      fuerza: '45', fuerzaDer: '20', fuerzaIzq: '25', fuerzaExp: '45',
+      fuerza: '80', fuerzaDer: '40', fuerzaIzq: '40', fuerzaExp: '50',
       resistencia: '3.5', flexibilidad: '40', equilibrio: '6',
       equilibrioDer: '3', equilibrioIzq: '3',
     },
@@ -261,15 +264,19 @@ test('ranking: fondo al 100% sin VO2 es provisional; la firme es velocidad', () 
     leger: { palier: 3.5 },
   };
   const r = ejecutarFlujoEvaluacion(datos, { ahora: AHORA });
-  assert.equal(r.etapas.modulos.fisica_vo2max.estado, 'pendiente_baremo');
-  assert.equal(r.etapas.modulos.fisica_vo2max.resultadoEvaluacion.palier, 3.5);
+  assert.equal(r.etapas.modulos.fisica_vo2max.estado, 'completo');
+  assert.equal(r.etapas.modulos.fisica_vo2max.nivel, 'Bajo');
   const { familias, recomendada, advertencias } = r.etapas.ranking;
-  assert.equal(familias[0].id, 'atletismo_fondo');
+  assert.equal(familias[0].id, 'atletismo_velocidad');
   assert.equal(familias[0].compatibilidad, 1);
-  assert.equal(familias[0].firme, false);
+  assert.equal(familias[0].firme, true);
   assert.equal(recomendada.id, 'atletismo_velocidad');
-  assert.ok(advertencias.some(a => a.includes('provisional')));
-  assert.ok(r.informe.advertencias.some(a => a.includes('provisional')));
+  const fondo = familias.find(f => f.id === 'atletismo_fondo');
+  assert.ok(fondo);
+  assert.equal(fondo.compatibilidad, 0.8);
+  assert.ok(fondo.brechas.some(b => b.severa && b.capacidad === 'vo2max'));
+  assert.ok(!advertencias.some(a => a.includes('provisional')));
+  assert.ok(!r.informe.advertencias.some(a => a.includes('provisional')));
 });
 
 test('resistencia aeróbica: 3.7 se trata como sin dato (no es medio nivel)', () => {

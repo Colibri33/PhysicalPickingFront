@@ -18,7 +18,7 @@ export const MET_CAMINATA = 3.3;
 export const ITEMS_IPAQ = [
   {
     id: 'i1',
-    texto: 'Durante los últimos 7 días, ¿en cuántos días realizó actividades físicas vigorosas tales como levantar pesos pesados, cavar, hacer ejercicios aeróbicos o andar rápido en bicicleta?',
+    texto: 'Durante los últimos 7 días, ¿en cuántos realizó actividades físicas vigorosas tales como levantar pesos pesados, cavar, hacer ejercicios aeróbicos o andar rápido en bicicleta?',
     ayuda: 'Piense sólo en aquellas actividades que realizó durante por lo menos 10 minutos seguidos.',
   },
   {

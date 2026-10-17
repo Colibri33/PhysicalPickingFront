@@ -13,6 +13,7 @@
 import { VARS_FISICAS, esNivelLegerValido } from '../../logic/modelo.js';
 import { ORIGEN, TIPO_MODULO, DESTINO, ESTADO_MODULO } from '../trazabilidad.js';
 import { aplicarBaremo } from '../normalizacion/baremos.js';
+import { vo2MaxDesdeNivel, nivelEnteroDeRegistro, BAREMO_LEGER_VO2MAX } from '../normalizacion/leger.js';
 
 const AFISAL = 'AFISAL-INEFC (Rodriguez et al., 1998; Espana; n=238; grupos 18-24 y 25-34)';
 
@@ -47,11 +48,8 @@ export const CAPACIDADES = [
   {
     id: 'vo2max', nombre: 'Resistencia aeróbica', prueba: 'leger_course_navette_20m', variableOrigen: 'resistencia',
     requiereAutorizacion: 'prueba_maxima',
-    baremoId: 'physicalpicking_vo2max', referenciaBaremo: 'Baremo propio de PhysicalPicking (muestra propia, por sexo)',
-    pendientes: [
-      'Integrar la estimacion de VO2max a partir del nivel del Leger (formula y referencia).',
-      'Integrar los baremos de VO2max propios de PhysicalPicking.',
-    ],
+    baremoId: 'physicalpicking_vo2max', referenciaBaremo: BAREMO_LEGER_VO2MAX.fuente,
+    pendientes: [],
     leerDato(datos) {
       // La batería captura el nivel en `realesF.resistencia` (espejado en
       // `leger.palier`); se acepta cualquiera de los dos. Admite medios
@@ -77,9 +75,18 @@ export const CAPACIDADES = [
       return { ok: true, errores: [], advertencias: [], faltantes: [], omitidosPorCondicion: [], respondidos: 1 };
     },
     evaluarDato(respuestas) {
+      const palier = respuestas?.palier;
+      const nivelEntero = nivelEnteroDeRegistro(palier);
+      const vo2max = nivelEntero !== null ? vo2MaxDesdeNivel(nivelEntero) : null;
       return {
-        resultadoEvaluacion: { prueba: 'leger_course_navette_20m', palier: respuestas?.palier ?? null, valor: null, unidad: 'nivel' },
-        advertencias: ['Resistencia aeróbica: estimacion de VO2max a partir del nivel y baremos propios pendientes; el nivel se conserva sin calificar.'],
+        resultadoEvaluacion: {
+          prueba: 'leger_course_navette_20m',
+          palier: palier ?? null,
+          valor: vo2max,
+          unidad: 'ml/kg/min',
+          detalle: { nivel: palier ?? null, nivelEntero, velocidad: nivelEntero !== null ? 8.5 + (nivelEntero - 1) * 0.5 : null, vo2max },
+        },
+        advertencias: [],
       };
     },
   },

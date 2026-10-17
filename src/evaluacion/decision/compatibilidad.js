@@ -97,8 +97,15 @@ export function evaluarFamilia(niveles, familia) {
   };
 }
 
-/** Orden del ranking (empates permitidos: devuelve 0 y conserva el orden de entrada). */
+/** Orden del ranking (empates permitidos: devuelve 0 y conserva el orden de entrada).
+   Las familias firmes (todas sus demandas definitorias evaluadas) van primero;
+   las provisionales (carencia en demanda Alta/Muy alta o capacidad Mitchell-relevante)
+   van después, aunque tengan alto porcentaje. */
 export function compararFamilias(a, b) {
+  // Primero las firmes (firme !== false), luego las provisionales
+  const fa = a.firme === false ? 0 : 1;
+  const fb = b.firme === false ? 0 : 1;
+  if (fa !== fb) return fb - fa;
   const ca = a.compatibilidad ?? -1;
   const cb = b.compatibilidad ?? -1;
   if (ca !== cb) return cb - ca;

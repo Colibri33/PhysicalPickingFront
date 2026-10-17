@@ -59,7 +59,7 @@ export const MODULO_ANTROPOMETRICAS = {
     return {
       resultadoEvaluacion: {
         ...r,
-        imc: imc.valor, categoriaIMC: imc.categoria || null,
+        imc: imc.valor, categoriaIMC: imc.categoria || null, nivelIMC: imc.nivel || null,
         icc: icc.valor, categoriaICC: clasificarICC(icc.valor, contexto?.sexo) || null,
       },
       advertencias,
@@ -67,11 +67,14 @@ export const MODULO_ANTROPOMETRICAS = {
   },
 
   normalizar(resultado) {
+    const partes = [];
+    if (resultado.nivelIMC) partes.push(`IMC: ${resultado.nivelIMC}`);
+    if (resultado.categoriaICC) partes.push(`ICC: ${resultado.categoriaICC}`);
     return {
       datoNormalizado: resultado,
-      nivel: null,
+      nivel: partes.length > 0 ? partes.join(' · ') : null,
       estado: ESTADO_MODULO.PENDIENTE_BAREMO,
-      advertencias: ['Antropometria: baremos definitivos pendientes; solo se informa la clasificacion de IMC existente.'],
+      advertencias: ['Antropometria: baremos definitivos pendientes; solo se informa la clasificacion de IMC e ICC existentes.'],
       datosFaltantes: ['baremos_antropometricos'],
     };
   },

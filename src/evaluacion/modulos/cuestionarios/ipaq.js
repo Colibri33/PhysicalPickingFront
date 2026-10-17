@@ -15,7 +15,7 @@ const MIN_DIA = { tipo: 'numero', min: 0, max: 1440, permiteNoSabe: true };
 
 export const MODULO_IPAQ = crearModuloCuestionario({
   id: 'ipaq',
-  nombre: 'IPAQ (versión corta)',
+  nombre: 'IPAQ (Actividad física)',
   destino: DESTINO.PREPARACION,
   version: '0.2.0',
   fuente: {
@@ -24,7 +24,7 @@ export const MODULO_IPAQ = crearModuloCuestionario({
     origen: ORIGEN.INSTRUMENTO,
   },
   items: [
-    { id: 'i1', tema: 'dias_actividad_vigorosa', ...DIAS, texto: 'Durante los últimos 7 días, ¿en cuántos días realizó actividades físicas vigorosas tales como levantar pesos pesados, cavar, hacer ejercicios aeróbicos o andar rápido en bicicleta?' },
+    { id: 'i1', tema: 'dias_actividad_vigorosa', ...DIAS, texto: 'Durante los últimos 7 días, ¿en cuántos realizó actividades físicas vigorosas tales como levantar pesos pesados, cavar, hacer ejercicios aeróbicos o andar rápido en bicicleta?' },
     { id: 'i2', tema: 'minutos_dia_actividad_vigorosa', ...MIN_DIA, texto: 'Habitualmente, ¿cuánto tiempo en total dedicó a una actividad física intensa en uno de esos días?', visibleSi: { item: 'i1', mayorQue: 0 } },
     { id: 'i3', tema: 'dias_actividad_moderada', ...DIAS, texto: 'Durante los últimos 7 días, ¿en cuántos días hizo actividades físicas moderadas como transportar pesos livianos, andar en bicicleta a velocidad regular o jugar a dobles en tenis? No incluya caminar.' },
     { id: 'i4', tema: 'minutos_dia_actividad_moderada', ...MIN_DIA, texto: 'Habitualmente, ¿cuánto tiempo en total dedicó a una actividad física moderada en uno de esos días?', visibleSi: { item: 'i3', mayorQue: 0 } },
