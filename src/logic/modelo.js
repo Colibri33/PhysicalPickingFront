@@ -51,12 +51,12 @@ export const VARS_FISICAS = [
   { id: 'fuerza',       nombre: 'Fuerza prensil',   color: '#6d28d9', unidad: 'kg',           minimo: 20,   maximo: 200,  paso: 1,   direccion: 'mayor_mejor' },
   { id: 'fuerzaExp',    nombre: 'Fuerza explosiva', color: '#9333ea', unidad: 'cm',           minimo: 5,    maximo: 65,   paso: 1,   direccion: 'mayor_mejor' },
   /* Resistencia aeróbica (Léger, course navette 20 m): se registra el
-     ÚLTIMO NIVEL/PALIER alcanzado (0-21, a mayor nivel mejor; admite
-     medios niveles como 3.5, propios del protocolo). Solo se
+     NIVEL MÁXIMO ALCANZADO según el protocolo de Léger: número entero
+     de 1 a 21 (a mayor nivel mejor; sin decimales ni medios niveles). Solo se
      aplica si el PAR-Q+ la autoriza (prueba máxima); si no, queda sin
      dato y no penaliza en el flujo definitivo. Reemplaza a la antigua
      variable de resistencia en metros (Cooper), retirada. */
-  { id: 'resistencia',  nombre: 'Resistencia aeróbica', color: '#0f9d66', unidad: 'nivel',    minimo: 0,    maximo: 21,   paso: 0.5, direccion: 'mayor_mejor' },
+  { id: 'resistencia',  nombre: 'Resistencia aeróbica', color: '#0f9d66', unidad: 'nivel',    minimo: 1,    maximo: 21,   paso: 1,   direccion: 'mayor_mejor' },
   { id: 'flexibilidad', nombre: 'Flexibilidad',      color: '#db2777', unidad: 'cm',           minimo: -20,  maximo: 30,   paso: 1,   direccion: 'mayor_mejor' },
   /* Equilibrio monopodal sin visión (AFISAL-INEFC, Tabla 9):
      2 intentos, uno por pierna; se cuenta cada vez que se baja el pie
@@ -390,12 +390,12 @@ export const EQUILIBRIO_POR_PIERNA_MAX = 30;
 export const FUERZA_POR_MANO_MAX = 100;
 
 /*
- * esNivelLegerValido — el Course Navette registra medios niveles
- * (p. ej. 3.5): se aceptan pasos de 0.5 entre 0 y 21.
+ * esNivelLegerValido — se registra el nivel máximo alcanzado del
+ * Course Navette: número entero entre 1 y 21.
  */
 export function esNivelLegerValido(n) {
-  return typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= 21 &&
-    Number.isInteger(n * 2);
+  return typeof n === 'number' && Number.isFinite(n) && n >= 1 && n <= 21 &&
+    Number.isInteger(n);
 }
 
 export function estadoAnalisisInicial() {

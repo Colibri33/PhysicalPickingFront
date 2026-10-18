@@ -5,6 +5,7 @@
    y un informe explicado por cada evaluación guardada. */
 
 import { jsPDF } from 'jspdf';
+import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad.js';
 
 /* ── Marca ── */
 const MORADO = [91, 63, 224];
@@ -89,14 +90,27 @@ export function resumirRegistro(registro = {}) {
     fecha: texto(registro.fecha ?? registro.creadoEn),
     parq: registro.parq?.resultado ?? null,
     pruebaMaxima: registro.evaluacion?.informe?.seguridad?.pruebaMaxima ?? null,
-    alertasSeguridad: registro.evaluacion?.informe?.seguridad?.alertas ?? [],
+    alertasSeguridad: (() => {
+      // R-SEG-04: en registros anteriores a la regla se deriva de los antecedentes guardados.
+      const alertas = registro.evaluacion?.informe?.seguridad?.alertas ?? [];
+      if (alertas.some(a => a.codigo === 'ANTECEDENTE_LESION')) return alertas;
+      const lesion = alertaAntecedenteLesion(registro.complementarias?.resultado?.antecedentes);
+      return lesion ? [...alertas, lesion] : alertas;
+    })(),
     ipaq: ipaq?.categoria ? `Nivel ${ipaq.categoria} — ${ipaq.met?.total ?? '—'} MET-min/semana` : null,
     psqi: typeof psqi?.puntajeGlobal === 'number' ? `Puntaje ${psqi.puntajeGlobal}/21 — ${psqi.categoria ?? ''}`.trim() : null,
     breq: typeof breq?.rai === 'number' ? `Índice de autonomía (RAI): ${breq.rai}` : null,
     barreras: Array.isArray(barreras?.significativas) && barreras.significativas.length > 0
       ? `Barreras relevantes: ${barreras.significativas.join(', ')}` : null,
     interpretacion: texto(registro.interpretacion?.parrafo, ''),
-    recomendacion: texto(registro.interpretacion?.recomendacion, ''),
+    // Con el flujo nuevo la recomendación sale del DecisionEngine; el texto
+    // del modelo heredado solo se usa en registros sin ranking del motor.
+    recomendacion: registro.evaluacion?.etapas?.ranking?.familias && 'recomendada' in registro.evaluacion.etapas.ranking
+      ? texto(registro.evaluacion.etapas.ranking.recomendada
+        ? `${registro.evaluacion.etapas.ranking.recomendada.nombre ?? registro.evaluacion.etapas.ranking.recomendada.id} (${registro.evaluacion.etapas.ranking.recomendada.porcentaje ?? '—'}% de compatibilidad).`
+        : '', '')
+      : texto(registro.interpretacion?.recomendacion, ''),
+    planAdaptacion: registro.evaluacion?.etapas?.planAdaptacion?.aplica ? registro.evaluacion.etapas.planAdaptacion : null,
     variables,
     familias: familias.slice(0, 5).map(f => ({
       id: f.id,
@@ -325,9 +339,9 @@ export function generarPdfMisDatos(datos = {}) {
     /* Compatibilidad */
     if (s.familias.length > 0) {
       y = parrafo(doc, 'Compatibilidad por familia deportiva:', y, { negrita: true, tamano: 10.5 });
-      y = parrafo(doc, 'Porcentaje de requisitos cumplidos. Si falta un dato no resta puntos, pero la familia queda como provisional y no encabeza la recomendación.', y, { tamano: 9, color: GRIS });
+      y = parrafo(doc, 'Porcentaje de requisitos cumplidos. Una familia no es recomendable si le falta el dato de su demanda principal o si tienes una brecha severa en ella (nivel Bajo o Muy bajo donde exige Alta o Muy alta).', y, { tamano: 9, color: GRIS });
       s.familias.forEach((f, fi) => {
-        y = barra(doc, `#${fi + 1} ${f.nombre}${f.firme === false ? ' (provisional)' : ''}`, f.porcentaje, y,
+        y = barra(doc, `#${fi + 1} ${f.nombre}${f.firme === false ? ' (no recomendable)' : ''}`, f.porcentaje, y,
           fi === 0 ? MORADO : [47, 92, 232]);
         (f.carencias || []).forEach(c => { y = parrafo(doc, `Sin evaluar: ${c}.`, y, { tamano: 8.5, color: GRIS, sangria: 4 }); });
         (f.brechas || []).forEach(b => { y = parrafo(doc, `Brecha relevante: ${b}.`, y, { tamano: 8.5, color: GRIS, sangria: 4 }); });
@@ -352,6 +366,21 @@ export function generarPdfMisDatos(datos = {}) {
     }
     if (s.recomendacion) {
       y = parrafo(doc, `Recomendación: ${s.recomendacion}`, y, { tamano: 9.5 });
+      y += 2;
+    }
+    if (s.planAdaptacion?.estado === 3) {
+      const pl = s.planAdaptacion;
+      y = parrafo(doc, `Estado ${pl.estado}: ${pl.nombre}`, y, { negrita: true, tamano: 10.5 });
+      y = parrafo(doc, pl.motivo, y, { tamano: 9.5 });
+      if ((pl.prioridades || []).length > 0) {
+        y = parrafo(doc, `Capacidades a priorizar: ${pl.prioridades.map(p => `${ETIQUETAS_CAPACIDAD[p.capacidad] ?? p.capacidad} (${p.nivel})`).join(', ')}.`, y, { tamano: 9.5 });
+      }
+      [...(pl.pautasGenerales || []), ...(pl.pautasComponentes || [])].forEach(p => {
+        y = parrafo(doc, `• ${p.titulo}: ${p.texto} (${p.referencia})`, y, { tamano: 9 });
+      });
+      y += 2;
+    } else if (s.planAdaptacion?.tipo === 'datos_insuficientes') {
+      y = parrafo(doc, `${s.planAdaptacion.motivo} Faltan: ${(s.planAdaptacion.faltantes || []).map(c => ETIQUETAS_CAPACIDAD[c] ?? c).join(', ')}.`, y, { tamano: 9.5 });
       y += 2;
     }
     y = parrafo(doc, 'Esta orientación describe tendencias de tu perfil actual y no reemplaza el criterio de un profesional en ciencias del deporte.', y, { tamano: 8.5, color: GRIS });

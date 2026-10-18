@@ -4,18 +4,23 @@
    1. Tabla desglosada base/ajAntrop/total (descriptivo heredado)
    2. Radar chart variables fisicas
    3. Compatibilidad por familia del DecisionEngine (matriz + Mitchell)
-   4. Interpretacion desde brechas del motor
+   4. Mapa corporal de brechas frente a la familia elegida
+   5. Interpretacion: recomendación firme, o Estado 3 / datos faltantes
+      cuando ninguna familia es firme (R-DEC-03)
 */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import ParticipantStrip from './ParticipantStrip';
 import RadarChart       from './RadarChart';
 import EstadoFlujoEvaluacion from './EstadoFlujoEvaluacion';
+import MapaCorporalBrechas from './MapaCorporalBrechas';
+import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
 import {
   VARS_FISICAS,
   calcularConsolidado,
 } from '../logic/modelo';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
+import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
 
 function signo(d) { const r = Math.round(d * 10)/10; return r > 0 ? `+${r}` : `${r}`; }
 
@@ -44,8 +49,11 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
   );
   const ranking = flujo.etapas.ranking.familias;
   const lider = ranking?.[0] ?? null;
-  const top = flujo.etapas.ranking.recomendada ?? lider;
-  const liderProvisional = lider && lider.firme === false;
+  // Solo una familia firme puede presentarse como recomendación (R-DEC-03).
+  const top = flujo.etapas.ranking.recomendada ?? null;
+  const liderProvisional = top && lider && lider.firme === false;
+  const plan = flujo.etapas.planAdaptacion;
+  const [familiaSel, setFamiliaSel] = useState(() => top?.id ?? '');
 
   const datosRadar = Object.fromEntries(VARS_FISICAS.map(v => [v.id, consolidado[v.id].total]));
   const totales    = VARS_FISICAS.map(v => consolidado[v.id].total);
@@ -132,48 +140,68 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         <span>
           Porcentaje de requisitos cumplidos por familia (demanda = nivel mínimo).
           Sin dato en una capacidad no penaliza el porcentaje: baja la cobertura.
-          Una familia con su demanda definitoria sin evaluar es provisional y no
-          encabeza como recomendación firme. Mitchell solo prioriza brechas,
-          no modifica el porcentaje.
+          Una familia no es recomendable si tiene su demanda definitoria sin evaluar
+          o una brecha severa (nivel Bajo o Muy bajo donde exige Alta o Muy alta).
+          Mitchell solo prioriza brechas, no modifica el porcentaje.
+          Toca una familia para verla en el mapa corporal.
         </span>
       </div>
       {!ranking ? (
         <p className="empty-text">Ranking pendiente: requiere el DecisionEngine.</p>
       ) : (
         <div className="ranking-list">
-          {ranking.map((f, i) => (
-            <div key={f.id} className={`ranking-item${i < 3 ? ' ranking-top' : ''}`}>
-              <span className="rank-pos">#{i + 1}</span>
-              <span className="rank-nombre">{f.nombre ?? f.id}{f.firme === false ? ' (provisional)' : ''}</span>
-              <div className="rank-bar-wrap">
-                <div className="rank-bar-track">
-                  <div className="rank-bar-fill" style={{ width: `${f.porcentaje ?? 0}%`, background: i === 0 ? '#5B3FE0' : i === 1 ? '#2F5CE8' : '#22D3EE' }} />
+          {ranking.map((f, i) => {
+            const noFirme = f.firme === false;
+            const severa = motivosNoFirme(f).some(m => m.tipo === 'brecha_severa');
+            const destacada = !noFirme && i < 3;
+            return (
+              <button type="button" key={f.id}
+                className={`ranking-item${destacada ? ' ranking-top' : ''}${noFirme ? ' ranking-no-firme' : ''}${familiaSel === f.id ? ' ranking-sel' : ''}`}
+                onClick={() => setFamiliaSel(familiaSel === f.id ? '' : f.id)}
+                aria-pressed={familiaSel === f.id}
+                title={noFirme ? textoMotivosNoFirme(f).join('; ') : 'Ver en el mapa corporal'}>
+                <span className="rank-pos">#{i + 1}</span>
+                <span className="rank-nombre">
+                  {f.nombre ?? f.id}
+                  {noFirme && <span className="rank-tag">{severa ? 'brecha severa' : 'faltan datos'}</span>}
+                </span>
+                <div className="rank-bar-wrap">
+                  <div className="rank-bar-track">
+                    <div className="rank-bar-fill" style={{ width: `${f.porcentaje ?? 0}%`, background: noFirme ? '#c9c3e3' : i === 0 ? '#5B3FE0' : i === 1 ? '#2F5CE8' : '#22D3EE' }} />
+                  </div>
+                  <span className="rank-pct">{f.porcentaje ?? '—'}{f.porcentaje !== null && f.porcentaje !== undefined ? '%' : ''}</span>
                 </div>
-                <span className="rank-pct">{f.porcentaje ?? '—'}{f.porcentaje !== null && f.porcentaje !== undefined ? '%' : ''}</span>
-              </div>
-            </div>
-          ))}
+              </button>
+            );
+          })}
         </div>
+      )}
+
+      {/* ── Mapa corporal de brechas ── */}
+      {ranking && (
+        <MapaCorporalBrechas flujo={flujo} familiaId={familiaSel} onFamiliaChange={setFamiliaSel} sexo={analisis.participante?.genero} />
       )}
 
       {/* ── Interpretación desde brechas del motor ── */}
       <h3 className="section-subtitle mt-lg">Interpretacion de la compatibilidad</h3>
+      <AlertaAntecedentes alertas={flujo.informe.seguridad.alertas} />
       <div className="interp-block">
         {!top ? (
-          <p className="interp-parrafo">Sin compatibilidad calculada todavía.</p>
+          plan?.aplica
+            ? <PlanAdaptacion plan={plan} />
+            : <p className="interp-parrafo">Sin compatibilidad calculada todavía.</p>
         ) : (
           <>
             <p className="interp-parrafo">
-              Mayor compatibilidad firme: {top.nombre ?? top.id}
+              Recomendación firme: {top.nombre ?? top.id}
               {top.porcentaje !== null && top.porcentaje !== undefined ? ` (${top.porcentaje}%, cobertura ${Math.round((top.cobertura ?? 0) * 5)}/5)` : ' (sin datos suficientes)'}.
             </p>
             {liderProvisional && (
               <div className="interp-recomendacion">
-                <span className="interp-label">Recomendación provisional</span>
+                <span className="interp-label">Familia con mayor porcentaje no recomendable</span>
                 <p style={{ fontSize: '.82rem' }}>
-                  {lider.nombre ?? lider.id} lidera por compatibilidad ({lider.porcentaje ?? '—'}%) pero tiene
-                  sin evaluar su demanda definitoria ({(lider.carencias ?? []).map(c => `${ETIQUETAS_CAPACIDAD[c.capacidad] ?? c.capacidad} (demanda ${c.demanda})`).join(', ')}):
-                  no es una recomendación firme.
+                  {lider.nombre ?? lider.id} tiene {lider.porcentaje ?? '—'}% pero no es recomendable:
+                  {' '}{textoMotivosNoFirme(lider).join('; ')}.
                 </p>
               </div>
             )}

@@ -102,14 +102,40 @@ test('desempate Mitchell: igual compatibilidad, gana la de menos brechas relevan
   // Ciclismo (IIIC) exige VO2 Muy alta: misma o menor compat que natación con brecha relevante.
   const cic = ord.find(r => r.familiaId === 'ciclismo');
   assert.ok(cic.brechasRelevantes >= 1);
-  // El orden respeta: compat ↓, luego brechas relevantes ↑.
+  // El orden respeta: firmes primero; dentro de cada grupo, compat ↓.
   for (let i = 1; i < ord.length; i++) {
     const a = ord[i - 1];
     const b = ord[i];
-    assert.ok(a.compatibilidad >= b.compatibilidad, `${a.familiaId} antes que ${b.familiaId}`);
+    if (a.firme === b.firme) {
+      assert.ok(a.compatibilidad >= b.compatibilidad, `${a.familiaId} antes que ${b.familiaId}`);
+    } else {
+      assert.ok(a.firme && !b.firme, `firme ${a.familiaId} antes que no firme ${b.familiaId}`);
+    }
   }
 });
 
 test('NIVELES tiene los 5 niveles usados por la regla', () => {
   assert.deepEqual([...NIVELES], ['Muy bajo', 'Bajo', 'Medio', 'Alto', 'Muy alto']);
+});
+
+test('R-DEC-02: brecha severa en la demanda principal impide la recomendación firme', () => {
+  // Perfil de la captura: velocidad cumple 2/5 (VO2 Baja, equilibrio Media)
+  // pero tiene fuerza explosiva Muy bajo frente a Muy alta.
+  const niveles = { fuerza: 'Muy bajo', fuerza_explosiva: 'Muy bajo', vo2max: 'Bajo', flexibilidad: 'Muy bajo', equilibrio: 'Alto' };
+  const vel = evaluarFamilia(niveles, MATRIZ_DEMANDA.find(f => f.id === 'atletismo_velocidad'));
+  assert.equal(vel.compatibilidad, 0.4); // el porcentaje no cambia
+  assert.equal(vel.firme, false);
+  assert.deepEqual(vel.motivosNoFirme, [
+    { tipo: 'brecha_severa', capacidad: 'fuerza_explosiva', demanda: 'Muy alta', nivel: 'Muy bajo' },
+  ]);
+  assert.equal(ordenarFamilias(niveles, MATRIZ_DEMANDA).filter(f => f.firme).length, 0);
+});
+
+test('R-DEC-02: brecha no severa (Medio frente a Muy alta) no bloquea; sin dato sigue bloqueando', () => {
+  const fondo = MATRIZ_DEMANDA.find(f => f.id === 'atletismo_fondo');
+  const medio = evaluarFamilia({ fuerza: 'Bajo', fuerza_explosiva: 'Medio', vo2max: 'Medio', flexibilidad: 'Medio', equilibrio: 'Medio' }, fondo);
+  assert.equal(medio.firme, true);
+  const sinVo2 = evaluarFamilia({ fuerza: 'Bajo', fuerza_explosiva: 'Medio', vo2max: null, flexibilidad: 'Medio', equilibrio: 'Medio' }, fondo);
+  assert.equal(sinVo2.firme, false);
+  assert.deepEqual(sinVo2.motivosNoFirme, [{ tipo: 'sin_dato', capacidad: 'vo2max', demanda: 'Muy alta' }]);
 });

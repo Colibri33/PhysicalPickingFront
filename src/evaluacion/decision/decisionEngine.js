@@ -20,7 +20,8 @@ import { validarEntradaDecisionEngine } from './decisionEnginePort.js';
 import { MATRIZ_DEMANDA } from './matrizDemanda.js';
 import { ordenarFamilias } from './compatibilidad.js';
 
-export const VERSION_MOTOR_REFERENCIA = '1.0-referencia';
+// 1.2: R-DEC-02 (brecha severa → no firme) y motivosNoFirme en la salida.
+export const VERSION_MOTOR_REFERENCIA = '1.2-referencia';
 
 export class DecisionEngineReferencia {
   constructor(config = {}) {
@@ -52,6 +53,7 @@ export class DecisionEngineReferencia {
       carencias: r.carencias,
       carenciasRelevantes: r.carenciasRelevantes,
       firme: r.firme,
+      motivosNoFirme: r.motivosNoFirme,
     }));
     return {
       estado: 'evaluado',

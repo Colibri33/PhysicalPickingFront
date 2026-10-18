@@ -27,6 +27,7 @@ import { aplicarReglasPreparacionSeguridad } from './reglas/preparacionSeguridad
 import { construirEntradaDecisionEngine, ejecutarDecisionEngine, obtenerDecisionEngine, registrarDecisionEngine } from './decision/decisionEnginePort.js';
 import { DecisionEngineReferencia } from './decision/decisionEngine.js';
 import { construirRanking } from './decision/ranking.js';
+import { construirPlanAdaptacion } from './reglas/planAdaptacion.js';
 import { construirInforme } from './informe/construirInforme.js';
 
 // Motor de referencia v1 por defecto (auditable, sustituible con
@@ -78,8 +79,11 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
   // 8. Ranking
   const ranking = construirRanking(decision);
 
+  // 8b. Estado de preparacion cuando ninguna familia es firme (R-DEC-03)
+  const planAdaptacion = construirPlanAdaptacion({ ranking, capacidades: entradaMotor.capacidades });
+
   // 9. Informe
-  const informe = construirInforme({ resultados, reglas, decision, ranking });
+  const informe = construirInforme({ resultados, reglas, decision, ranking, planAdaptacion });
 
   return {
     versionFlujo: VERSION_FLUJO,
@@ -91,6 +95,7 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
       reglas,
       decisionEngine: { entrada: entradaMotor, ...decision },
       ranking,
+      planAdaptacion,
     },
     informe,
   };

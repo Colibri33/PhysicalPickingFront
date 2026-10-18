@@ -2,10 +2,15 @@
    Paso final: recomendación desde el ranking del DecisionEngine
    (13 familias, matriz + Mitchell). No calcula nada propio: consume
    el flujo de src/evaluacion, la misma fuente del informe final.
+   Si ninguna familia es firme no muestra un deporte: presenta el
+   Estado 3 o los datos faltantes (R-DEC-03).
 */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
+import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
+import MapaCorporalBrechas from './MapaCorporalBrechas';
+import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
 
 const ETIQUETAS_CAPACIDAD = {
   fuerza: 'Fuerza',
@@ -30,13 +35,15 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
     [analisis],
   );
   const ranking = flujo.etapas.ranking.familias ?? [];
-  // Recomendación firme: primera familia sin carencias definitorias
-  // (registros antiguos sin `firme` conservan el orden del motor).
-  const recomendada = flujo.etapas.ranking.recomendada ?? ranking[0] ?? null;
+  // Recomendación firme: primera familia sin carencias definitorias ni
+  // brechas severas. Si no hay ninguna, no se muestra un deporte (R-DEC-03).
+  const recomendada = flujo.etapas.ranking.recomendada ?? null;
   const lider = ranking[0] ?? null;
-  const liderProvisional = lider && lider.firme === false;
+  const liderProvisional = recomendada && lider && lider.firme === false;
   const recomendaciones = ranking.slice(0, 5);
-  const top = recomendada ?? recomendaciones[0] ?? null;
+  const top = recomendada;
+  const plan = flujo.etapas.planAdaptacion;
+  const [familiaSel, setFamiliaSel] = useState(() => recomendada?.id ?? '');
 
   return (
     <div className="panel-card">
@@ -48,41 +55,62 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
         seleccion definitiva.
       </p>
 
-      {/* Resumen de la familia principal */}
-      {top && (
+      <AlertaAntecedentes alertas={flujo.informe.seguridad.alertas} />
+
+      {/* Resumen de la familia principal, o Estado 3 / datos faltantes */}
+      {top ? (
         <div className="rec-perfil-banner" style={{ borderColor: 'var(--purple, #5B3FE0)' }}>
-          <span className="rec-perfil-etiqueta">Mayor compatibilidad firme</span>
+          <span className="rec-perfil-etiqueta">Recomendación firme</span>
           <span className="rec-perfil-nombre">{top.nombre ?? top.id}</span>
           <span className="rec-perfil-pct">{top.porcentaje ?? '—'}{top.porcentaje !== null && top.porcentaje !== undefined ? '%' : ''}</span>
         </div>
+      ) : (
+        <PlanAdaptacion plan={plan} />
       )}
       {liderProvisional && (
         <div className="ranking-disclaimer" style={{ marginBottom: '1rem' }}>
           <span className="ranking-disclaimer-icon">⚠</span>
           <span>
-            {lider.nombre ?? lider.id} lidera por compatibilidad ({lider.porcentaje ?? '—'}%) pero tiene
-            sin evaluar su demanda definitoria ({(lider.carencias ?? []).map(c => `${ETIQUETAS_CAPACIDAD[c.capacidad] ?? c.capacidad} (demanda ${c.demanda})`).join(', ')}):
-            es una coincidencia provisional, no la recomendación firme.
+            {lider.nombre ?? lider.id} tiene {lider.porcentaje ?? '—'}% pero no es recomendable:
+            {' '}{textoMotivosNoFirme(lider).join('; ')}.
           </span>
         </div>
+      )}
+
+      {ranking.length > 0 && (
+        <MapaCorporalBrechas flujo={flujo} familiaId={familiaSel} onFamiliaChange={setFamiliaSel} />
+      )}
+
+      {!top && recomendaciones.length > 0 && (
+        <h3 className="section-subtitle mt-lg">Compatibilidad por familia (ninguna recomendable todavía)</h3>
       )}
 
       {/* Lista de familias recomendadas (fuente unica: ranking del DecisionEngine) */}
       <div className="rec-lista">
         {recomendaciones.map((fam, idx) => {
           const relevantes = (fam.brechas ?? []).filter(b => b.relevanteMitchell);
+          const noFirme = fam.firme === false;
+          const severa = motivosNoFirme(fam).some(m => m.tipo === 'brecha_severa');
           return (
-            <div key={fam.id} className="rec-card">
+            <div key={fam.id}
+              className={`rec-card rec-card--clic${familiaSel === fam.id ? ' rec-card--sel' : ''}${noFirme ? ' rec-card--no-firme' : ''}`}
+              role="button" tabIndex={0} aria-pressed={familiaSel === fam.id}
+              onClick={() => setFamiliaSel(familiaSel === fam.id ? '' : fam.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFamiliaSel(familiaSel === fam.id ? '' : fam.id); } }}>
               <div className="rec-card-header">
-                <div className="rec-card-rank" style={{ background: idx === 0 ? '#5B3FE0' : idx === 1 ? '#22D3EE' : '#8b86a8' }}>
+                <div className="rec-card-rank" style={{ background: noFirme ? '#b9b3d6' : idx === 0 ? '#5B3FE0' : idx === 1 ? '#22D3EE' : '#8b86a8' }}>
                   #{idx + 1}
                 </div>
                 <div className="rec-card-meta">
                   <span className="rec-card-nombre">{fam.nombre ?? fam.id}</span>
                   <span className="rec-card-afinidad">
                     {fam.porcentaje ?? '—'}{fam.porcentaje !== null && fam.porcentaje !== undefined ? '% de compatibilidad' : ''} · cobertura {Math.round((fam.cobertura ?? 0) * 5)}/5
-                    {fam.firme === false ? ' · provisional' : ''}
                   </span>
+                  {noFirme && (
+                    <span className="rec-card-no-firme">
+                      No recomendable ({severa ? 'brecha severa' : 'faltan datos'}): {textoMotivosNoFirme(fam).join('; ')}
+                    </span>
+                  )}
                   {relevantes.length > 0 && (
                     <span className="rec-card-tags">
                       {relevantes.map((b, i) => (
@@ -98,7 +126,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
               <div className="rec-card-bar-track">
                 <div
                   className="rec-card-bar-fill"
-                  style={{ width: `${fam.porcentaje ?? 0}%`, background: idx === 0 ? '#5B3FE0' : '#22D3EE' }}
+                  style={{ width: `${fam.porcentaje ?? 0}%`, background: noFirme ? '#c9c3e3' : idx === 0 ? '#5B3FE0' : '#22D3EE' }}
                 />
               </div>
             </div>
@@ -118,10 +146,12 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
         <span>
           Las recomendaciones muestran compatibilidad ordinal con cada familia
           (demanda = nivel mínimo) y sus brechas fisiológicas relevantes según
-          Mitchell. Sin dato en una capacidad no baja el porcentaje, pero una
-          familia con su demanda definitoria sin evaluar es provisional y no
-          encabeza como recomendación firme. No reemplazan la orientacion de
-          un especialista en ciencias del deporte.
+          Mitchell. Una familia no es recomendable si tiene su demanda definitoria
+          sin evaluar o una brecha severa (nivel Bajo o Muy bajo donde exige Alta
+          o Muy alta); si ninguna lo es, no se recomienda un deporte y se orienta
+          a una fase de adaptación. Toca una familia para verla en el mapa
+          corporal. No reemplazan la orientacion de un especialista en ciencias
+          del deporte.
         </span>
       </div>
 

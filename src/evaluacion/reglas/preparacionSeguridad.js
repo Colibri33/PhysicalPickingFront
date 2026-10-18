@@ -12,6 +12,12 @@
      sin dato (no penaliza); se marca "Leger no aplicado".
    - R-SEG-03: las limitaciones declaradas en las preguntas
      complementarias se reportan por prueba (solo aviso, sin excluir).
+   - R-SEG-04 (decision propia, 2026-10): un antecedente de lesion
+     declarado en las preguntas complementarias (lesion deportiva en
+     los ultimos 2 anos, cirugia musculoesqueletica o dolor articular
+     recurrente) genera la alerta de adaptacion y recuperacion previa
+     antes de iniciar nuevamente un deporte. Solo alerta: no excluye
+     familias ni cambia el porcentaje.
 
    Las reglas de ESTADO DE PREPARACION (Estados 1-3: base fisica +
    IPAQ + PSQI) ya existen dentro del DecisionEngine; aqui no se
@@ -29,7 +35,31 @@ export const REGLAS = [
   { id: 'R-SEG-01', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Autorizacion de pruebas maximas (resistencia aeróbica · Léger) segun PAR-Q+.' },
   { id: 'R-SEG-02', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Sin autorizacion, resistencia aeróbica queda sin dato y no penaliza.' },
   { id: 'R-SEG-03', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Limitaciones declaradas se reportan por prueba (aviso).' },
+  { id: 'R-SEG-04', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Antecedente de lesion → alerta de adaptacion y recuperacion previa antes de volver al deporte.' },
 ];
+
+const ANTECEDENTES_LESION = [
+  { campo: 'lesion2anios', texto: 'lesión deportiva en los últimos 2 años' },
+  { campo: 'cirugiaMusculoesqueletica', texto: 'cirugía por lesión musculoesquelética' },
+  { campo: 'dolorArticular', texto: 'dolor articular recurrente' },
+];
+
+/** R-SEG-04: alerta por antecedente de lesion (null si no aplica). */
+export function alertaAntecedenteLesion(antecedentes) {
+  const presentes = ANTECEDENTES_LESION.filter(a => antecedentes?.[a.campo] === true);
+  if (presentes.length === 0) return null;
+  const zona = typeof antecedentes.zona === 'string' && antecedentes.zona.trim() ? antecedentes.zona.trim() : null;
+  return {
+    codigo: 'ANTECEDENTE_LESION',
+    regla: 'R-SEG-04',
+    severidad: 'precaucion',
+    titulo: 'Adaptación y recuperación previa',
+    mensaje: `Antecedente declarado: ${presentes.map(a => a.texto).join(', ')}${zona ? ` (zona: ${zona})` : ''}. ` +
+      'Se recomienda un periodo de adaptación y recuperación previa antes de iniciar nuevamente con algún deporte.',
+    antecedentes: presentes.map(a => a.campo),
+    zona,
+  };
+}
 
 const AUTORIZA = new Set([CLASIFICACION_PARQ.SIN_POSITIVOS, CLASIFICACION_PARQ.SEGUIMIENTO_SIN_POSITIVOS]);
 
@@ -68,6 +98,10 @@ export function aplicarReglasPreparacionSeguridad(perfil) {
   if (perfil.limitaciones?.presente) {
     alertas.push({ codigo: 'LIMITACION_DECLARADA', regla: 'R-SEG-03', severidad: 'informativa', mensaje: 'El participante declara limitaciones relevantes para las pruebas.', pruebas: limitadas });
   }
+
+  // R-SEG-04
+  const alertaLesion = alertaAntecedenteLesion(perfil.antecedentes);
+  if (alertaLesion) alertas.push(alertaLesion);
 
   return {
     reglasAplicadas: REGLAS,

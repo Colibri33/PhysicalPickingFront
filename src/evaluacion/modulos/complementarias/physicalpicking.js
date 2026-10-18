@@ -67,6 +67,23 @@ export const BLOQUES_COMPLEMENTARIOS = {
 
 const ITEMS = Object.values(BLOQUES_COMPLEMENTARIOS).flat();
 
+/* Antecedentes de lesion tal como se declararon (solo los 3 Si/No y la
+   zona). Lo usa la regla de seguridad R-SEG-04 cuando el bloque queda
+   invalido por OTRA pregunta (p. ej. experiencia), para no perder la
+   alerta. No valida ni completa nada. */
+export function antecedentesDeclarados(r) {
+  if (!r || typeof r !== 'object') return null;
+  const lesion2anios = r.lesion_2anios === true;
+  const cirugiaMusculoesqueletica = r.cirugia_musculoesqueletica === true;
+  const dolorArticular = r.dolor_articular === true;
+  if (!lesion2anios && !cirugiaMusculoesqueletica && !dolorArticular) return null;
+  return {
+    lesion2anios, cirugiaMusculoesqueletica, dolorArticular,
+    zona: typeof r.zona_articulacion === 'string' && r.zona_articulacion.trim() ? r.zona_articulacion.trim() : null,
+    origen: 'respuesta_declarada',
+  };
+}
+
 export const MODULO_COMPLEMENTARIAS = {
   id: 'complementarias_physicalpicking',
   nombre: 'Preguntas complementarias de PhysicalPicking (elaboracion propia, no es PAR-Q+)',

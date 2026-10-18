@@ -3,8 +3,9 @@
    Modulos de las 5 capacidades de la bateria confirmada. Cada uno:
      respuesta original (valor crudo) → evaluacion (valor + unidad) →
      normalizacion a nivel ordinal mediante un baremo INYECTADO.
-   No contiene baremos: sin baremo, nivel = null y estado
-   'pendiente_baremo'.
+   No contiene baremos: los recibe del registro (AFISAL y Léger propio
+   provisional, ver index.js). Si el registro no trae el baremo de una
+   capacidad, nivel = null y estado 'pendiente_baremo'.
 
    Reutiliza las definiciones de captura existentes (VARS_FISICAS de
    logic/modelo.js) para leer el valor y su unidad; no duplica rangos.
@@ -51,9 +52,9 @@ export const CAPACIDADES = [
     baremoId: 'physicalpicking_vo2max', referenciaBaremo: BAREMO_LEGER_VO2MAX.fuente,
     pendientes: [],
     leerDato(datos) {
-      // La batería captura el nivel en `realesF.resistencia` (espejado en
-      // `leger.palier`); se acepta cualquiera de los dos. Admite medios
-      // niveles (3.5). Valores >21 son la antigua resistencia en metros
+      // La batería captura el nivel máximo alcanzado (entero 1-21) en
+      // `realesF.resistencia` (espejado en `leger.palier`); se acepta
+      // cualquiera de los dos. Valores >21 son la antigua resistencia en metros
       // (retirada) y se ignoran aquí.
       const candidatos = [datos?.realesF?.resistencia, datos?.leger?.palier];
       for (const raw of candidatos) {
@@ -70,7 +71,7 @@ export const CAPACIDADES = [
         return { ok: false, errores: ['Resistencia aeróbica (Léger): el nivel debe ser un numero valido.'], advertencias: [], faltantes: [], omitidosPorCondicion: [], respondidos: 0 };
       }
       if (!esNivelLegerValido(p)) {
-        return { ok: false, errores: ['Resistencia aeróbica (Léger): el nivel debe estar entre 0 y 21 (admite medios niveles como 3.5).'], advertencias: [], faltantes: [], omitidosPorCondicion: [], respondidos: 0 };
+        return { ok: false, errores: ['Resistencia aeróbica (Léger): el nivel máximo alcanzado debe ser un número entero entre 1 y 21.'], advertencias: [], faltantes: [], omitidosPorCondicion: [], respondidos: 0 };
       }
       return { ok: true, errores: [], advertencias: [], faltantes: [], omitidosPorCondicion: [], respondidos: 1 };
     },
@@ -105,7 +106,7 @@ function crearModuloCapacidad(cap) {
     tipo: TIPO_MODULO.PRUEBA_FISICA,
     destino: DESTINO.COMPATIBILIDAD,
     version: '0.2.0',
-    estadoConfiguracion: cap.baremoId === 'physicalpicking_vo2max' ? 'baremo_pendiente' : 'baremo_afisal_integrado',
+    estadoConfiguracion: cap.baremoId === 'physicalpicking_vo2max' ? 'baremo_propio_provisional' : 'baremo_afisal_integrado',
     fuente: {
       prueba: cap.prueba,
       referencia: cap.referenciaBaremo,

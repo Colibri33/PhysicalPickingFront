@@ -7,7 +7,7 @@
 
 import { ESTADO_MODULO } from '../trazabilidad.js';
 
-export function construirInforme({ resultados, reglas, decision, ranking }) {
+export function construirInforme({ resultados, reglas, decision, ranking, planAdaptacion = null }) {
   const modulos = Object.values(resultados).map(m => ({
     moduloId: m.moduloId,
     nombre: m.nombre,
@@ -34,7 +34,15 @@ export function construirInforme({ resultados, reglas, decision, ranking }) {
       pruebaMaximaAutorizada: reglas.pruebaMaxima.autorizada,
     },
     seguridad: { alertas: [...reglas.alertas, ...(decision.salida?.seguridad?.alertas ?? [])], pruebaMaxima: reglas.pruebaMaxima },
-    recomendacion: ranking.familias ? { ranking: ranking.familias, estado: decision.salida?.estado ?? null, experiencia: decision.salida?.experiencia ?? null } : null,
+    recomendacion: ranking.familias ? {
+      ranking: ranking.familias,
+      recomendada: ranking.recomendada ?? null,
+      sinFamiliaCompatible: ranking.sinFamiliaCompatible ?? false,
+      estado: decision.salida?.estado ?? null,
+      experiencia: decision.salida?.experiencia ?? null,
+    } : null,
+    // Estado 3 / datos insuficientes cuando ninguna familia es firme.
+    preparacion: planAdaptacion,
     // El perfil funcional completo esta en etapas.perfilFuncional (no se duplica).
     modulos,
     advertencias: [...reglas.advertencias, ...ranking.advertencias, ...(decision.errores ?? [])],

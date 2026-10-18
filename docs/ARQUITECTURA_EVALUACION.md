@@ -11,9 +11,10 @@ Código en `src/evaluacion/`. Funciones puras (sin React, DOM ni red); se prueba
 | 3 | Evaluación | `modulos/*` → `evaluar()` | Calcula el resultado del instrumento o prueba. | Sin reglas de calificación cargadas → `pendiente_calificacion`. |
 | 4 | Normalización | `modulos/*` → `normalizar()` + `normalizacion/baremos.js` | Convierte a nivel ordinal o al dato que pide el motor. | Sin baremo cargado → `nivel = null`, `pendiente_baremo`. |
 | 5 | Perfil funcional | `perfil/construirPerfilFuncional.js` | Agrupa solo datos normalizados por capa. | No lee respuestas originales. |
-| 6 | Reglas de preparación/seguridad | `reglas/preparacionSeguridad.js` | R-SEG-01 a 03 (autorización de Léger, VO2max sin dato, limitaciones por prueba). | No modifica niveles ni porcentaje. Los Estados 1-3 siguen dentro del DecisionEngine. |
+| 6 | Reglas de preparación/seguridad | `reglas/preparacionSeguridad.js` | R-SEG-01 a 04 (autorización de Léger, VO2max sin dato, limitaciones por prueba, alerta por antecedente de lesión). | No modifica niveles ni porcentaje. |
 | 7 | DecisionEngine | `decision/decisionEnginePort.js` | Construye y valida la entrada del motor; ejecuta el motor inyectado. | Sin motor → `pendiente_integracion`. |
-| 8 | Ranking | `decision/ranking.js` | Toma el ranking del motor y verifica las 13 familias. | No reordena ni recalcula. |
+| 8 | Ranking | `decision/ranking.js` | Toma el ranking del motor, verifica las 13 familias y publica la recomendación firme (o ninguna, R-DEC-03). | No reordena ni recalcula. |
+| 8b | Plan de adaptación | `reglas/planAdaptacion.js` | Sin familia firme: Estado 3 (Adaptación desde cero) con orientación ACSM, o datos faltantes. | No inventa cargas; Estados 1 y 2 siguen pendientes. |
 | 9 | Informe | `informe/construirInforme.js` | Seguridad primero, recomendación, estado de módulos, pendientes. | No calcula. |
 
 Orquestador: `index.js → ejecutarFlujoEvaluacion(datos, { baremos, decisionEngine, ahora })`.
@@ -23,7 +24,7 @@ Orquestador: `index.js → ejecutarFlujoEvaluacion(datos, { baremos, decisionEng
 | Módulo | Destino | Estado de configuración |
 |---|---|---|
 | `fisica_fuerza`, `fisica_fuerza_explosiva`, `fisica_flexibilidad`, `fisica_equilibrio` | compatibilidad | Baremos AFISAL-INEFC integrados por defecto (grupos 18-24 y 25-34 × sexo); equilibrio se captura en intentos |
-| `fisica_vo2max` | compatibilidad | Resistencia aeróbica: captura de nivel Léger 0-21 (admite medios niveles) con compuerta PAR-Q+; estimación y baremos propios pendientes |
+| `fisica_vo2max` | compatibilidad | Resistencia aeróbica: captura del **nivel máximo alcanzado** (entero 1-21) con compuerta PAR-Q+; VO2máx estimado (Léger et al., 1988) y baremo propio por sexo **provisional** (`normalizacion/leger.js`, n=58) |
 | `antropometricas` | informativa | IMC (OMS) e ICC (WHO 2008) calculados; % grasa/muscular retirados (histórico en `_legado`); demás baremos pendientes |
 | `parq` (PAR-Q+ oficial) | **seguridad** (nunca al porcentaje) | Lógica condicional integrada; textos y subpreguntas pendientes |
 | `complementarias_physicalpicking` | experiencia | Módulo propio (NO es PAR-Q+): lesiones (2 años/cirugía/dolor + zona/fecha/tratamiento), limitaciones y experiencia con textos integrados |
@@ -65,6 +66,27 @@ publica `recomendada` (primera firme) y advierte si el líder por compatibilidad
 es provisional. La ejecuta el motor de
 referencia v1 (`decision/decisionEngine.js`); un motor externo debe
 reproducirla (`test/compatibilidad.test.js` la fija).
+
+**Decisiones propias v1.2 (2026-10), identificadas como tales:**
+
+- **R-DEC-02 · Brecha severa.** Una brecha severa (nivel Muy bajo o Bajo donde
+  la familia exige Alta o Muy alta; definición ya existente en
+  `matrizDemanda.js`) también deja a la familia como no firme. Si faltar el dato
+  de la demanda definitoria impide recomendar, tener ese dato en nivel bajo no
+  puede permitirlo. No se añaden pesos ni umbrales y el porcentaje no cambia.
+  Cada familia publica `motivosNoFirme` (`sin_dato` / `brecha_severa`).
+- **R-DEC-03 · Sin familia firme.** Si ninguna familia es firme no se presenta
+  ningún deporte. Si todas tienen al menos una brecha severa → **Estado 3,
+  Adaptación desde cero**, con prioridades (capacidades del perfil en Muy bajo
+  o Bajo) y orientación general parafraseada del ACSM (2021, 11.ª ed., cap. 5:
+  Tablas 5.1, 5.5, 5.6 y *Progression of Aerobic Exercise*). Si alguna familia
+  solo falla por datos faltantes → se piden esos datos (no se asigna el Estado 3).
+- **R-SEG-04 · Antecedente de lesión.** Lesión deportiva en los últimos 2 años,
+  cirugía musculoesquelética o dolor articular recurrente (preguntas
+  complementarias) → alerta de adaptación y recuperación previa antes de iniciar
+  nuevamente un deporte. Solo alerta.
+- Orden del ranking: familias firmes primero; dentro de cada grupo, el orden
+  descrito arriba.
 
 **DecisionEngine.** Motor de referencia v1 registrado por defecto (auditable;
 sustituible con `registrarDecisionEngine()` o `decisionEngine: null`). La entrada

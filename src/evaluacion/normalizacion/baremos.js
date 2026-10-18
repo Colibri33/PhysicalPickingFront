@@ -59,7 +59,7 @@ export function validarDefinicionBaremo(b) {
   return e;
 }
 
-function buscarGrupo(baremo, contexto) {
+export function buscarGrupo(baremo, contexto) {
   const { sexo, edad } = contexto ?? {};
   return baremo.grupos.find(g =>
     (g.sexo == null || g.sexo === sexo) &&

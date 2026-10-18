@@ -3,17 +3,23 @@
    Baremos del test de Léger (course navette 20 m) para PhysicalPicking.
    Muestra propia: n=58 (41 hombres, 17 mujeres), edades 18-29.
 
-   Método: puntuación z (5 niveles), mismo enfoque que AFISAL-INEFC.
-   Los cortes se derivan de: media + z × DE, por sexo.
+   Método: puntuación z (5 niveles), tomado de AFISAL-INEFC (Rodríguez
+   et al.; afisal.pdf, "Análisis estadístico"): z < -1,5 muy bajo;
+   -1,5 a -0,5 bajo; -0,5 a 0,5 medio; 0,5 a 1,5 alto; z > 1,5 muy alto.
+   Los cortes se derivan de: media + z × DE, por sexo (muestra propia).
+   AFISAL no incluye el test de Léger ni su ecuación: la ecuación de
+   VO2máx es de Léger et al. (1988) y su constante (-24,4) queda POR
+   VERIFICAR contra el artículo completo.
 
    Ecuación (Léger et al., 1988, protocolo 20 m):
      VO2máx (ml/kg/min) = 6,0 × V − 24,4   (≥ 18 años)
      donde V = velocidad del nivel alcanzado (km/h)
            V = 8,5 + (nivel − 1) × 0,5     (palier 1 = 8,5 km/h, +0,5 por palier)
 
-   El dato de registro usa formato "nivel.ida" (p. ej. 3,6 = nivel 3, 6 idas).
-   El cálculo de VO2máx usa la PARTE ENTERA del nivel. Los decimales (idas)
-   no entran al cálculo del baremo.
+   Dato de captura en la app: NIVEL MÁXIMO ALCANZADO (entero 1-21).
+   La muestra del Excel se registró como "nivel.ida" (p. ej. 3,6 = nivel 3,
+   6 idas); para el baremo se usó solo la parte entera, que equivale a este
+   mismo dato. Las idas no entran al cálculo.
 
    ESTADO: BAREMO PROVISIONAL (muestra propia, no validada externamente).
    No presentar como estándar oficial ni atribuir a AFISAL-INEFC.

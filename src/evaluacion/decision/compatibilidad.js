@@ -17,12 +17,19 @@
      (p. ej. fondo con VO2max Muy alta sin dato) es una mala
      aplicación de la matriz, aunque el porcentaje sea 100% de lo
      evaluado.
+   - R-DEC-02 Brecha severa v1.2 (decision propia, 2026-10): una brecha
+     severa (nivel Muy bajo/Bajo donde la familia exige Alta/Muy alta;
+     definicion ya existente en matrizDemanda.js) tambien deja a la
+     familia como NO FIRME. Motivo: si faltar el dato de la demanda
+     definitoria impide recomendar, tener ese dato en nivel bajo no
+     puede permitirlo. No se introduce ningun peso ni umbral nuevo y
+     el porcentaje no cambia.
    - Mitchell NO modifica el porcentaje: solo cuenta brechas en
      capacidades relevantes para desempatar.
-   - Orden del ranking: compatibilidad ↓, carencias relevantes ↑ (menos),
-     brechas relevantes ↑ (menos), brechas severas ↑ (menos),
-     cobertura ↓, empates permitidos (orden estable, sin desempate
-     arbitrario).
+   - Orden del ranking: familias firmes primero; dentro de cada grupo,
+     compatibilidad ↓, carencias relevantes ↑ (menos), brechas
+     relevantes ↑ (menos), brechas severas ↑ (menos), cobertura ↓,
+     empates permitidos (orden estable, sin desempate arbitrario).
    ═══════════════════════════════════════════════════════════════ */
 
 import {
@@ -79,6 +86,13 @@ export function evaluarFamilia(niveles, familia) {
   const brechasRelevantes = brechas.filter(b => b.relevanteMitchell).length;
   const brechasSeveras = brechas.filter(b => b.severa).length;
   const carenciasRelevantes = carencias.filter(c => c.relevanteMitchell).length;
+  // Motivos por los que la familia no puede ser recomendacion firme.
+  const motivosNoFirme = [
+    ...carencias.filter(c => c.relevanteMitchell || c.demandaAlta)
+      .map(c => ({ tipo: 'sin_dato', capacidad: c.capacidad, demanda: c.demanda })),
+    ...brechas.filter(b => b.severa)
+      .map(b => ({ tipo: 'brecha_severa', capacidad: b.capacidad, demanda: b.demanda, nivel: b.nivel })),
+  ];
   return {
     familiaId: familia.id,
     mitchell: familia.mitchell,
@@ -91,9 +105,11 @@ export function evaluarFamilia(niveles, familia) {
     brechasSeveras,
     carencias,
     carenciasRelevantes,
-    // Firme = todas sus demandas definitorias evaluadas: ninguna
-    // carencia en demanda Alta/Muy alta ni en capacidad relevante.
-    firme: carenciasRelevantes === 0 && !carencias.some(c => c.demandaAlta),
+    // Firme = todas sus demandas definitorias evaluadas (ninguna carencia
+    // en demanda Alta/Muy alta ni en capacidad relevante) y sin brechas
+    // severas (R-DEC-02).
+    firme: motivosNoFirme.length === 0,
+    motivosNoFirme,
   };
 }
 

@@ -2,7 +2,9 @@
    Arbol de visibilidad condicional + poda + resultado.
    Datos: { respuestas: {id:'si'|'no'}, detalles: {id: texto}, resultado: 'apto'|'consultar' }
    Solo las preguntas visibles aparecen en `respuestas`.
-   Verificar redaccion contra el formulario oficial (eparmedx.com) antes de uso clinico. */
+   Textos y ORDEN de subpreguntas: PAR-Q+ en español (parq+.pdf; traducción de
+   M. Rubio con J. y L. Schwartz), igual al Google Form aplicado. Los ids (c3a, c4b...)
+   siguen la numeracion oficial: no reordenar, los registros guardados dependen de ella. */
 
 export const PREGUNTAS_GENERALES = [
   { id: 'g1', texto: '¿Alguna vez su médico le ha dicho que tiene una afección cardíaca O presión arterial alta?' },
@@ -16,7 +18,7 @@ export const PREGUNTAS_GENERALES = [
 
 export const CONDICIONES = [
   { id: 'c1', texto: '¿Sufre usted de artritis, osteoporosis o problemas de columna?', abreSi: 'si', hijas: [
-    { id: 'c1a', texto: '¿Tiene dificultades para controlar su condición con medicamentos u otras terapias prescritas por un médico? (Responda NO si actualmente no toma medicamentos ni otros tratamientos)', abreSi: 'si' },
+    { id: 'c1a', texto: '¿Tiene dificultades para controlar los síntomas con medicación u otro tratamiento indicado por su médico? (Conteste NO si estos problemas no están siendo tratados con fármacos u otros medios)', abreSi: 'si' },
     { id: 'c1b', texto: '¿Tiene problemas articulares dolorosos, fractura reciente o una fractura a causa de osteoporosis o cáncer, desplazamientos vertebrales (ej. espondilolistesis) y/o espondilolisis/defecto en la porción interarticular?', abreSi: 'si' },
     { id: 'c1c', texto: '¿Ha recibido tratamiento con corticoides inyectables o vía oral regularmente durante más de tres meses?', abreSi: 'si' },
   ]},
@@ -25,14 +27,14 @@ export const CONDICIONES = [
     { id: 'c2b', texto: '¿Se encuentra actualmente en tratamiento con radioterapia o quimioterapia?', abreSi: 'si' },
   ]},
   { id: 'c3', texto: '¿Padece usted alguna enfermedad cardiovascular o cardíaca? (incluye enfermedad coronaria, insuficiencia cardíaca, anomalía diagnosticada del ritmo cardíaco)', abreSi: 'si', hijas: [
-    { id: 'c3a', texto: '¿Sufre de arritmia que requiere tratamiento médico? (ej. fibrilación auricular, extrasístoles ventriculares)', abreSi: 'si' },
-    { id: 'c3b', texto: '¿Sufre de insuficiencia cardíaca crónica?', abreSi: 'si' },
-    { id: 'c3c', texto: '¿Le han diagnosticado una enfermedad coronaria (cardiovascular) y hace 2 meses o más que no participa en actividades físicas frecuentes?', abreSi: 'si' },
-    { id: 'c3d', texto: '¿Tiene dificultades para controlar los síntomas con medicación u otro tratamiento indicado por su médico? (Conteste NO si estos problemas no están siendo tratados con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c3a', texto: '¿Tiene dificultades para controlar los síntomas con medicación u otro tratamiento indicado por su médico? (Conteste NO si estos problemas no están siendo tratados con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c3b', texto: '¿Sufre de arritmia que requiere tratamiento médico? (ej. fibrilación auricular, extrasístoles ventriculares)', abreSi: 'si' },
+    { id: 'c3c', texto: '¿Sufre de insuficiencia cardíaca crónica?', abreSi: 'si' },
+    { id: 'c3d', texto: '¿Le han diagnosticado una enfermedad coronaria (cardiovascular) y hace 2 meses o más que no participa en actividades físicas frecuentes?', abreSi: 'si' },
   ]},
   { id: 'c4', texto: '¿Tiene usted hipertensión arterial?', abreSi: 'si', hijas: [
-    { id: 'c4a', texto: '¿Su presión arterial en reposo es igual o superior a 160/90 mmHg, con o sin medicación? (Conteste SI si desconoce su presión arterial de reposo)', abreSi: 'si' },
-    { id: 'c4b', texto: '¿Tiene dificultades para controlar los síntomas con medicación u otro tratamiento indicado por su médico? (Conteste NO si estos problemas no están siendo tratados con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c4a', texto: '¿Tiene dificultades para controlar los síntomas con medicación u otro tratamiento indicado por su médico? (Conteste NO si no está siendo tratado por este problema con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c4b', texto: '¿Su presión arterial en reposo es igual o superior a 160/90 mmHg, con o sin medicación? (Conteste SI si desconoce su presión arterial de reposo)', abreSi: 'si' },
   ]},
   { id: 'c5', texto: '¿Tiene usted alguna enfermedad metabólica? Esto incluye Diabetes tipo 1, Diabetes tipo 2, prediabetes', abreSi: 'si', hijas: [
     { id: 'c5a', texto: '¿Tiene dificultades para mantener los niveles de glucosa en la sangre con la alimentación, fármacos u otro procedimiento indicado por su médico?', abreSi: 'si' },
@@ -46,18 +48,18 @@ export const CONDICIONES = [
     { id: 'c6b', texto: '¿Tiene Síndrome de Down Y problemas de espalda que afectan los nervios o los músculos?', abreSi: 'si' },
   ]},
   { id: 'c7', texto: '¿Tiene usted alguna enfermedad respiratoria? (incluye EPOC, asma, hipertensión pulmonar)', abreSi: 'si', hijas: [
-    { id: 'c7a', texto: '¿Alguna vez su médico le ha comentado que el oxígeno en su sangre es insuficiente en reposo o durante la actividad física y/o que se recomienda la oxigenoterapia complementaria?', abreSi: 'si' },
-    { id: 'c7b', texto: '¿En caso de ser asmático, tiene usted síntomas actuales como opresión en el pecho, silbidos al respirar, esfuerzo respiratorio constante, tos persistente (más de 2 días a la semana) o ha necessitado medicación de rescate más de 2 veces la semana pasada?', abreSi: 'si' },
-    { id: 'c7c', texto: '¿Su médico alguna vez le ha dicho que tiene la presión arterial alta en los vasos sanguíneos de sus pulmones?', abreSi: 'si' },
-    { id: 'c7d', texto: '¿Tiene dificultades para controlar su enfermedad con medicación u otro tratamiento indicado por su médico? (Conteste NO si no está siendo tratado por esto con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c7a', texto: '¿Tiene dificultades para controlar su enfermedad con medicación u otro tratamiento indicado por su médico? (Conteste NO si no está siendo tratado por esto con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c7b', texto: '¿Alguna vez su médico le ha comentado que el oxígeno en su sangre es insuficiente en reposo o durante la actividad física y/o que se recomienda la oxigenoterapia complementaria?', abreSi: 'si' },
+    { id: 'c7c', texto: '¿En caso de ser asmático, tiene usted síntomas actuales como opresión en el pecho, silbidos al respirar, esfuerzo respiratorio constante, tos persistente (más de 2 días a la semana) o ha necesitado medicación de rescate más de 2 veces la semana pasada?', abreSi: 'si' },
+    { id: 'c7d', texto: '¿Su médico alguna vez le ha dicho que tiene la presión arterial alta en los vasos sanguíneos de sus pulmones?', abreSi: 'si' },
   ]},
   { id: 'c8', texto: '¿Tiene usted una lesión medular (vertebral)? (incluye tetraplejía y paraplejía)', abreSi: 'si', hijas: [
-    { id: 'c8a', texto: '¿Habitualmente, muestra usted baja presión sanguínea en reposo lo suficientemente significativa como para causar mareos, aturdimiento y/o desmayos?', abreSi: 'si' },
-    { id: 'c8b', texto: '¿Tiene dificultades para controlar su enfermedad con medicación u otro tratamiento indicado por su médico? (Conteste NO si no está siendo tratado por esto con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c8a', texto: '¿Tiene dificultades para controlar su enfermedad con medicación u otro tratamiento indicado por su médico? (Conteste NO si no está siendo tratado por esto con fármacos u otros medios)', abreSi: 'si' },
+    { id: 'c8b', texto: '¿Habitualmente, muestra usted baja presión sanguínea en reposo lo suficientemente significativa como para causar mareos, aturdimiento y/o desmayos?', abreSi: 'si' },
     { id: 'c8c', texto: '¿Le ha indicado su médico que usted presenta ataques repentinos de presión arterial alta (conocida como disreflexia autonómica)?', abreSi: 'si' },
   ]},
   { id: 'c9', texto: '¿Ha sufrido usted un accidente cerebro vascular (ACV)? Esto incluye el accidente isquémico transitorio', abreSi: 'si', hijas: [
-    { id: 'c9a', texto: '¿Ha experimentado pérdida de conocimiento o síncope como resultado de una lesión en la cabeza en los 12 últimos meses o ha sido diagnosticado con una concusión o comoción cerebral en los últimos 12 meses?', abreSi: 'si' },
+    { id: 'c9a', texto: '¿Tiene dificultades para controlar su enfermedad con medicación u otro tratamiento indicado por su médico? (Conteste NO si no está siendo tratado por esto con fármacos u otros medios)', abreSi: 'si' },
     { id: 'c9b', texto: '¿Tiene dificultades de movilidad o para caminar?', abreSi: 'si' },
     { id: 'c9c', texto: '¿Ha sufrido usted un accidente cerebro vascular o un trastorno neurológico o de los músculos en los últimos 6 meses?', abreSi: 'si' },
   ]},

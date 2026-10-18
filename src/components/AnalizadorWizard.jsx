@@ -254,7 +254,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
             })}
           </div>
         </header>
-        <main className="panel-area">{renderPaso()}</main>
+        <main className={`panel-area${paso === 12 || paso === 13 ? ' panel-area--ancha' : ''}`}>{renderPaso()}</main>
       </div>
     </div>
   );

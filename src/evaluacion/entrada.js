@@ -26,7 +26,11 @@ function mapearParqAFlujo(flat = {}) {
   const seguimiento = {};
   for (const c of CONDICIONES) {
     const v = flat[c.id];
-    const aplica = v === 'si' || v === 'no';
+    // Sin responder: no se inventa "no aplica"; el modulo lo reporta como faltante
+    // cuando hay algun Si en las generales.
+    if (v !== 'si' && v !== 'no') continue;
+    // Solo un "Si" abre las subpreguntas; un "No" significa que la condicion no aplica.
+    const aplica = v === 'si';
     const resp = {};
     if (aplica) {
       for (const h of (c.hijas ?? [])) {

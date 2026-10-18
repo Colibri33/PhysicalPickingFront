@@ -81,19 +81,19 @@ export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostra
       <h3 className="section-subtitle">Hábitos del último mes</h3>
       <div className="breq-lista">
         <div className={cls('p1')}>
-          <p className="breq-texto">1. Durante el último mes, ¿cuál ha sido, normalmente, su hora de acostarse?</p>
+          <p className="breq-texto">1. ¿A qué hora se acostó normalmente por la noche?</p>
           <input className="field-input" type="time" value={respuestas.p1 ?? ''} onChange={e => handle('p1', e.target.value)} />
         </div>
         <div className={cls('p2')}>
-          <p className="breq-texto">2. Durante el último mes, ¿cuánto tiempo habrá tardado en dormirse, normalmente, las noches del último mes? (Apunte el tiempo en minutos)</p>
+          <p className="breq-texto">2. ¿Cuánto tiempo se demoró en quedarse dormido en promedio? (minutos)</p>
           <input className="field-input" type="number" min={0} max={1440} step={1} value={respuestas.p2 ?? ''} onChange={e => handle('p2', e.target.value === '' ? undefined : Number(e.target.value))} />
         </div>
         <div className={cls('p3')}>
-          <p className="breq-texto">3. Durante el último mes, ¿a qué hora se ha levantado habitualmente por la mañana?</p>
+          <p className="breq-texto">3. ¿A qué hora se levantó habitualmente por la mañana?</p>
           <input className="field-input" type="time" value={respuestas.p3 ?? ''} onChange={e => handle('p3', e.target.value)} />
         </div>
         <div className={cls('p4')}>
-          <p className="breq-texto">4. Durante el último mes, ¿cuántas horas calcula que habrá dormido verdaderamente cada noche durante el último mes? (El tiempo puede ser diferente al que usted permanezca en la cama)</p>
+          <p className="breq-texto">4. ¿Cuántas horas durmió cada noche? (puede ser diferente al tiempo en cama)</p>
           <input className="field-input" type="number" min={0} max={24} step={0.5} value={respuestas.p4 ?? ''} onChange={e => handle('p4', e.target.value === '' ? undefined : Number(e.target.value))} />
         </div>
       </div>
@@ -115,19 +115,19 @@ export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostra
       <h3 className="section-subtitle">Medicación, somnolencia y calidad</h3>
       <div className="breq-lista">
         <div className={cls('p6')}>
-          <p className="breq-texto">6. Durante el último mes, ¿cuántas veces habrá tomado medicinas (por su cuenta o recetadas por el médico) para dormir?</p>
+          <p className="breq-texto">6. Durante el último mes, ¿cuántas veces ha tomado medicinas (recetadas o por su cuenta) para dormir?</p>
           <Opciones id="p6" valor={respuestas.p6} opciones={OPCIONES_FRECUENCIA} onChange={handle} />
         </div>
         <div className={cls('p7')}>
-          <p className="breq-texto">7. Durante el último mes, ¿cuántas veces ha sentido somnolencia mientras conducía, comía o desarrollaba alguna otra actividad?</p>
-          <Opciones id="p7" valor={respuestas.p7} opciones={OPCIONES_FRECUENCIA} onChange={handle} />
+          <p className="breq-texto">7. Durante el último mes, ¿cuántas veces ha tenido problemas para permanecer despierto mientras conducía, comía, trabajaba, estudiaba o desarrollaba alguna otra actividad social?</p>
+          <Opciones id="p7" valor={respuestas.p7} opciones={OPCIONES_PROBLEMA} onChange={handle} />
         </div>
         <div className={cls('p8')}>
-          <p className="breq-texto">8. Durante el último mes, ¿ha representado para usted mucho problema el «tener ánimos» para realizar alguna de las actividades detalladas en la pregunta anterior?</p>
+          <p className="breq-texto">8. Durante el último mes, ¿el ‘tener ánimos’, qué tanto problema le ha traído para realizar actividades como conducir, comer, trabajar, estudiar o alguna actividad social?</p>
           <Opciones id="p8" valor={respuestas.p8} opciones={OPCIONES_PROBLEMA} onChange={handle} />
         </div>
         <div className={cls('p9')}>
-          <p className="breq-texto">9. Durante el último mes, ¿cómo valoraría en conjunto, la calidad de su sueño?</p>
+          <p className="breq-texto">9. Durante el último mes, ¿cómo calificaría en conjunto la calidad de su sueño?</p>
           <Opciones id="p9" valor={respuestas.p9} opciones={OPCIONES_CALIDAD} onChange={handle} />
         </div>
       </div>
@@ -135,7 +135,7 @@ export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostra
       <h3 className="section-subtitle">10. Compañero de habitación</h3>
       <div className="breq-lista">
         <div className={cls('p10')}>
-          <p className="breq-texto">¿Duerme usted solo o acompañado?</p>
+          <p className="breq-texto">¿Tiene usted pareja o compañero/a de habitación?</p>
           <Opciones id="p10" valor={respuestas.p10} opciones={OPCIONES_CONVIVENCIA} onChange={handle} />
         </div>
         {conCompanero && (

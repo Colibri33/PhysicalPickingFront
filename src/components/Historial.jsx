@@ -9,6 +9,8 @@ import {
   descargarInformePdf,
 } from '../auth/authService';
 import { generarPdfMisDatos } from '../utils/informeMisDatosPdf';
+import { AlertaAntecedentes } from './PlanAdaptacion';
+import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad';
 
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 
@@ -159,12 +161,32 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               </button>
             </div>
 
-            {r.interpretacion?.recomendacion && (
-              <div className="interp-recomendacion" style={{ marginBottom: '1rem' }}>
-                <span className="interp-label">Recomendacion</span>
-                <p style={{ fontSize: '.82rem' }}>{r.interpretacion.recomendacion}</p>
-              </div>
-            )}
+            {/* R-SEG-04: alerta por antecedente de lesión. En registros
+                anteriores a la regla se deriva de los antecedentes guardados. */}
+            <AlertaAntecedentes alertas={[
+              (r.evaluacion?.informe?.seguridad?.alertas ?? []).find(a => a.codigo === 'ANTECEDENTE_LESION')
+                ?? alertaAntecedenteLesion(r.complementarias?.resultado?.antecedentes),
+            ].filter(Boolean)} />
+
+            {(() => {
+              // Con el flujo nuevo la recomendación sale del DecisionEngine
+              // (familia firme, Estado 3 o datos faltantes); el texto del
+              // modelo heredado solo se usa en registros sin ese bloque.
+              const rk = r.evaluacion?.etapas?.ranking;
+              const plan = r.evaluacion?.etapas?.planAdaptacion;
+              const texto = rk?.familias && 'recomendada' in rk
+                ? (rk.recomendada
+                  ? `Recomendación firme: ${rk.recomendada.nombre ?? rk.recomendada.id} (${rk.recomendada.porcentaje ?? '—'}% de compatibilidad).`
+                  : plan?.estado === 3 ? `Estado 3 · ${plan.nombre}: ${plan.motivo}`
+                    : plan?.tipo === 'datos_insuficientes' ? plan.motivo : null)
+                : r.interpretacion?.recomendacion;
+              return texto ? (
+                <div className="interp-recomendacion" style={{ marginBottom: '1rem' }}>
+                  <span className="interp-label">Recomendacion</span>
+                  <p style={{ fontSize: '.82rem' }}>{texto}</p>
+                </div>
+              ) : null;
+            })()}
 
             {Array.isArray(r.evaluacion?.etapas?.ranking?.familias) && r.evaluacion.etapas.ranking.familias.length > 0 && (
               <>
@@ -173,11 +195,11 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
                   {r.evaluacion.etapas.ranking.familias.slice(0, 5).map(f => (
                     <div key={f.id} className="modal-bar-row">
                       <div className="modal-bar-meta">
-                        <span>{f.nombre ?? f.id}</span>
+                        <span>{f.nombre ?? f.id}{f.firme === false ? ' (no recomendable)' : ''}</span>
                         <strong>{f.porcentaje ?? '—'}{f.porcentaje !== null && f.porcentaje !== undefined ? '%' : ''}</strong>
                       </div>
                       <div className="modal-bar-track">
-                        <div className="modal-bar-fill" style={{ width: `${f.porcentaje ?? 0}%`, background: '#5B3FE0' }} />
+                        <div className="modal-bar-fill" style={{ width: `${f.porcentaje ?? 0}%`, background: f.firme === false ? '#c9c3e3' : '#5B3FE0' }} />
                       </div>
                     </div>
                   ))}

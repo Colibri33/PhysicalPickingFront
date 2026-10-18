@@ -1,8 +1,8 @@
 /* ─── StepFisicas.jsx v7 ───
    Batería física: dinamometría (suma ambas manos), salto, flexibilidad,
    equilibrio bilateral y resistencia aeróbica (Léger, último
-   nivel/palier alcanzado, solo si el PAR-Q+ lo autoriza; estimación de
-   VO2max pendiente). */
+   nivel máximo alcanzado, entero, solo si el PAR-Q+ lo autoriza; el
+   VO2máx se estima y califica en evaluacion/normalizacion/leger.js). */
 import { useState } from 'react';
 import VariableInput from './VariableInput';
 import { VARS_FISICAS, EQUILIBRIO_POR_PIERNA_MAX, FUERZA_POR_MANO_MAX, validarFormularioVariables, normalizarValor, esNivelLegerValido } from '../logic/modelo';
@@ -158,10 +158,10 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
     );
 
     // Resistencia aeróbica (Léger): obligatoria solo si está autorizada.
-    // Se registra el último nivel/palier alcanzado (0-21, admite medios niveles).
+    // Se registra el nivel máximo alcanzado (entero 1-21).
     const palierNum = Number(palier);
     const palierOk = !legerAutorizado || (palier !== '' && esNivelLegerValido(palierNum));
-    if (!palierOk) mapaExtra.leger = `Resistencia aeróbica (Léger): registra el último nivel alcanzado (0-${LEGER_PALIER_MAX}, admite medios niveles como 3.5).`;
+    if (!palierOk) mapaExtra.leger = `Resistencia aeróbica (Léger): registra el nivel máximo alcanzado (número entero de 1 a ${LEGER_PALIER_MAX}).`;
 
     if (!ok || mapaExtra.equilibrio || mapaExtra.fuerza || mapaExtra.leger) {
       const mapa = { ...mapaExtra };
@@ -238,18 +238,18 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       {legerAutorizado ? (
         <div className={`norm-row mt-lg${errores.leger ? ' norm-row--error' : ''}`}>
           <div className="norm-meta">
-            <span className="norm-name">Resistencia aeróbica (Léger course navette 20 m) — último nivel alcanzado</span>
-            <span className="norm-rango">0 – {LEGER_PALIER_MAX} · prueba máxima autorizada por PAR-Q+</span>
+            <span className="norm-name">Resistencia aeróbica (Léger course navette 20 m) — nivel máximo alcanzado</span>
+            <span className="norm-rango">1 – {LEGER_PALIER_MAX} (número entero) · prueba máxima autorizada por PAR-Q+</span>
           </div>
           <div className="norm-input-row">
             <input
-              className="norm-input" type="number" min={0} max={LEGER_PALIER_MAX} step={0.5}
+              className="norm-input" type="number" min={1} max={LEGER_PALIER_MAX} step={1}
               value={palier} onChange={e => handleLeger(e.target.value)}
-              aria-label="Último nivel Léger alcanzado"
+              aria-label="Nivel máximo Léger alcanzado"
             />
             <span className="norm-unit">nivel</span>
           </div>
-          <p className="panel-desc" style={{ margin: 0 }}>La estimación de VO2max y sus baremos propios están pendientes: el nivel se conserva sin calificar.</p>
+          <p className="panel-desc" style={{ margin: 0 }}>Con el nivel alcanzado se estima el VO2máx (ecuación de Léger et al., 1988) y se califica con el baremo propio de PhysicalPicking por sexo (provisional).</p>
           {errores.leger && <p className="norm-error">{errores.leger}</p>}
         </div>
       ) : (
