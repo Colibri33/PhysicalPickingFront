@@ -5,6 +5,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { useState, useEffect, useCallback } from 'react';
+import { leerModoInvitado, guardarModoInvitado, borrarBorrador } from './utils/borrador';
 import PantallaAuth          from './components/PantallaAuth';
 import PantallaConsentimiento from './components/PantallaConsentimiento';
 import PantallaRecuperarContrasena from './components/PantallaRecuperarContrasena';
@@ -17,7 +18,7 @@ import { supabase } from './supabaseClient';
 export default function App() {
   /* ── Sesión ── */
   const [usuarioActual, setUsuarioActual] = useState(null); // Object | null
-  const [modoInvitado,  setModoInvitado]  = useState(false);
+  const [modoInvitado,  setModoInvitado]  = useState(() => leerModoInvitado());
   const [sesionLista,   setSesionLista]   = useState(false); // evita flash de auth
   const [consentimientoOk, setConsentimientoOk] = useState(false);
 
@@ -58,6 +59,7 @@ export default function App() {
   /* ── Handlers de auth ── */
   async function handleLoginExitoso(usuario) {
     setUsuarioActual(usuario);
+    guardarModoInvitado(false);
     setModoInvitado(false);
     setConsentimientoOk(await tieneConsentimientoVigente());
     mostrarToast(`Bienvenido, ${usuario.nombre}.`, 'success');
@@ -65,11 +67,14 @@ export default function App() {
 
   function handleInvitado() {
     setModoInvitado(true);
+    guardarModoInvitado(true);
     setUsuarioActual(null);
     mostrarToast('Modo invitado — los datos se guardan localmente en este navegador.', 'info');
   }
 
   async function handleLogout() {
+    borrarBorrador(usuarioActual?.id ?? null);
+    guardarModoInvitado(false);
     await logout();
     setUsuarioActual(null);
     setModoInvitado(false);

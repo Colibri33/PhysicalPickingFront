@@ -1,6 +1,8 @@
 /* Historial.jsx v6 — edicion de registros + descarga PDF */
 import { useState } from 'react';
-import { VARS_FISICAS } from '../logic/modelo';
+import { VARS_FISICAS, estadoAnalisisInicial } from '../logic/modelo';
+import ResultadosConsolidado from './ResultadosConsolidado';
+import RecomendacionDeportes from './RecomendacionDeportes';
 import { EDAD_MIN, EDAD_MAX } from './StepParticipante';
 import {
   exportarMisDatos,
@@ -21,6 +23,37 @@ function descargarBlob(blob, nombreArchivo) {
   a.download = nombreArchivo;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* Reconstruye el estado `analisis` del asistente a partir de un registro
+   guardado, para reutilizar las mismas pantallas del informe final. */
+function analisisDesdeRegistro(r) {
+  const base = estadoAnalisisInicial();
+  const claves = ['participante', 'parq', 'complementarias', 'breq', 'barreras', 'ipaq', 'psqi', 'leger', 'realesF', 'fisicas', 'antropometricas', 'cuestionarios'];
+  const a = { ...base };
+  for (const k of claves) if (r[k] && typeof r[k] === 'object') a[k] = { ...base[k], ...r[k] };
+  return a;
+}
+
+function DetalleAnalisis({ registro, onVolver, onEditarPdf }) {
+  const [vista, setVista] = useState('informe');
+  const analisis = analisisDesdeRegistro(registro);
+  return (
+    <div>
+      <div className="action-row" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button className="btn btn-outline" onClick={onVolver} type="button">← Volver a la lista</button>
+        <button className="btn btn-outline" onClick={onEditarPdf} type="button">Editar datos / PDF</button>
+        <span className="hist-count" style={{ marginLeft: 'auto' }}>{registro.participante.nombre} · {registro.fecha}</span>
+      </div>
+      <div className="action-row" style={{ marginBottom: '1rem' }}>
+        <button className={`btn ${vista === 'informe' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setVista('informe')} type="button">Informe final</button>
+        <button className={`btn ${vista === 'reco' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setVista('reco')} type="button">Recomendación deportiva</button>
+      </div>
+      {vista === 'informe'
+        ? <ResultadosConsolidado analisis={analisis} />
+        : <RecomendacionDeportes analisis={analisis} />}
+    </div>
+  );
 }
 
 function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostrarToast }) {
@@ -232,7 +265,8 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
 }
 
 export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual, mostrarToast, onLogout, onHistorialActualizado }) {
-  const [detalle, setDetalle] = useState(null);
+  const [detalle, setDetalle] = useState(null);   // modal (editar / PDF)
+  const [verId, setVerId] = useState(null);         // analisis completo
 
   async function handleExportar() {
     try {
@@ -259,6 +293,24 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
   function handleActualizado(registroActualizado) {
     setDetalle(registroActualizado);
     onHistorialActualizado?.(registroActualizado);
+  }
+
+  const regVisto = verId != null ? historial.find(r => r.id === verId) : null;
+  if (regVisto) {
+    return (
+      <div className="panel-card">
+        <DetalleAnalisis registro={regVisto} onVolver={() => setVerId(null)} onEditarPdf={() => setDetalle(regVisto)} />
+        {detalle && (
+          <ModalDetalle
+            registro={detalle}
+            onClose={() => setDetalle(null)}
+            usuarioId={usuarioActual?.id ?? null}
+            mostrarToast={mostrarToast}
+            onActualizado={handleActualizado}
+          />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -297,7 +349,7 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
               const topNombre = topMotor?.nombre ?? topMotor?.id ?? topHeredado?.nombre ?? null;
               const topPct = topMotor?.porcentaje ?? topHeredado?.afinidad ?? null;
               return (
-              <button key={r.id} className="hist-card" onClick={() => setDetalle(r)} type="button">
+              <button key={r.id} className="hist-card" onClick={() => { setVerId(r.id); window.scrollTo({ top: 0 }); }} type="button">
                 <span className="hist-num">#{historial.length - i}</span>
                 <div className="hist-info">
                   <div className="hist-name">{r.participante.nombre}</div>

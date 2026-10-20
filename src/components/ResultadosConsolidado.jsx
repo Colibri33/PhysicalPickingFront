@@ -13,6 +13,8 @@ import ParticipantStrip from './ParticipantStrip';
 import RadarChart       from './RadarChart';
 import EstadoFlujoEvaluacion from './EstadoFlujoEvaluacion';
 import MapaCorporalBrechas from './MapaCorporalBrechas';
+import AsistenteIA from './AsistenteIA';
+import { construirResumenIA } from '../ia/resumenIA';
 import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
 import {
   VARS_FISICAS,
@@ -47,6 +49,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
     () => ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis)),
     [analisis],
   );
+  const resumenIA = useMemo(() => construirResumenIA(analisis, flujo), [analisis, flujo]);
   const ranking = flujo.etapas.ranking.familias;
   const lider = ranking?.[0] ?? null;
   // Solo una familia firme puede presentarse como recomendación (R-DEC-03).
@@ -252,16 +255,22 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         )}
       </div>
 
-      {/* ── Acciones ── */}
+      <AsistenteIA resumen={resumenIA} />
+
+      {/* ── Acciones (omitidas en la vista de solo lectura del historial) ── */}
+      {(onGuardar || onNuevo || onContinuar) && (
       <div className="action-row mt-lg">
-        <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">
-          {guardando ? 'Guardando...' : analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
-        </button>
+        {onGuardar && (
+          <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">
+            {guardando ? 'Guardando...' : analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
+          </button>
+        )}
         {onContinuar && (
           <button className="btn btn-primary" onClick={onContinuar} type="button">Ver recomendacion deportiva →</button>
         )}
-        <button className="btn btn-outline" onClick={onNuevo} type="button">＋ Nuevo analisis</button>
+        {onNuevo && <button className="btn btn-outline" onClick={onNuevo} type="button">＋ Nuevo analisis</button>}
       </div>
+      )}
     </div>
   );
 }

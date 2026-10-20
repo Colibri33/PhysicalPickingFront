@@ -9,7 +9,9 @@
    - Navegación automática al completar cada bloque
    - Panel lateral conservado
 */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { leerBorrador, guardarBorrador, borrarBorrador } from '../utils/borrador';
+import { generarAnalisisDemo } from '../utils/rellenoDemo';
 import Sidebar, { PASO_HISTORIAL } from './Sidebar';
 import StepParticipante      from './StepParticipante';
 import StepParq              from './StepParq';
@@ -65,12 +67,16 @@ const TITULOS = {
 const TOTAL_PASOS = 13;
 
 export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarToast, onLogout }) {
-  const [paso,        setPaso]      = useState(1);
-  const [pasoMax,     setPasoMax]   = useState(1);
+  // Borrador: al refrescar la pagina se recupera el analisis en curso.
+  const borradorInicial = useRef(undefined);
+  if (borradorInicial.current === undefined) borradorInicial.current = leerBorrador(usuarioActual?.id ?? null);
+  const b0 = borradorInicial.current;
+  const [paso,        setPaso]      = useState(b0?.paso ?? 1);
+  const [pasoMax,     setPasoMax]   = useState(b0?.pasoMax ?? 1);
   const [sidebarOpen, setSidebar]   = useState(false);
-  const [analisis,    setAnalisis]  = useState(estadoAnalisisInicial());
+  const [analisis,    setAnalisis]  = useState(b0?.analisis ?? estadoAnalisisInicial());
   const [historial,   setHistorial] = useState([]);
-  const [analisisGuardado, setAnalisisGuardado] = useState(false);
+  const [analisisGuardado, setAnalisisGuardado] = useState(b0?.analisisGuardado ?? false);
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
@@ -78,6 +84,23 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
     leerHistorial(usuarioActual?.id ?? null).then(h => { if (!cancelado) setHistorial(h); });
     return () => { cancelado = true; };
   }, [usuarioActual]);
+
+  // Guardar el borrador en cada cambio (solo si ya hay algo escrito).
+  useEffect(() => {
+    if (!analisis.participante?.nombre && pasoMax <= 1) return;
+    guardarBorrador(usuarioActual?.id ?? null, { analisis, paso, pasoMax, analisisGuardado });
+  }, [analisis, paso, pasoMax, analisisGuardado, usuarioActual]);
+
+  // Demo: rellena TODO con datos coherentes y deja listo el informe.
+  function rellenarDemo() {
+    if (analisis.participante?.nombre && !window.confirm('Esto reemplaza los datos actuales con datos de ejemplo. ¿Continuar?')) return;
+    setAnalisis(generarAnalisisDemo());
+    setAnalisisGuardado(false);
+    setPasoMax(13);
+    setPaso(12);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    mostrarToast('Datos de demostración cargados. Puedes revisar cualquier paso.', 'success');
+  }
 
   function irA(n) {
     if (n > pasoMax && n !== PASO_HISTORIAL) return;
@@ -163,6 +186,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
   }
 
   function nuevoAnalisis() {
+    borrarBorrador(usuarioActual?.id ?? null);
     setAnalisis(estadoAnalisisInicial());
     setAnalisisGuardado(false);
     setPaso(1);
@@ -247,6 +271,10 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
               <span className="tb-paso">Paso {paso} de {TOTAL_PASOS}</span>
             )}
           </div>
+          <button type="button" className="btn-demo" onClick={rellenarDemo}
+            title="Rellena todos los pasos con datos de ejemplo coherentes (para exposiciones)">
+            ⚡ Rellenar demo
+          </button>
           <div className="step-dots">
             {Array.from({ length: TOTAL_PASOS }, (_, i) => {
               const n = i + 1;
@@ -254,7 +282,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
             })}
           </div>
         </header>
-        <main className={`panel-area${paso === 12 || paso === 13 ? ' panel-area--ancha' : ''}`}>{renderPaso()}</main>
+        <main className={`panel-area${paso === 12 || paso === 13 || paso === PASO_HISTORIAL ? ' panel-area--ancha' : ''}`}>{renderPaso()}</main>
       </div>
     </div>
   );

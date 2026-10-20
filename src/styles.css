@@ -1428,3 +1428,28 @@ button.ranking-item:focus-visible { outline: 2px solid var(--purple); outline-of
 .rend3d--compacto .rend3d-badge { width: 28px; height: 28px; }
 .rend-aviso { font-size: .72rem; color: var(--ink3); margin: .45rem 0 0; line-height: 1.35; }
 @media (prefers-reduced-motion: reduce) { .rend3d-spin { animation-duration: 2s; } }
+
+/* Boton de demostracion (rellena todo con datos coherentes) */
+.btn-demo {
+  margin-left: auto; flex: none;
+  border: 1px dashed var(--purple, #6d28d9); background: transparent; color: var(--purple, #6d28d9);
+  border-radius: 999px; padding: .4rem .9rem; font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+}
+.btn-demo:hover { background: rgba(109, 40, 217, .08); }
+@media (max-width: 640px) { .btn-demo { padding: .35rem .6rem; font-size: .72rem; } }
+
+/* Asistente IA */
+.ia-box { margin-top: 1.5rem; padding: 1.1rem; border: 1px solid var(--border); border-radius: 14px; background: var(--white); }
+.ia-texto { white-space: pre-wrap; line-height: 1.55; font-size: .9rem; margin: .6rem 0 .8rem; }
+.ia-aviso { font-size: .72rem; opacity: .65; margin: .6rem 0 0; }
+.ia-error { color: #b42318; font-size: .85rem; margin: .5rem 0; }
+.ia-chat { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: .5rem; margin: .6rem 0; }
+.ia-msg { padding: .55rem .8rem; border-radius: 12px; font-size: .88rem; line-height: 1.45; white-space: pre-wrap; max-width: 88%; }
+.ia-user { align-self: flex-end; background: #5B3FE0; color: #fff; }
+.ia-assistant { align-self: flex-start; background: rgba(91, 63, 224, .08); }
+.ia-msg-error { background: #fdecea; color: #b42318; }
+.ia-sugs { display: flex; flex-wrap: wrap; gap: .4rem; }
+.ia-sug { border: 1px solid var(--border); background: transparent; border-radius: 999px; padding: .35rem .75rem; font: inherit; font-size: .78rem; cursor: pointer; }
+.ia-sug:hover { background: rgba(91, 63, 224, .08); }
+.ia-form { display: flex; gap: .5rem; }
+.ia-form .field-input { flex: 1; }
