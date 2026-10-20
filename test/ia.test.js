@@ -15,3 +15,14 @@ test('resumen IA: completo, pequeño y sin nombre', () => {
   assert.ok(r.recomendacion.top5.length > 0);
   assert.ok(r.estilosYHabitos.ipaq && r.estilosYHabitos.psqi && r.estilosYHabitos.motivacionBreq);
 });
+
+import { parseInterpretacion } from '../src/ia/parseInterpretacion.js';
+test('parseInterpretacion: JSON, cercas de código y respaldo en texto plano', () => {
+  const json = { lectura: 'Perfil equilibrado.', fortalezas: ['a', 'b'], mejorar: ['c'], deportes: [{ nombre: 'Ciclismo', porcentaje: '60', razon: 'x' }], precauciones: [] };
+  const r = parseInterpretacion('```json\n' + JSON.stringify(json) + '\n```');
+  assert.equal(r.lectura, 'Perfil equilibrado.');
+  assert.equal(r.deportes[0].porcentaje, 60);
+  assert.deepEqual(r.fortalezas, ['a', 'b']);
+  assert.equal(parseInterpretacion('Texto libre sin JSON').textoPlano, 'Texto libre sin JSON');
+  assert.equal(parseInterpretacion('{roto').textoPlano, '{roto');
+});

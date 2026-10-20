@@ -2,6 +2,60 @@
    Recibe el resumen ya calculado; la IA solo redacta/explica, no calcula. */
 import { useState, useRef, useEffect } from 'react';
 import { interpretarConIA, preguntarALaIA } from '../ia/iaService';
+import { parseInterpretacion } from '../ia/parseInterpretacion';
+
+function Lista({ items, icono }) {
+  return (
+    <ul className="ia-lista">
+      {items.map((t, i) => <li key={i}><span className="ia-ico" aria-hidden="true">{icono}</span><span>{t}</span></li>)}
+    </ul>
+  );
+}
+
+export function InterpretacionVista({ data }) {
+  if (data.textoPlano !== undefined) return <div className="ia-texto">{data.textoPlano}</div>;
+  return (
+    <div className="ia-interp">
+      {data.lectura && (
+        <div className="ia-lectura">
+          <span className="ia-etq">Lectura general</span>
+          <p>{data.lectura}</p>
+        </div>
+      )}
+      {(data.fortalezas.length > 0 || data.mejorar.length > 0) && (
+        <div className="ia-cols">
+          {data.fortalezas.length > 0 && (
+            <div className="ia-card ia-card--ok"><h4>💪 Fortalezas</h4><Lista items={data.fortalezas} icono="✓" /></div>
+          )}
+          {data.mejorar.length > 0 && (
+            <div className="ia-card ia-card--mejora"><h4>🎯 A mejorar</h4><Lista items={data.mejorar} icono="↗" /></div>
+          )}
+        </div>
+      )}
+      {data.deportes.length > 0 && (
+        <div>
+          <span className="ia-etq">Deportes recomendados</span>
+          <div className="ia-deportes">
+            {data.deportes.map((d, i) => (
+              <div key={i} className="ia-dep">
+                <div className="ia-dep-top">
+                  <span className="ia-dep-n">{i + 1}</span>
+                  <strong>{d.nombre}</strong>
+                  {d.porcentaje !== null && <span className="ia-dep-pct">{d.porcentaje}%</span>}
+                </div>
+                {d.porcentaje !== null && <div className="ia-dep-bar"><div style={{ width: `${Math.min(100, Math.max(0, d.porcentaje))}%` }} /></div>}
+                {d.razon && <p>{d.razon}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data.precauciones.length > 0 && (
+        <div className="ia-card ia-card--aviso"><h4>⚠️ Precauciones</h4><Lista items={data.precauciones} icono="•" /></div>
+      )}
+    </div>
+  );
+}
 
 const SUGERENCIAS = ['¿Por qué me recomendaron este deporte?', '¿Qué debo mejorar primero?', '¿Qué significa el mapa 3D?', '¿Qué es el test de Léger?'];
 
@@ -46,7 +100,7 @@ export default function AsistenteIA({ resumen }) {
       {error && <p className="ia-error">{error}</p>}
       {interp && (
         <>
-          <div className="ia-texto">{interp}</div>
+          <InterpretacionVista data={parseInterpretacion(interp)} />
           <button className="btn btn-outline" onClick={generar} disabled={cargando} type="button">{cargando ? 'Analizando…' : 'Regenerar'}</button>
         </>
       )}
