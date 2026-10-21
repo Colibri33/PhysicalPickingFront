@@ -104,7 +104,7 @@ export default function AsistenteIA({ resumen }) {
           <button className="btn btn-outline" onClick={generar} disabled={cargando} type="button">{cargando ? 'Analizando…' : 'Regenerar'}</button>
         </>
       )}
-      <p className="ia-aviso">Texto generado por IA (DeepSeek) a partir de tus resultados. Es orientativo y no sustituye a un profesional de salud o entrenador.</p>
+      <p className="ia-aviso">Texto generado por IA a partir de tus resultados. Es orientativo y no sustituye a un profesional de salud o entrenador.</p>
 
       <h3 className="section-subtitle mt-lg">Asistente: resuelve tus dudas</h3>
       <div className="ia-chat">
