@@ -1,5 +1,6 @@
 /* StepBreq.jsx — BREQ-3 (paso 3). Escala 0-4, 23 afirmaciones obligatorias. */
 import { useState } from 'react';
+import Icono from './Icono';
 import { ITEMS_BREQ, NOMBRES_SUBESCALAS, faltantesBreq, calcularBreq } from '../logic/breq';
 
 const OPCIONES = [0, 1, 2, 3, 4];
@@ -91,7 +92,7 @@ export default function StepBreq({ analisis, updateAnalisis, onContinuar, mostra
       )}
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

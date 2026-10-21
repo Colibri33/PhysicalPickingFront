@@ -20,6 +20,7 @@
    igual que con el input numerico anterior).
 */
 import { normalizarValor } from '../logic/modelo';
+import Icono from './Icono';
 
 export default function VariableInput({ variable: v, valor, onChange, error }) {
   const respondido = valor !== '' && valor !== null && valor !== undefined;
@@ -38,7 +39,7 @@ export default function VariableInput({ variable: v, valor, onChange, error }) {
           Rango: {v.minimo} – {v.maximo} {v.unidad}
           &nbsp;·&nbsp;
           <span className="norm-dir">
-            {v.direccion === 'mayor_mejor' ? '↑ mayor = mejor' : '↓ menor = mejor'}
+            {v.direccion === 'mayor_mejor' ? <><Icono n="arriba" /> mayor = mejor</> : <><Icono n="abajo" /> menor = mejor</>}
           </span>
         </span>
       </div>

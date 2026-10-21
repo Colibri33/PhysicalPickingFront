@@ -4,6 +4,7 @@
    nivel máximo alcanzado, entero, solo si el PAR-Q+ lo autoriza; el
    VO2máx se estima y califica en evaluacion/normalizacion/leger.js). */
 import { useState } from 'react';
+import Icono from './Icono';
 import VariableInput from './VariableInput';
 import { VARS_FISICAS, EQUILIBRIO_POR_PIERNA_MAX, FUERZA_POR_MANO_MAX, validarFormularioVariables, normalizarValor, esNivelLegerValido } from '../logic/modelo';
 import { evaluarParq } from '../logic/parq';
@@ -20,7 +21,7 @@ function InputFuerza({ realesF, onCambio, error }) {
       <div className="norm-meta">
         <span className="norm-name">Fuerza prensil (suma ambas manos)</span>
         <span className="norm-rango">
-          {v.minimo} – {v.maximo} {v.unidad} · <span className="norm-dir">↑ mayor = mejor</span>
+          {v.minimo} – {v.maximo} {v.unidad} · <span className="norm-dir"><Icono n="arriba" /> mayor = mejor</span>
         </span>
       </div>
       <p className="panel-desc" style={{ margin: 0 }}>
@@ -58,7 +59,7 @@ function InputEquilibrio({ realesF, onCambio, error }) {
       <div className="norm-meta">
         <span className="norm-name">Equilibrio (suma ambas piernas)</span>
         <span className="norm-rango">
-          0 – {v.maximo} {v.unidad} · <span className="norm-dir">↓ menor = mejor</span>
+          0 – {v.maximo} {v.unidad} · <span className="norm-dir"><Icono n="abajo" /> menor = mejor</span>
         </span>
       </div>
       <p className="panel-desc" style={{ margin: 0 }}>
@@ -212,7 +213,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       </p>
 
       <div className="rango-note">
-        <span className="rango-note-icon">ℹ</span>
+        <span className="rango-note-icon"><Icono n="info" /></span>
         <span>
           Los rangos de referencia cubren el espectro de población general activa.
           Valores fuera del rango se aceptan como advertencia y se normalizan al límite más cercano.
@@ -254,7 +255,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
         </div>
       ) : (
         <div className="rango-note mt-lg">
-          <span className="rango-note-icon">ℹ</span>
+          <span className="rango-note-icon"><Icono n="info" /></span>
           <span>Resistencia aeróbica (Léger) no autorizada automáticamente por el PAR-Q+: esta prueba máxima se omite y quedará sin dato (no penaliza).</span>
         </div>
       )}
@@ -269,7 +270,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       )}
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

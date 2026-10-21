@@ -1,5 +1,6 @@
 /* StepIpaq.jsx — IPAQ versión corta (paso 5). Días 0-7 + tiempo por día. */
 import { useState } from 'react';
+import Icono from './Icono';
 import { ITEMS_IPAQ, faltantesIpaq, calcularIpaq } from '../logic/ipaq';
 
 const DIAS = [0, 1, 2, 3, 4, 5, 6, 7];
@@ -157,7 +158,7 @@ export default function StepIpaq({ analisis, updateAnalisis, onContinuar, mostra
       )}
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

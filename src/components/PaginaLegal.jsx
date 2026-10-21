@@ -8,6 +8,7 @@
    tiempos de conservacion exactos), se deja marcado explicitamente
    con [PENDIENTE DE REVISION LEGAL] en vez de inventar informacion.
 */
+import Icono from './Icono';
 const FECHA_ACTUALIZACION = '2026-08';
 
 function Seccion({ titulo, children }) {
@@ -207,7 +208,7 @@ export default function PaginaLegal({ tipo, onVolver }) {
   return (
     <div className="legal-screen">
       <div className="legal-card">
-        <button className="legal-volver" onClick={onVolver} type="button">← Volver</button>
+        <button className="legal-volver" onClick={onVolver} type="button"><Icono n="izquierda" /> Volver</button>
         <h2 className="legal-title">PHYSICALPICKING</h2>
         <h3 className="legal-subtitle">{titulo}</h3>
 

@@ -1,5 +1,6 @@
 /* StepPsqi.jsx — PSQI / ICSP-VC (paso 6). Calidad de sueño último mes. */
 import { useState } from 'react';
+import Icono from './Icono';
 import {
   OPCIONES_FRECUENCIA, OPCIONES_PROBLEMA, OPCIONES_CALIDAD, OPCIONES_CONVIVENCIA,
   ITEMS_PSQI_PERTURBACIONES, ITEMS_PSQI_COMPANERO,
@@ -169,7 +170,7 @@ export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostra
       )}
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

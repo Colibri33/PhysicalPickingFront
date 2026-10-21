@@ -1521,3 +1521,28 @@ button.ranking-item:focus-visible { outline: 2px solid var(--purple); outline-of
 .chat-enviar { width: 2.7rem; height: 2.7rem; border: 0; border-radius: 50%; color: #fff; font-size: 1.05rem; cursor: pointer; background: linear-gradient(135deg, #5B3FE0, #2F7CF6); }
 .chat-enviar:disabled { opacity: .45; cursor: default; }
 @media (max-width: 640px) { .chat-burbuja { max-width: 90%; } .chat-sugs { padding-left: 0; } }
+
+/* Iconos SVG (sustituyen a emojis y símbolos) */
+.ico { width: 1.1em; height: 1.1em; flex: none; vertical-align: -0.18em; }
+.btn .ico:last-child, .menu-toggle .ico { margin-left: 0; }
+.btn .ico:last-child:not(:only-child) { margin-left: .4em; }
+.btn .ico:first-child:not(:only-child) { margin-right: .4em; }
+.auth-back .ico, .legal-volver .ico, .btn-demo .ico, .ia-box .btn .ico { margin-right: .4em; }
+.ia-box .btn .ico { margin-left: 0; }
+.ia-lectura-ico { display: inline-flex; font-size: 1.9rem; }
+.ia-cap-ico { display: inline-flex; font-size: 1.5rem; color: #5B3FE0; }
+.ia-fila-ico .ico { width: .95em; height: .95em; vertical-align: 0; stroke-width: 2.6; }
+.ia-aviso-ico { display: inline-flex; font-size: 1.2rem; color: #c27a00; flex: none; }
+.chat-avatar .ico { width: 1.25em; height: 1.25em; vertical-align: 0; }
+.chat-avatar--sm { color: #5B3FE0; }
+.chat-enviar .ico { vertical-align: 0; margin: 0; }
+.compare-arrow { display: inline-flex; align-items: center; }
+.rango-note-icon .ico, .ranking-disclaimer-icon .ico { vertical-align: -0.2em; }
+.norm-dir .ico { width: .95em; height: .95em; margin-right: .2em; }
+
+.chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.chat-avatar { overflow: hidden; background: #fff; }
+.chat-avatar--sm { background: #fff; }
+.sidebar-brand { display: inline-flex; align-items: center; gap: .6rem; }
+.sidebar-brand-img { width: 2rem; height: 2rem; border-radius: 8px; display: block; }
+.auth-logo-img { display: block; width: min(240px, 70%); height: auto; margin: 0 auto .25rem; }

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { interpretarConIA, preguntarALaIA } from '../ia/iaService';
 import { parseInterpretacion } from '../ia/parseInterpretacion';
 import { capacidadesParaMostrar } from '../ia/capacidades';
+import Icono from './Icono';
 
 const SUGERENCIAS = ['¿Por qué me recomendaron este deporte?', '¿Qué debo mejorar primero?', '¿Qué significa el mapa 3D?', '¿Qué es el test de Léger?'];
 
@@ -11,7 +12,7 @@ const SUGERENCIAS = ['¿Por qué me recomendaron este deporte?', '¿Qué debo me
 function Fila({ icono, titulo, detalle, tono }) {
   return (
     <li className={`ia-fila ia-fila--${tono}`}>
-      <span className="ia-fila-ico" aria-hidden="true">{icono}</span>
+      <span className="ia-fila-ico" aria-hidden="true"><Icono n={icono} /></span>
       <span>{titulo && <strong>{titulo}</strong>}{titulo && detalle ? ' · ' : ''}{detalle}</span>
     </li>
   );
@@ -26,7 +27,7 @@ function Capacidades({ capacidades }) {
       <div className="ia-caps">
         {lista.map(c => (
           <div key={c.id} className="ia-cap">
-            <span className="ia-cap-ico" aria-hidden="true">{c.icono}</span>
+            <span className="ia-cap-ico" aria-hidden="true"><Icono n={c.icono} /></span>
             <div className="ia-cap-info">
               <span className="ia-cap-n">{c.nombre}</span>
               <div className={`ia-seg ia-nivel-${c.paso}`} aria-label={c.nivel}>
@@ -41,13 +42,15 @@ function Capacidades({ capacidades }) {
   );
 }
 
+const AVATAR_IA = `${import.meta.env?.BASE_URL ?? '/'}brand/ia-avatar.jpg`;
+
 export function InterpretacionVista({ data, capacidades }) {
   if (data.textoPlano !== undefined) return <div className="ia-texto">{data.textoPlano}</div>;
   return (
     <div className="ia-interp">
       {data.resumen && (
         <div className="ia-lectura">
-          <span className="ia-lectura-ico" aria-hidden="true">✨</span>
+          <span className="ia-lectura-ico" aria-hidden="true"><Icono n="destellos" /></span>
           <p>{data.resumen}</p>
         </div>
       )}
@@ -57,13 +60,13 @@ export function InterpretacionVista({ data, capacidades }) {
           {data.fuertes.length > 0 && (
             <div className="ia-card ia-card--ok">
               <h4>Lo que haces bien</h4>
-              <ul className="ia-filas">{data.fuertes.map((x, i) => <Fila key={i} icono="✓" tono="ok" {...x} />)}</ul>
+              <ul className="ia-filas">{data.fuertes.map((x, i) => <Fila key={i} icono="check" tono="ok" {...x} />)}</ul>
             </div>
           )}
           {data.mejorar.length > 0 && (
             <div className="ia-card ia-card--mejora">
               <h4>Para mejorar</h4>
-              <ul className="ia-filas">{data.mejorar.map((x, i) => <Fila key={i} icono="↗" tono="mejora" {...x} />)}</ul>
+              <ul className="ia-filas">{data.mejorar.map((x, i) => <Fila key={i} icono="tendencia" tono="mejora" {...x} />)}</ul>
             </div>
           )}
         </div>
@@ -87,7 +90,7 @@ export function InterpretacionVista({ data, capacidades }) {
         </div>
       )}
       {data.precaucion && (
-        <div className="ia-aviso-box"><span aria-hidden="true">⚠️</span><p>{data.precaucion}</p></div>
+        <div className="ia-aviso-box"><span className="ia-aviso-ico" aria-hidden="true"><Icono n="alerta" /></span><p>{data.precaucion}</p></div>
       )}
     </div>
   );
@@ -156,7 +159,7 @@ export default function AsistenteIA({ resumen }) {
       <h3 className="section-subtitle">Interpretación con IA</h3>
       {!interp && (
         <button className="btn btn-primary" onClick={generar} disabled={cargando} type="button">
-          {cargando ? 'Analizando…' : '✨ Generar interpretación con IA'}
+          {cargando ? 'Analizando…' : <><Icono n="destellos" /> Generar interpretación con IA</>}
         </button>
       )}
       {error && <p className="ia-error">{error}</p>}
@@ -171,7 +174,7 @@ export default function AsistenteIA({ resumen }) {
       <h3 className="section-subtitle mt-lg">Asistente: resuelve tus dudas</h3>
       <div className="chat">
         <div className="chat-head">
-          <span className="chat-avatar" aria-hidden="true">🤖</span>
+          <span className="chat-avatar" aria-hidden="true"><img src={AVATAR_IA} alt="" /></span>
           <div>
             <strong>Asistente PhysicalPicking</strong>
             <span className="chat-estado"><i /> En línea</span>
@@ -179,7 +182,7 @@ export default function AsistenteIA({ resumen }) {
         </div>
         <div className="chat-caja" ref={cajaRef}>
           <div className="chat-fila chat-fila--bot">
-            <span className="chat-avatar chat-avatar--sm" aria-hidden="true">🤖</span>
+            <span className="chat-avatar chat-avatar--sm" aria-hidden="true"><img src={AVATAR_IA} alt="" /></span>
             <div className="chat-burbuja chat-burbuja--bot"><p>¡Hola! Soy tu asistente. Puedo explicarte tus resultados en palabras simples. ¿Qué quieres saber?</p></div>
           </div>
           {msgs.length === 0 && (
@@ -189,7 +192,7 @@ export default function AsistenteIA({ resumen }) {
           )}
           {msgs.map((m, i) => (
             <div key={i} className={`chat-fila chat-fila--${m.role === 'user' ? 'yo' : 'bot'}`}>
-              {m.role !== 'user' && <span className="chat-avatar chat-avatar--sm" aria-hidden="true">🤖</span>}
+              {m.role !== 'user' && <span className="chat-avatar chat-avatar--sm" aria-hidden="true"><img src={AVATAR_IA} alt="" /></span>}
               <div className={`chat-burbuja chat-burbuja--${m.role === 'user' ? 'yo' : 'bot'}${m.error ? ' chat-burbuja--error' : ''}`}>
                 {m.role === 'user' ? <p>{m.content}</p> : <Mensaje texto={m.content} />}
                 <span className="chat-hora">{m.hora}</span>
@@ -198,14 +201,14 @@ export default function AsistenteIA({ resumen }) {
           ))}
           {enviando && (
             <div className="chat-fila chat-fila--bot">
-              <span className="chat-avatar chat-avatar--sm" aria-hidden="true">🤖</span>
+              <span className="chat-avatar chat-avatar--sm" aria-hidden="true"><img src={AVATAR_IA} alt="" /></span>
               <div className="chat-burbuja chat-burbuja--bot"><span className="chat-puntos"><i /><i /><i /></span></div>
             </div>
           )}
         </div>
         <form className="chat-form" onSubmit={e => { e.preventDefault(); enviar(); }}>
           <input className="chat-input" value={texto} maxLength={1000} placeholder="Escribe tu pregunta…" onChange={e => setTexto(e.target.value)} />
-          <button className="chat-enviar" type="submit" disabled={enviando || !texto.trim()} aria-label="Enviar">➤</button>
+          <button className="chat-enviar" type="submit" disabled={enviando || !texto.trim()} aria-label="Enviar"><Icono n="enviar" /></button>
         </form>
       </div>
     </section>

@@ -3,6 +3,7 @@
    18 a 30 anos (poblacion objetivo para la bateria EUROFIT que se
    incorporara en la siguiente fase). Todos los campos son
    obligatorios y se validan antes de avanzar. */
+import Icono from './Icono';
 const EDAD_MIN = 18;
 const EDAD_MAX = 30;
 export { EDAD_MIN, EDAD_MAX };
@@ -87,7 +88,7 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
       </div>
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

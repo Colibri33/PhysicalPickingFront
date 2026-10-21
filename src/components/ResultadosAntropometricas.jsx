@@ -1,4 +1,5 @@
 /* ─── ResultadosAntropometricas.jsx (antes ResultadosCorporales.jsx) ─── */
+import Icono from './Icono';
 import {
   VARS_FISICAS,
   REGLAS_AJUSTE_ANTROPOMETRICO,
@@ -88,7 +89,7 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
       )}
 
       {/* Comparación base → ajustado antropometricamente */}
-      <h3 className="section-subtitle mt-lg">Base normalizada → tras ajuste antropometrico</h3>
+      <h3 className="section-subtitle mt-lg">Base normalizada <Icono n="derecha" /> tras ajuste antropometrico</h3>
       <div className="compare-list">
         {VARS_FISICAS.map(v => {
           const base = analisis.fisicas[v.id];
@@ -100,7 +101,7 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
                 <span className="compare-lbl">{v.nombre}</span>
                 <div className="compare-vals">
                   <span className="compare-base">Base: {base}%</span>
-                  <span className="compare-arrow">→</span>
+                  <span className="compare-arrow"><Icono n="derecha" /></span>
                   <span className="compare-adj">{adj}%</span>
                   {diff !== 0 && (
                     <span className={`compare-delta ${diff > 0 ? 'delta-pos' : 'delta-neg'}`}>
@@ -125,7 +126,7 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
       </div>
 
       <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar} type="button">
-        Ver perfil consolidado →
+        Ver perfil consolidado <Icono n="derecha" />
       </button>
     </div>
   );

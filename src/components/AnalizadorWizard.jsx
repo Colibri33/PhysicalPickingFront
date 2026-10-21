@@ -10,6 +10,7 @@
    - Panel lateral conservado
 */
 import { useState, useEffect, useRef } from 'react';
+import Icono from './Icono';
 import { leerBorrador, guardarBorrador, borrarBorrador } from '../utils/borrador';
 import { generarAnalisisDemo } from '../utils/rellenoDemo';
 import Sidebar, { PASO_HISTORIAL } from './Sidebar';
@@ -263,7 +264,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
       />
       <div className="main-content">
         <header className="topbar">
-          <button className="menu-toggle" onClick={() => setSidebar(o => !o)} aria-label="Menu" type="button">☰</button>
+          <button className="menu-toggle" onClick={() => setSidebar(o => !o)} aria-label="Menu" type="button"><Icono n="menu" /></button>
           <div className="topbar-info">
             <span className="tb-section">{seccion}</span>
             <span className="tb-title">{titulo}</span>
@@ -273,7 +274,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           </div>
           <button type="button" className="btn-demo" onClick={rellenarDemo}
             title="Rellena todos los pasos con datos de ejemplo coherentes (para exposiciones)">
-            ⚡ Rellenar demo
+            <Icono n="rayo" /> Rellenar demo
           </button>
           <div className="step-dots">
             {Array.from({ length: TOTAL_PASOS }, (_, i) => {

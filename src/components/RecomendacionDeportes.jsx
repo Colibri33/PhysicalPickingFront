@@ -6,6 +6,7 @@
    Estado 3 o los datos faltantes (R-DEC-03).
 */
 import { useMemo, useState } from 'react';
+import Icono from './Icono';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
 import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
@@ -69,7 +70,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       )}
       {liderProvisional && (
         <div className="ranking-disclaimer" style={{ marginBottom: '1rem' }}>
-          <span className="ranking-disclaimer-icon">⚠</span>
+          <span className="ranking-disclaimer-icon"><Icono n="alerta" /></span>
           <span>
             {lider.nombre ?? lider.id} tiene {lider.porcentaje ?? '—'}% pero no es recomendable:
             {' '}{textoMotivosNoFirme(lider).join('; ')}.
@@ -142,7 +143,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       )}
 
       <div className="rec-disclaimer">
-        <span className="ranking-disclaimer-icon">ℹ</span>
+        <span className="ranking-disclaimer-icon"><Icono n="info" /></span>
         <span>
           Las recomendaciones muestran compatibilidad ordinal con cada familia
           (demanda = nivel mínimo) y sus brechas fisiológicas relevantes según
@@ -159,7 +160,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       <div className="action-row mt-lg">
         {onGuardar && (
           <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">
-            {guardando ? 'Guardando...' : analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
+            {guardando ? 'Guardando...' : analisisGuardado ? <>Analisis guardado <Icono n="check" /></> : 'Guardar en historial'}
           </button>
         )}
         {onNuevo && (

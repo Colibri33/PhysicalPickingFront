@@ -9,6 +9,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { useState } from 'react';
+import Icono from './Icono';
 import { solicitarRecuperacionContrasena, actualizarContrasena } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
 import CampoContrasena from './CampoContrasena';
@@ -77,7 +78,7 @@ export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, m
     <div className="auth-screen">
       <FondoAnimado />
       <div className="auth-card">
-        <button className="auth-back" onClick={onVolver} type="button">← Volver</button>
+        <button className="auth-back" onClick={onVolver} type="button"><Icono n="izquierda" /> Volver</button>
         <h2 className="auth-title">Recuperar contraseña</h2>
         {enviado ? (
           <p className="auth-subtitle">

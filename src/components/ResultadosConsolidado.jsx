@@ -9,6 +9,7 @@
       cuando ninguna familia es firme (R-DEC-03)
 */
 import { useMemo, useState } from 'react';
+import Icono from './Icono';
 import ParticipantStrip from './ParticipantStrip';
 import RadarChart       from './RadarChart';
 import EstadoFlujoEvaluacion from './EstadoFlujoEvaluacion';
@@ -139,7 +140,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
       {/* ── Compatibilidad por familia (DecisionEngine) ── */}
       <h3 className="section-subtitle mt-lg">Compatibilidad por familia deportiva</h3>
       <div className="ranking-disclaimer">
-        <span className="ranking-disclaimer-icon">ℹ</span>
+        <span className="ranking-disclaimer-icon"><Icono n="info" /></span>
         <span>
           Porcentaje de requisitos cumplidos por familia (demanda = nivel mínimo).
           Sin dato en una capacidad no penaliza el porcentaje: baja la cobertura.
@@ -262,11 +263,11 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
       <div className="action-row mt-lg">
         {onGuardar && (
           <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">
-            {guardando ? 'Guardando...' : analisisGuardado ? 'Analisis guardado ✓' : 'Guardar en historial'}
+            {guardando ? 'Guardando...' : analisisGuardado ? <>Analisis guardado <Icono n="check" /></> : 'Guardar en historial'}
           </button>
         )}
         {onContinuar && (
-          <button className="btn btn-primary" onClick={onContinuar} type="button">Ver recomendacion deportiva →</button>
+          <button className="btn btn-primary" onClick={onContinuar} type="button">Ver recomendacion deportiva <Icono n="derecha" /></button>
         )}
         {onNuevo && <button className="btn btn-outline" onClick={onNuevo} type="button">＋ Nuevo analisis</button>}
       </div>

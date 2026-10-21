@@ -2,11 +2,11 @@
    con los niveles que ya dio el motor (no depende de la IA). */
 const NIVELES = ['Muy bajo', 'Bajo', 'Medio', 'Alto', 'Muy alto'];
 const ETIQUETAS = {
-  fuerza: ['💪', 'Fuerza de agarre'],
-  fuerza_explosiva: ['🦵', 'Salto y potencia'],
-  vo2max: ['🫁', 'Resistencia'],
-  flexibilidad: ['🧘', 'Flexibilidad'],
-  equilibrio: ['⚖️', 'Equilibrio'],
+  fuerza: ['fuerza', 'Fuerza de agarre'],
+  fuerza_explosiva: ['salto', 'Salto y potencia'],
+  vo2max: ['resistencia', 'Resistencia'],
+  flexibilidad: ['flexibilidad', 'Flexibilidad'],
+  equilibrio: ['equilibrio', 'Equilibrio'],
 };
 
 export function capacidadesParaMostrar(capacidades = {}) {

@@ -2,6 +2,7 @@
    Elaboración propia: NO es PAR-Q+ oficial y se presenta como bloque separado.
    A. Antecedentes de lesiones · B. Limitaciones · C. Experiencia deportiva. */
 import { useState } from 'react';
+import Icono from './Icono';
 import {
   PREGUNTAS_ANTECEDENTES, NIVELES_EXPERIENCIA, MODALIDADES, HABILIDADES,
   PRUEBAS_BATERIA_UI, algunaLesion, faltantesComplementarias,
@@ -219,7 +220,7 @@ export default function StepComplementarias({ analisis, updateAnalisis, onContin
       </div>
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

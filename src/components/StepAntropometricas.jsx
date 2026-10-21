@@ -1,6 +1,7 @@
 /* ─── StepAntropometricas.jsx (antes StepCorporales.jsx) ───
    IMC (peso/talla) e ICC (cintura/cadera, WHO 2008) calculados en vivo. */
 import { calcularIMC, calcularICC, clasificarICC, RANGOS_ANTROPOMETRICOS } from '../logic/modelo';
+import Icono from './Icono';
 
 export default function StepAntropometricas({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const a = analisis.antropometricas;
@@ -103,7 +104,7 @@ export default function StepAntropometricas({ analisis, updateAnalisis, onContin
       </div>
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 /* StepBarreras.jsx — BBAQ-21 (paso 4). Selector de 4 niveles, 21 afirmaciones. */
 import { useState } from 'react';
+import Icono from './Icono';
 import { ITEMS_BARRERAS, DIMENSIONES_BARRERAS, OPCIONES_BARRERAS, faltantesBarreras, calcularBarreras } from '../logic/barreras';
 
 export default function StepBarreras({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
@@ -92,7 +93,7 @@ export default function StepBarreras({ analisis, updateAnalisis, onContinuar, mo
       )}
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

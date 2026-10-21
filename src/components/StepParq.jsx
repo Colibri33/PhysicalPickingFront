@@ -1,5 +1,6 @@
 /* StepParq.jsx — PAR-Q+ (paso 2). Selector Si/No con arbol condicional y poda. */
 import { useState } from 'react';
+import Icono from './Icono';
 import { todasVisibles, pendientes, evaluarParq, podarRespuestas, seccionCondicionesAbierta } from '../logic/parq';
 
 export default function StepParq({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
@@ -107,7 +108,7 @@ export default function StepParq({ analisis, updateAnalisis, onContinuar, mostra
       )}
 
       <button className="btn btn-primary btn-full mt-lg" onClick={handleContinuar} type="button">
-        Continuar →
+        Continuar <Icono n="derecha" />
       </button>
     </div>
   );

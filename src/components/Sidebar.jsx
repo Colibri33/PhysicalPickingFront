@@ -1,4 +1,5 @@
 /* Sidebar.jsx v11 — 13 pasos + historial */
+import Icono from './Icono';
 export const PASO_HISTORIAL = 14;
 
 const GRUPOS_SIDEBAR = [
@@ -42,8 +43,8 @@ export default function Sidebar({ paso, pasoMax, open, onClose, onNavegar, usuar
   return (
     <nav className={`sidebar${open ? ' open' : ''}`}>
       <div className="sidebar-header">
-        <span className="sidebar-logo">PhysicalPicking</span>
-        <button className="sidebar-close" onClick={onClose} type="button">✕</button>
+        <span className="sidebar-brand"><img src={`${import.meta.env?.BASE_URL ?? '/'}brand/icono.png`} alt="" className="sidebar-brand-img" /><span className="sidebar-logo">PhysicalPicking</span></span>
+        <button className="sidebar-close" onClick={onClose} type="button" aria-label="Cerrar menu"><Icono n="cerrar" /></button>
       </div>
       <div className="sidebar-user">
         {usuarioActual

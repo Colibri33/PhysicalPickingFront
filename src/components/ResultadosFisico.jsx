@@ -2,6 +2,7 @@
    Perfil físico: barras 0-100 (descriptivo heredado) + nivel AFISAL
    por capacidad desde el flujo de evaluación. */
 import { useMemo } from 'react';
+import Icono from './Icono';
 import BarraVariable    from './BarraVariable';
 import ParticipantStrip from './ParticipantStrip';
 import { VARS_FISICAS } from '../logic/modelo';
@@ -47,7 +48,7 @@ export default function ResultadosFisico({ analisis, onContinuar }) {
       </div>
 
       <button className="btn btn-primary btn-full mt-lg" onClick={onContinuar} type="button">
-        Ver ajustes antropometricos →
+        Ver ajustes antropometricos <Icono n="derecha" />
       </button>
     </div>
   );

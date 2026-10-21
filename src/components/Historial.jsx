@@ -1,5 +1,6 @@
 /* Historial.jsx v6 — edicion de registros + descarga PDF */
 import { useState } from 'react';
+import Icono from './Icono';
 import { VARS_FISICAS, estadoAnalisisInicial } from '../logic/modelo';
 import ResultadosConsolidado from './ResultadosConsolidado';
 import RecomendacionDeportes from './RecomendacionDeportes';
@@ -41,7 +42,7 @@ function DetalleAnalisis({ registro, onVolver, onEditarPdf }) {
   return (
     <div>
       <div className="action-row" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <button className="btn btn-outline" onClick={onVolver} type="button">← Volver a la lista</button>
+        <button className="btn btn-outline" onClick={onVolver} type="button"><Icono n="izquierda" /> Volver a la lista</button>
         <button className="btn btn-outline" onClick={onEditarPdf} type="button">Editar datos / PDF</button>
         <span className="hist-count" style={{ marginLeft: 'auto' }}>{registro.participante.nombre} · {registro.fecha}</span>
       </div>
@@ -164,7 +165,7 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
   return (
     <div className="modal-veil" onClick={onClose}>
       <div className="modal-box" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} type="button">✕</button>
+        <button className="modal-close" onClick={onClose} type="button" aria-label="Cerrar"><Icono n="cerrar" /></button>
         <h2 className="modal-title">{r.participante.nombre}</h2>
 
         {editando ? (
@@ -328,7 +329,7 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
       )}
       {!usuarioActual && (
         <div className="rango-note" style={{ marginBottom: '1rem' }}>
-          <span className="rango-note-icon">ℹ</span>
+          <span className="rango-note-icon"><Icono n="info" /></span>
           <span>
             Estas en modo invitado: este historial vive solo en este navegador. Si lo
             borras, cambias de navegador o de dispositivo, lo perderas de forma permanente.

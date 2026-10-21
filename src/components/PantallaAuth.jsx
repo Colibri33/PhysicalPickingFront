@@ -4,6 +4,7 @@
    ═══════════════════════════════════════════════════════════════ */
 
 import { useState } from 'react';
+import Icono from './Icono';
 import { login, registrar } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
 import CampoContrasena from './CampoContrasena';
@@ -58,8 +59,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
       <FondoAnimado />
       <div className="auth-card">
         <div className="auth-logo">
-          <span className="auth-logo-icon">◎</span>
-          <span className="auth-logo-text">PhysicalPicking</span>
+          <img className="auth-logo-img" src={`${import.meta.env?.BASE_URL ?? '/'}brand/logo-completo.png`} alt="Physical Picking" />
         </div>
         <p className="auth-subtitle">Sistema de evaluacion multivariable del rendimiento deportivo</p>
 
@@ -95,7 +95,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     <div className="auth-screen">
       <FondoAnimado />
       <div className="auth-card">
-        <button className="auth-back" onClick={() => setVista('inicio')} type="button">← Volver</button>
+        <button className="auth-back" onClick={() => setVista('inicio')} type="button"><Icono n="izquierda" /> Volver</button>
         <h2 className="auth-title">Iniciar sesion</h2>
 
         <form onSubmit={handleLogin} className="auth-form" autoComplete="on">
@@ -147,7 +147,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     <div className="auth-screen">
       <FondoAnimado />
       <div className="auth-card">
-        <button className="auth-back" onClick={() => setVista('inicio')} type="button">← Volver</button>
+        <button className="auth-back" onClick={() => setVista('inicio')} type="button"><Icono n="izquierda" /> Volver</button>
         <h2 className="auth-title">Crear cuenta</h2>
 
         <form onSubmit={handleRegistro} className="auth-form" autoComplete="on">
