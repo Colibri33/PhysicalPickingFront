@@ -20,9 +20,19 @@ import { parseInterpretacion } from '../src/ia/parseInterpretacion.js';
 test('parseInterpretacion: JSON, cercas de código y respaldo en texto plano', () => {
   const json = { lectura: 'Perfil equilibrado.', fortalezas: ['a', 'b'], mejorar: ['c'], deportes: [{ nombre: 'Ciclismo', porcentaje: '60', razon: 'x' }], precauciones: [] };
   const r = parseInterpretacion('```json\n' + JSON.stringify(json) + '\n```');
-  assert.equal(r.lectura, 'Perfil equilibrado.');
+  assert.equal(r.resumen, 'Perfil equilibrado.');
   assert.equal(r.deportes[0].porcentaje, 60);
-  assert.deepEqual(r.fortalezas, ['a', 'b']);
+  assert.deepEqual(r.fuertes.map(x => x.detalle), ['a', 'b']);
   assert.equal(parseInterpretacion('Texto libre sin JSON').textoPlano, 'Texto libre sin JSON');
   assert.equal(parseInterpretacion('{roto').textoPlano, '{roto');
+});
+
+test('parseInterpretacion: formato nuevo y compatibilidad con el anterior', () => {
+  const n = parseInterpretacion(JSON.stringify({ resumen: 'Buen perfil.', fuertes: [{ titulo: 'Resistencia', detalle: 'Muy alta' }], mejorar: [{ titulo: 'Flexibilidad', detalle: 'Estira' }], deportes: [{ nombre: 'Ciclismo', porcentaje: 80, razon: 'x' }], precaucion: 'Cuida el sueño' }));
+  assert.equal(n.fuertes[0].titulo, 'Resistencia');
+  assert.equal(n.precaucion, 'Cuida el sueño');
+  const v = parseInterpretacion(JSON.stringify({ lectura: 'Perfil.', fortalezas: ['a'], mejorar: ['b'], precauciones: ['c'], deportes: [] }));
+  assert.equal(v.resumen, 'Perfil.');
+  assert.deepEqual(v.fuertes, [{ titulo: '', detalle: 'a' }]);
+  assert.equal(v.precaucion, 'c');
 });
