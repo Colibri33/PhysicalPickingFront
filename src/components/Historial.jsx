@@ -8,7 +8,8 @@
  */
 import { useState } from 'react';
 import Icono from './Icono';
-import { VARS_FISICAS, estadoAnalisisInicial } from '../logic/modelo';
+import { VARS_FISICAS } from '../logic/modelo';
+import { analisisDesdeRegistro } from '../utils/analisisRegistro';
 import ResultadosConsolidado from './ResultadosConsolidado';
 import RecomendacionDeportes from './RecomendacionDeportes';
 import { EDAD_MIN, EDAD_MAX } from './StepParticipante';
@@ -19,6 +20,7 @@ import {
   descargarInformePdf,
 } from '../auth/authService';
 import { generarPdfMisDatos } from '../utils/informeMisDatosPdf';
+import { cargarRecursosPdf } from '../utils/recursosPdf';
 import { AlertaAntecedentes } from './PlanAdaptacion';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad';
 
@@ -37,17 +39,6 @@ function descargarBlob(blob, nombreArchivo) {
   a.download = nombreArchivo;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-/** Reconstruye el estado `analisis` desde un registro guardado para reutilizar las pantallas del informe.
- * @param {Object} r - Registro guardado.
- * @returns {Object} estado de análisis. */
-function analisisDesdeRegistro(r) {
-  const base = estadoAnalisisInicial();
-  const claves = ['participante', 'parq', 'complementarias', 'breq', 'barreras', 'ipaq', 'psqi', 'leger', 'realesF', 'fisicas', 'antropometricas', 'cuestionarios'];
-  const a = { ...base };
-  for (const k of claves) if (r[k] && typeof r[k] === 'object') a[k] = { ...base[k], ...r[k] };
-  return a;
 }
 
 /** Vista completa de un registro (informe o recomendación).
@@ -312,8 +303,10 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
 
   async function handleExportar() {
     try {
+      mostrarToast?.('Preparando tu PDF…', 'info');
       const datos = await exportarMisDatos();
-      const blob = generarPdfMisDatos(datos);
+      const recursos = await cargarRecursosPdf(datos);
+      const blob = generarPdfMisDatos(datos, recursos);
       descargarBlob(blob, 'mis-datos-physicalpicking.pdf');
       mostrarToast?.('Descarga de tus datos generada (PDF).', 'success');
     } catch (e) {

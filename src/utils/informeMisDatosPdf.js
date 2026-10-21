@@ -1,26 +1,30 @@
 /**
  * @module utils/informeMisDatosPdf
- * @description Genera en el navegador, con jsPDF, el PDF legible de "Mis datos" (derecho de acceso, Habeas Data) a partir del JSON de GET /arco/exportar.
+ * @description Genera en el navegador, con jsPDF, el PDF de "Mis datos" (derecho de acceso, Habeas Data): datos de la cuenta e informe final de cada participante evaluado.
  *
  * Principios SOLID aplicados:
- *  - S (Responsabilidad única): única razón de cambio es el contenido y el formato del PDF de Mis datos.
- *  - D (Inversión de dependencias): depende del contrato JSON del endpoint de exportación y de alertaAntecedenteLesion (evaluacion/reglas), sin recalcular reglas de seguridad.
- * Notas: el documento incluye portada de marca, guía de lectura, datos de cuenta, consentimientos y un informe explicado por cada evaluación guardada.
+ *  - S (Responsabilidad única): única razón de cambio es el contenido y el diseño del PDF de Mis datos.
+ *  - D (Inversión de dependencias): depende del JSON de GET /arco/exportar y de recursos gráficos ya resueltos (logo, robot, tipografías, imagen 3D); no accede a red ni DOM.
+ * Notas: no vuelca respuestas de cuestionarios; solo resultados finales. La identidad visual sigue la marca PhysicalPicking.
  */
 
 import { jsPDF } from 'jspdf';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad.js';
 
 const MORADO = [91, 63, 224];
-const TINTA = [31, 41, 55];
-const GRIS = [107, 114, 128];
-const LINEA = [229, 231, 235];
-const FONDO = [241, 240, 250];
-const BARRA_FONDO = [226, 224, 240];
+const MORADO_OSC = [44, 27, 107];
+const AZUL = [47, 92, 232];
+const CIAN = [34, 211, 238];
+const TINTA = [28, 18, 51];
+const GRIS = [91, 86, 120];
+const TARJETA = [243, 241, 253];
+const PISTA = [226, 222, 245];
+const AMBAR = [245, 158, 11];
 
 const MARGEN = 16;
 const ANCHO = 210 - MARGEN * 2;
-const PIE_Y = 288;
+const LIMITE_Y = 258;      // el robot de la esquina ocupa la franja inferior derecha
+const NIVEL_INDICE = { 'Muy bajo': 1, Bajo: 2, Medio: 3, Alto: 4, 'Muy alto': 5 };
 
 const ETIQUETAS_FISICAS = {
   fuerza: 'Fuerza prensil',
@@ -143,293 +147,414 @@ export function resumirRegistro(registro = {}) {
   };
 }
 
-/** Agrega una página si el contenido no cabe en el espacio restante.
- * @param {Object} doc - documento jsPDF.
- * @param {number} y - posición vertical actual en mm.
- * @param {number} [necesario] - alto requerido en mm.
- * @returns {number} posición vertical vigente. */
-function nuevaPaginaSiFalta(doc, y, necesario = 20) {
-  if (y + necesario > PIE_Y - 6) { doc.addPage(); return 20; }
-  return y;
+/** Mezcla linealmente dos colores RGB.
+ * @param {number[]} a - color inicial.
+ * @param {number[]} b - color final.
+ * @param {number} t - posición entre 0 y 1.
+ * @returns {number[]} color RGB resultante. */
+function mezclar(a, b, t) {
+  return a.map((v, i) => Math.round(v + (b[i] - v) * t));
 }
 
-/** Escribe un párrafo con ajuste de línea y salto de página automático.
- * @param {Object} doc - documento jsPDF.
- * @param {string} textoStr - texto a escribir.
- * @param {number} y - posición vertical actual en mm.
- * @param {Object} [opciones] - sangria, tamano, negrita, color, justificado, interlineado.
- * @returns {number} nueva posición vertical. */
-function parrafo(doc, textoStr, y, { sangria = 0, tamano = 10, negrita = false, color = TINTA, justificado = false, interlineado = 5.2 } = {}) {
-  doc.setFont('helvetica', negrita ? 'bold' : 'normal');
-  doc.setFontSize(tamano);
-  doc.setTextColor(...color);
-  const lineas = doc.splitTextToSize(textoStr, ANCHO - sangria);
-  for (const l of lineas) {
-    y = nuevaPaginaSiFalta(doc, y);
-    doc.text(l, MARGEN + sangria, y, justificado ? { align: 'justify', maxWidth: ANCHO - sangria } : {});
-    y += interlineado;
+/** Lienzo de página: mantiene el documento, la posición vertical y las tipografías de marca.
+ * Concentra las primitivas de dibujo para que el contenido del informe no dependa de jsPDF. */
+class Lienzo {
+  /** @param {Object} doc - documento jsPDF.
+   * @param {Object} recursos - logo, robot, fuentes y cuerpos 3D (todos opcionales). */
+  constructor(doc, recursos) {
+    this.doc = doc;
+    this.r = recursos || {};
+    this.propia = this.registrarFuentes();
+    this.y = 0;
   }
-  doc.setTextColor(...TINTA);
-  return y;
-}
 
-/** Escribe un título de sección con subrayado de marca.
- * @param {Object} doc - documento jsPDF.
- * @param {string} titulo - título de la sección.
- * @param {number} y - posición vertical actual en mm.
- * @returns {number} nueva posición vertical. */
-function seccion(doc, titulo, y) {
-  y = nuevaPaginaSiFalta(doc, y, 16);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12.5);
-  doc.setTextColor(...TINTA);
-  doc.text(titulo, MARGEN, y);
-  y += 2.5;
-  doc.setDrawColor(...MORADO);
-  doc.setLineWidth(0.9);
-  doc.line(MARGEN, y, MARGEN + 46, y);
-  return y + 6;
-}
-
-/** Dibuja una tabla etiqueta-valor con fondo alterno.
- * @param {Object} doc - documento jsPDF.
- * @param {Array<[string, *]>} filas - pares [etiqueta, valor].
- * @param {number} y - posición vertical actual en mm.
- * @returns {number} nueva posición vertical. */
-function tabla(doc, filas, y) {
-  filas.forEach(([k, v], i) => {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    const etiqueta = `${k}:  `;
-    const etiqW = doc.getTextWidth(etiqueta);
-    doc.setFont('helvetica', 'normal');
-    const lineas = doc.splitTextToSize(String(v), ANCHO - 4 - etiqW);
-    y = nuevaPaginaSiFalta(doc, y, lineas.length * 5.2 + 4);
-    if (i % 2 === 0) {
-      doc.setFillColor(...FONDO);
-      doc.rect(MARGEN, y - 4.2, ANCHO, lineas.length * 5.2 + 3, 'F');
+  /** Registra las tipografías de marca si llegaron; si no, se usa Helvetica.
+   * @returns {boolean} true si se registraron. */
+  registrarFuentes() {
+    const f = this.r.fuentes;
+    if (!f?.poppins || !f?.poppinsNegrita || !f?.fredoka) return false;
+    try {
+      this.doc.addFileToVFS('Poppins-Regular.ttf', f.poppins);
+      this.doc.addFont('Poppins-Regular.ttf', 'Poppins', 'normal');
+      this.doc.addFileToVFS('Poppins-SemiBold.ttf', f.poppinsNegrita);
+      this.doc.addFont('Poppins-SemiBold.ttf', 'Poppins', 'bold');
+      this.doc.addFileToVFS('Fredoka-SemiBold.ttf', f.fredoka);
+      this.doc.addFont('Fredoka-SemiBold.ttf', 'Fredoka', 'normal');
+      return true;
+    } catch {
+      return false;
     }
-    doc.setTextColor(...TINTA);
-    doc.setFont('helvetica', 'bold');
-    doc.text(etiqueta, MARGEN + 2, y);
-    doc.setFont('helvetica', 'normal');
-    lineas.forEach((l, j) => {
-      doc.text(l, MARGEN + 2 + (j === 0 ? etiqW : 0), y);
-      if (j < lineas.length - 1) y += 5.2;
-    });
-    y += 7;
-  });
-  return y + 2;
-}
-
-/** Dibuja una barra de porcentaje con su etiqueta.
- * @param {Object} doc - documento jsPDF.
- * @param {string} etiqueta - texto de la barra.
- * @param {number|null} porcentaje - valor 0-100.
- * @param {number} y - posición vertical actual en mm.
- * @param {number[]} [color] - color RGB de relleno.
- * @returns {number} nueva posición vertical. */
-function barra(doc, etiqueta, porcentaje, y, color = MORADO) {
-  y = nuevaPaginaSiFalta(doc, y, 12);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.setTextColor(...TINTA);
-  doc.text(etiqueta, MARGEN, y);
-  const pctTxt = porcentaje === null || porcentaje === undefined ? '—' : `${porcentaje}%`;
-  doc.setFont('helvetica', 'bold');
-  doc.text(pctTxt, MARGEN + ANCHO, y, { align: 'right' });
-  y += 2.2;
-  const pistaX = MARGEN;
-  const pistaW = ANCHO;
-  doc.setFillColor(...BARRA_FONDO);
-  doc.roundedRect(pistaX, y, pistaW, 3.4, 1.2, 1.2, 'F');
-  const pct = Math.max(0, Math.min(100, Number(porcentaje) || 0));
-  if (pct > 0) {
-    doc.setFillColor(...color);
-    doc.roundedRect(pistaX, y, (pistaW * pct) / 100, 3.4, 1.2, 1.2, 'F');
   }
-  return y + 8.5;
-}
 
-/** Pinta la portada de marca.
- * @param {Object} doc - documento jsPDF.
- * @param {number} totalEvaluaciones - cantidad de evaluaciones incluidas.
- * @param {string} generadoEn - fecha de generación ya formateada.
- * @returns {number} posición vertical inicial del contenido. */
-function pintarPortada(doc, totalEvaluaciones, generadoEn) {
-  doc.setFillColor(...MORADO);
-  doc.rect(0, 0, 210, 44, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(21);
-  doc.text('PHYSICALPICKING', MARGEN, 18);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.text('Mis datos personales · Derecho de acceso (Habeas Data, Ley 1581 de 2012)', MARGEN, 27);
-  doc.setFontSize(9.5);
-  doc.text(`Documento generado: ${generadoEn}  ·  Evaluaciones incluidas: ${totalEvaluaciones}`, MARGEN, 35);
-  doc.setTextColor(...TINTA);
-  return 52;
-}
+  /** Selecciona tipografía, tamaño y color.
+   * @param {'normal'|'negrita'|'titulo'} estilo - estilo tipográfico.
+   * @param {number} tamano - tamaño en puntos.
+   * @param {number[]} [color] - color RGB del texto. */
+  fuente(estilo, tamano, color = TINTA) {
+    const d = this.doc;
+    if (this.propia) d.setFont(estilo === 'titulo' ? 'Fredoka' : 'Poppins', estilo === 'negrita' ? 'bold' : 'normal');
+    else d.setFont('helvetica', estilo === 'normal' ? 'normal' : 'bold');
+    d.setFontSize(tamano);
+    d.setTextColor(...color);
+  }
 
-/** Pinta el pie con aviso de uso y numeración en todas las páginas.
- * @param {Object} doc - documento jsPDF.
- * @returns {void} */
-function pintarPie(doc) {
-  const total = doc.getNumberOfPages();
-  for (let i = 1; i <= total; i++) {
-    doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(...GRIS);
-    doc.text('Documento personal e intransferible · Uso informativo: no es un diagnóstico clínico.', MARGEN, PIE_Y + 6);
-    doc.text(`Página ${i} de ${total}`, 210 - MARGEN, PIE_Y + 6, { align: 'right' });
-    doc.setTextColor(...TINTA);
+  /** Dibuja una imagen codificada si existe.
+   * @param {string|null} dato - data URL o base64 PNG.
+   * @param {number} x - posición horizontal en mm.
+   * @param {number} y - posición vertical en mm.
+   * @param {number} w - ancho en mm.
+   * @param {number} h - alto en mm. */
+  imagen(dato, x, y, w, h) {
+    if (!dato) return;
+    const url = dato.startsWith('data:') ? dato : `data:image/png;base64,${dato}`;
+    try { this.doc.addImage(url, 'PNG', x, y, w, h); } catch { /* la imagen es opcional */ }
+  }
+
+  /** Franja superior con el degradado de marca (morado, azul, cian). */
+  franjaMarca() {
+    const pasos = 70;
+    const w = 210 / pasos;
+    for (let i = 0; i < pasos; i++) {
+      const t = i / (pasos - 1);
+      const c = t < 0.55 ? mezclar(MORADO, AZUL, t / 0.55) : mezclar(AZUL, CIAN, (t - 0.55) / 0.45);
+      this.doc.setFillColor(...c);
+      this.doc.rect(i * w, 0, w + 0.2, 5, 'F');
+    }
+  }
+
+  /** Abre una página nueva con franja de marca y logo reducido.
+   * @param {string} etiqueta - texto del encabezado derecho. */
+  paginaNueva(etiqueta) {
+    this.doc.addPage();
+    this.franjaMarca();
+    this.imagen(this.r.logo, MARGEN, 9, 24, 13);
+    this.fuente('normal', 8.5, GRIS);
+    this.doc.text(etiqueta, 210 - MARGEN, 16, { align: 'right' });
+    this.y = 30;
+  }
+
+  /** Salta de página si lo que sigue no cabe.
+   * @param {number} necesario - alto requerido en mm.
+   * @param {string} etiqueta - encabezado de la página nueva. */
+  asegurar(necesario, etiqueta) {
+    if (this.y + necesario > LIMITE_Y) this.paginaNueva(etiqueta);
+  }
+
+  /** Escribe un título de sección con una marca de color a su izquierda.
+   * @param {string} titulo - texto del título. */
+  seccion(titulo) {
+    this.asegurar(16, this.etiqueta);
+    this.doc.setFillColor(...MORADO);
+    this.doc.roundedRect(MARGEN, this.y - 4.6, 1.8, 6.2, 0.9, 0.9, 'F');
+    this.fuente('titulo', 13, MORADO_OSC);
+    this.doc.text(titulo, MARGEN + 4.5, this.y);
+    this.y += 7;
+  }
+
+  /** Escribe un párrafo con salto de página automático.
+   * @param {string} contenido - texto.
+   * @param {Object} [o] - opciones: x, ancho, tamano, estilo, color, interlineado.
+   * @returns {void} */
+  parrafo(contenido, { x = MARGEN, ancho = ANCHO, tamano = 9.5, estilo = 'normal', color = TINTA, interlineado = 4.9 } = {}) {
+    this.fuente(estilo, tamano, color);
+    for (const l of this.doc.splitTextToSize(String(contenido), ancho)) {
+      this.asegurar(interlineado + 1, this.etiqueta);
+      this.doc.text(l, x, this.y);
+      this.y += interlineado;
+    }
+  }
+
+  /** Mide cuántas líneas ocupa un texto.
+   * @param {string} contenido - texto.
+   * @param {number} ancho - ancho disponible en mm.
+   * @param {number} tamano - tamaño en puntos.
+   * @returns {number} cantidad de líneas. */
+  lineas(contenido, ancho, tamano = 9.5) {
+    this.fuente('normal', tamano);
+    return this.doc.splitTextToSize(String(contenido), ancho).length;
+  }
+
+  /** Tarjeta de fondo suave.
+   * @param {number} x - posición horizontal en mm.
+   * @param {number} y - posición vertical en mm.
+   * @param {number} w - ancho en mm.
+   * @param {number} h - alto en mm.
+   * @param {number[]} [color] - color de relleno. */
+  tarjeta(x, y, w, h, color = TARJETA) {
+    this.doc.setFillColor(...color);
+    this.doc.roundedRect(x, y, w, h, 3, 3, 'F');
+  }
+
+  /** Barra de progreso redondeada.
+   * @param {number} x - posición horizontal en mm.
+   * @param {number} y - posición vertical en mm.
+   * @param {number} w - ancho en mm.
+   * @param {number} fraccion - valor entre 0 y 1.
+   * @param {number[]} color - color de relleno. */
+  barra(x, y, w, fraccion, color) {
+    this.doc.setFillColor(...PISTA);
+    this.doc.roundedRect(x, y, w, 2.8, 1.4, 1.4, 'F');
+    const f = Math.max(0, Math.min(1, fraccion));
+    if (f > 0) {
+      this.doc.setFillColor(...color);
+      this.doc.roundedRect(x, y, Math.max(2.8, w * f), 2.8, 1.4, 1.4, 'F');
+    }
+  }
+
+  /** Etiqueta redondeada de color con texto blanco, alineada a la derecha de x.
+   * @param {string} contenido - texto de la etiqueta.
+   * @param {number} xDerecha - borde derecho en mm.
+   * @param {number} y - línea base en mm.
+   * @param {number[]} color - color de fondo. */
+  chip(contenido, xDerecha, y, color) {
+    this.fuente('negrita', 8, [255, 255, 255]);
+    const w = this.doc.getTextWidth(contenido) + 6;
+    this.doc.setFillColor(...color);
+    this.doc.roundedRect(xDerecha - w, y - 4.2, w, 6, 3, 3, 'F');
+    this.doc.text(contenido, xDerecha - w / 2, y, { align: 'center' });
+  }
+
+  /** Dibuja en todas las páginas el pie de marca y el robot de la esquina inferior derecha. */
+  pintarPies() {
+    const total = this.doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++) {
+      this.doc.setPage(i);
+      this.imagen(this.r.robot, 210 - 8 - 33, 297 - 3 - 37, 33, 37);
+      this.fuente('normal', 7.5, GRIS);
+      this.doc.text('PhysicalPicking · Documento personal e intransferible. Uso informativo: no es un diagnóstico clínico.', MARGEN, 289);
+      this.doc.text(`Página ${i} de ${total}`, MARGEN, 293.5);
+    }
   }
 }
 
-/** Genera el PDF de Mis datos con cuenta, consentimientos y el informe de cada evaluación.
- * @param {Object} [datos] - JSON de /arco/exportar (perfil, consentimientos, resultados, generadoEn).
- * @returns {Blob} documento PDF. */
-export function generarPdfMisDatos(datos = {}) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const resultados = Array.isArray(datos.resultados) ? datos.resultados : [];
-  const generadoEn = formatearFechaISO(datos.generadoEn || new Date().toISOString());
+/** Pinta la cabecera de la primera página: franja, logo, título y fecha.
+ * @param {Lienzo} L - lienzo de página.
+ * @param {number} totalParticipantes - participantes incluidos.
+ * @param {string} generadoEn - fecha de generación ya formateada. */
+function cabeceraPortada(L, totalParticipantes, generadoEn) {
+  L.franjaMarca();
+  L.imagen(L.r.logo, MARGEN, 11, 52, 28);
+  L.fuente('titulo', 21, MORADO_OSC);
+  L.doc.text('Mis datos personales', 210 - MARGEN, 24, { align: 'right' });
+  L.fuente('normal', 9, GRIS);
+  L.doc.text('Informe de tus evaluaciones', 210 - MARGEN, 30, { align: 'right' });
+  L.doc.text(`Generado el ${generadoEn} · ${totalParticipantes} ${totalParticipantes === 1 ? 'participante' : 'participantes'}`, 210 - MARGEN, 35, { align: 'right' });
+  L.y = 50;
+}
 
-  let y = pintarPortada(doc, resultados.length, generadoEn);
-
-  y = seccion(doc, 'Cómo leer este documento', y);
-  y = parrafo(doc,
-    'Este documento reúne toda la información que PhysicalPicking conserva sobre tu cuenta, en lenguaje claro. ' +
-    'La sección 1 describe tu cuenta, la 2 tus autorizaciones de tratamiento de datos y la 3 detalla cada ' +
-    'evaluación guardada: quién fue evaluado, su perfil físico, la compatibilidad con cada familia deportiva, ' +
-    'las condiciones de seguridad y los resultados de los cuestionarios. Los porcentajes indican requisitos ' +
-    'cumplidos según la exigencia de cada familia: a mayor porcentaje, mayor afinidad con tu perfil actual.',
-    y, { justificado: true });
-  y += 3;
-
-  y = seccion(doc, '1. Datos de la cuenta', y);
+/** Tarjeta con los datos de la cuenta y la autorización de tratamiento.
+ * @param {Lienzo} L - lienzo de página.
+ * @param {Object} datos - JSON de exportación. */
+function bloqueCuenta(L, datos) {
   const perfil = datos.perfil || {};
-  y = tabla(doc, [
+  const cons = Array.isArray(datos.consentimientos) ? datos.consentimientos : [];
+  const filas = [
     ['Nombre', texto(perfil.nombre ?? perfil.full_name)],
     ['Correo', texto(perfil.email ?? perfil.correo)],
     ['Cuenta creada', formatearFechaISO(perfil.created_at ?? perfil.creado_en)],
-  ], y);
-
-  y = seccion(doc, '2. Autorizaciones de tratamiento (Habeas Data)', y);
-  const cons = Array.isArray(datos.consentimientos) ? datos.consentimientos : [];
-  if (cons.length === 0) {
-    y = parrafo(doc, 'Sin autorizaciones registradas.', y);
-  } else {
-    y = parrafo(doc, 'Cada fila indica cuándo autorizaste el tratamiento y bajo qué versión de la política:', y);
-    cons.forEach(c => {
-      y = parrafo(doc,
-        `• ${formatearFechaISO(c.created_at ?? c.creado_en)} — Tratamiento de datos: ${siNo(c.acepto_tratamiento ?? c.aceptoTratamiento)} · ` +
-        `Datos sensibles: ${siNo(c.acepto_datos_sensibles ?? c.aceptoDatosSensibles)} · Versión de política: ${texto(c.politica_version ?? c.politicaVersion)}.`,
-        y, { tamano: 9.5 });
-    });
+  ];
+  if (cons.length > 0) {
+    const c = cons[0];
+    filas.push(['Autorización de datos',
+      `${formatearFechaISO(c.created_at ?? c.creado_en)} · política ${texto(c.politica_version ?? c.politicaVersion)}`]);
   }
-  y += 3;
+  L.seccion('Tu cuenta');
+  const alto = filas.length * 8 + 6;
+  L.tarjeta(MARGEN, L.y - 2, ANCHO, alto);
+  let y = L.y + 5;
+  filas.forEach(([k, v]) => {
+    L.fuente('normal', 8.5, GRIS);
+    L.doc.text(k, MARGEN + 6, y);
+    L.fuente('negrita', 9.5, TINTA);
+    L.doc.text(String(v), MARGEN + 52, y);
+    y += 8;
+  });
+  L.y += alto + 4;
+  L.parrafo('Este documento reúne los datos de tu cuenta y el informe final de cada participante que evaluaste, '
+    + 'sin las respuestas completas de los cuestionarios. Los porcentajes de compatibilidad indican qué tanto '
+    + 'se ajusta el perfil físico a las exigencias de cada familia deportiva.', { tamano: 8.8, color: GRIS });
+}
 
-  y = seccion(doc, `3. Historial de evaluaciones (${resultados.length})`, y);
+/** Banner con los datos del participante.
+ * @param {Lienzo} L - lienzo de página.
+ * @param {Object} s - resumen del registro.
+ * @param {number} n - número de participante. */
+function bannerParticipante(L, s, n) {
+  const h = 24;
+  L.doc.setFillColor(...MORADO_OSC);
+  L.doc.roundedRect(MARGEN, L.y, ANCHO, h, 4, 4, 'F');
+  L.doc.setFillColor(...CIAN);
+  L.doc.roundedRect(MARGEN + 5, L.y + 5, 1.8, h - 10, 0.9, 0.9, 'F');
+  L.fuente('titulo', 15, [255, 255, 255]);
+  L.doc.text(`${n}. ${s.nombre}`, MARGEN + 11, L.y + 10.5);
+  L.fuente('normal', 9, [214, 208, 245]);
+  const partes = [`${s.edad} años`, s.genero, s.perfil !== '—' ? `perfil ${s.perfil}` : null, s.actividad !== '—' ? s.actividad : null].filter(Boolean);
+  L.doc.text(partes.join('  ·  '), MARGEN + 11, L.y + 17.5);
+  L.fuente('normal', 8.5, [214, 208, 245]);
+  L.doc.text(s.fecha, MARGEN + ANCHO - 6, L.y + 10.5, { align: 'right' });
+  L.y += h + 7;
+}
+
+/** Perfil físico: modelo 3D a la izquierda y capacidades con su nivel a la derecha.
+ * @param {Lienzo} L - lienzo de página.
+ * @param {Object} s - resumen del registro.
+ * @param {Object} [cuerpo] - recursos del participante (imagen 3D y capacidades). */
+function bloquePerfilFisico(L, s, cuerpo) {
+  const caps = cuerpo?.capacidades?.length
+    ? cuerpo.capacidades.map(c => ({ nombre: c.nombre, etiqueta: c.nivel ?? 'Sin dato', fraccion: (NIVEL_INDICE[c.nivel] ?? 0) / 5, color: hexARgb(c.color) }))
+    : s.variables.map(v => ({ nombre: v.nombre, etiqueta: `${Math.round(Number(v.total) || 0)}%`, fraccion: (Number(v.total) || 0) / 100, color: MORADO }));
+  if (caps.length === 0 && !cuerpo?.imagen) return;
+
+  const conImagen = Boolean(cuerpo?.imagen);
+  const altoBloque = conImagen ? 84 : Math.max(24, caps.length * 13 + 14);
+  L.asegurar(altoBloque + 12, L.etiqueta);
+  L.seccion('Perfil físico');
+  const top = L.y - 2;
+  L.tarjeta(MARGEN, top, ANCHO, altoBloque);
+
+  let xDatos = MARGEN + 8;
+  let anchoDatos = ANCHO - 16;
+  if (conImagen) {
+    const h = altoBloque - 4; const w = h * (420 / 640);
+    L.imagen(cuerpo.imagen, MARGEN + 4, top + 2, w, h);
+    xDatos = MARGEN + 62;
+    anchoDatos = ANCHO - 70;
+  }
+  let y = top + (conImagen ? 12 : 10);
+  caps.forEach(c => {
+    L.fuente('negrita', 9.5, TINTA);
+    L.doc.text(c.nombre, xDatos, y);
+    L.chip(c.etiqueta, xDatos + anchoDatos, y, c.color);
+    L.barra(xDatos, y + 3, anchoDatos, c.fraccion, c.color);
+    y += conImagen ? 14.5 : 13;
+  });
+  L.y = top + altoBloque + 7;
+}
+
+/** Convierte un color hexadecimal en RGB.
+ * @param {string} hex - color #RRGGBB.
+ * @returns {number[]} color RGB. */
+function hexARgb(hex) {
+  const h = String(hex || '#A9A4C4').replace('#', '');
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
+}
+
+/** Recomendación deportiva: familia destacada y ranking breve.
+ * @param {Lienzo} L - lienzo de página.
+ * @param {Object} s - resumen del registro. */
+function bloqueRecomendacion(L, s) {
+  if (s.familias.length === 0 && !s.recomendacion) return;
+  L.asegurar(46, L.etiqueta);
+  L.seccion('Recomendación deportiva');
+  const firme = s.familias.find(f => f.firme !== false);
+  if (firme) {
+    L.doc.setFillColor(...MORADO);
+    L.doc.roundedRect(MARGEN, L.y - 2, ANCHO, 17, 3.5, 3.5, 'F');
+    L.fuente('normal', 8, [214, 208, 245]);
+    L.doc.text('Mayor compatibilidad', MARGEN + 6, L.y + 4);
+    L.fuente('titulo', 14, [255, 255, 255]);
+    L.doc.text(firme.nombre, MARGEN + 6, L.y + 11);
+    if (firme.porcentaje != null) {
+      L.fuente('titulo', 18, [255, 255, 255]);
+      L.doc.text(`${firme.porcentaje}%`, MARGEN + ANCHO - 6, L.y + 10.5, { align: 'right' });
+    }
+    L.y += 22;
+  } else if (s.familias.length > 0) {
+    L.parrafo('Con el perfil actual ninguna familia deportiva puede presentarse como recomendación firme.', { estilo: 'negrita' });
+    L.y += 2;
+  }
+  s.familias.slice(0, 4).forEach((f, i) => {
+    L.asegurar(11, L.etiqueta);
+    L.fuente('normal', 9, TINTA);
+    L.doc.text(`${f.nombre}${f.firme === false ? ' (no recomendable)' : ''}`, MARGEN, L.y);
+    L.fuente('negrita', 9, TINTA);
+    L.doc.text(f.porcentaje == null ? '—' : `${f.porcentaje}%`, MARGEN + ANCHO, L.y, { align: 'right' });
+    L.barra(MARGEN, L.y + 2, ANCHO, (Number(f.porcentaje) || 0) / 100, i === 0 && f.firme !== false ? MORADO : AZUL);
+    L.y += 9.5;
+  });
+  L.y += 3;
+}
+
+/** Precauciones de seguridad (solo si existen alertas).
+ * @param {Lienzo} L - lienzo de página.
+ * @param {Object} s - resumen del registro. */
+function bloquePrecauciones(L, s) {
+  const mensajes = [];
+  if (s.parq === 'consultar') mensajes.push('Se recomienda consultar a un profesional de la salud antes de realizar actividad física de esfuerzo.');
+  (s.alertasSeguridad || []).slice(0, 3).forEach(a => mensajes.push(String(a.mensaje ?? a)));
+  if (mensajes.length === 0) return;
+  const ancho = ANCHO - 14;
+  const alto = mensajes.reduce((t, m) => t + L.lineas(m, ancho, 9) * 4.5 + 2, 0) + 6;
+  L.asegurar(alto + 14, L.etiqueta);
+  L.seccion('Precauciones');
+  L.tarjeta(MARGEN, L.y - 2, ANCHO, alto, [255, 246, 230]);
+  L.doc.setFillColor(...AMBAR);
+  L.doc.roundedRect(MARGEN, L.y - 2, 2.2, alto, 1.1, 1.1, 'F');
+  let y = L.y + 3.5;
+  mensajes.forEach(m => {
+    L.fuente('normal', 9, TINTA);
+    L.doc.splitTextToSize(m, ancho).forEach(l => { L.doc.text(l, MARGEN + 7, y); y += 4.5; });
+    y += 2;
+  });
+  L.y += alto + 4;
+}
+
+/** Interpretación y plan de adaptación.
+ * @param {Lienzo} L - lienzo de página.
+ * @param {Object} s - resumen del registro. */
+function bloqueInterpretacion(L, s) {
+  if (s.interpretacion) {
+    L.asegurar(24, L.etiqueta);
+    L.seccion('Interpretación');
+    L.parrafo(s.interpretacion, { tamano: 9.3 });
+    L.y += 3;
+  }
+  const pl = s.planAdaptacion;
+  if (pl?.estado === 3) {
+    L.asegurar(26, L.etiqueta);
+    L.seccion('Plan de adaptación');
+    L.parrafo(pl.nombre, { estilo: 'negrita' });
+    if (pl.motivo) L.parrafo(pl.motivo, { tamano: 9 });
+    if ((pl.prioridades || []).length > 0) {
+      L.parrafo(`Capacidades a priorizar: ${pl.prioridades.map(p => `${ETIQUETAS_CAPACIDAD[p.capacidad] ?? p.capacidad} (${p.nivel})`).join(', ')}.`, { tamano: 9 });
+    }
+    L.y += 3;
+  } else if (pl?.tipo === 'datos_insuficientes') {
+    L.parrafo(`${pl.motivo} Faltan: ${(pl.faltantes || []).map(c => ETIQUETAS_CAPACIDAD[c] ?? c).join(', ')}.`, { tamano: 9 });
+    L.y += 3;
+  }
+}
+
+/** Genera el PDF de Mis datos: cuenta e informe final de cada participante.
+ * @param {Object} [datos] - JSON de /arco/exportar (perfil, consentimientos, resultados, generadoEn).
+ * @param {Object} [recursos] - logo, robot, fuentes y cuerpos (imagen 3D y capacidades por participante); todos opcionales.
+ * @returns {Blob} documento PDF. */
+export function generarPdfMisDatos(datos = {}, recursos = {}) {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const L = new Lienzo(doc, recursos);
+  const resultados = Array.isArray(datos.resultados) ? datos.resultados : [];
+  const generadoEn = formatearFechaISO(datos.generadoEn || new Date().toISOString());
+  L.etiqueta = 'Mis datos personales';
+
+  cabeceraPortada(L, resultados.length, generadoEn);
+  bloqueCuenta(L, datos);
+
   if (resultados.length === 0) {
-    y = parrafo(doc, 'Aún no tienes evaluaciones guardadas. Cuando completes una, su informe explicado aparecerá aquí.', y);
+    L.y += 6;
+    L.parrafo('Aún no tienes participantes evaluados. Cuando completes una evaluación, su informe final aparecerá aquí.');
   }
 
   resultados.forEach((r, i) => {
     const s = resumirRegistro(r);
-    y = nuevaPaginaSiFalta(doc, y, 24);
-    doc.setFillColor(...FONDO);
-    doc.roundedRect(MARGEN, y - 5, ANCHO, 10.5, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11.5);
-    doc.setTextColor(...MORADO);
-    doc.text(`Evaluación ${i + 1} — ${s.nombre}, ${s.edad} años · ${s.fecha}`, MARGEN + 3, y + 2);
-    doc.setTextColor(...TINTA);
-    y += 11;
-
-    y = tabla(doc, [
-      ['Género', s.genero],
-      ['Tipo de perfil', s.perfil],
-      ['Actividad / deporte', s.actividad],
-    ], y);
-
-    /* La seguridad se presenta primero porque condiciona la actividad física. */
-    y = parrafo(doc, 'Seguridad (PAR-Q+):', y, { negrita: true, tamano: 10.5 });
-    if (s.parq === 'apto') {
-      y = parrafo(doc, 'Cuestionario de aptitud: sin señales que exijan consulta médica previa. ' +
-        (s.pruebaMaxima
-          ? `Prueba máxima de resistencia (Léger): ${s.pruebaMaxima.autorizada ? 'autorizada' : 'no autorizada automáticamente'}. ${s.pruebaMaxima.motivo || ''}`.trim()
-          : 'Sigue las indicaciones del evaluador para pruebas de esfuerzo máximo.'), y, { tamano: 9.5, justificado: true });
-    } else if (s.parq === 'consultar') {
-      y = parrafo(doc, 'Cuestionario de aptitud: se recomienda consultar a un profesional de la salud antes de realizar actividad física de esfuerzo.', y, { tamano: 9.5 });
-    } else {
-      y = parrafo(doc, 'Cuestionario de aptitud: sin información registrada en esta evaluación.', y, { tamano: 9.5 });
-    }
-    (s.alertasSeguridad || []).forEach(a => {
-      y = parrafo(doc, `• ${a.mensaje ?? a}`, y, { tamano: 9.5, sangria: 4 });
-    });
-    y += 2;
-
-    if (s.variables.length > 0) {
-      y = parrafo(doc, 'Perfil físico (porcentaje sobre tu referencia personal):', y, { negrita: true, tamano: 10.5 });
-      s.variables.forEach(v => { y = barra(doc, v.nombre, v.total, y); });
-      const vals = s.variables.map(v => Number(v.total)).filter(n => !Number.isNaN(n));
-      if (vals.length > 0) {
-        const prom = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-        y = parrafo(doc, `Promedio general: ${prom}%. Es tu fotografía funcional del momento: sirve para comparar avances, no para clasificarte.`, y, { tamano: 9.5 });
-      }
-      y += 2;
-    }
-
-    if (s.familias.length > 0) {
-      y = parrafo(doc, 'Compatibilidad por familia deportiva:', y, { negrita: true, tamano: 10.5 });
-      y = parrafo(doc, 'Porcentaje de requisitos cumplidos. Una familia no es recomendable si le falta el dato de su demanda principal o si tienes una brecha severa en ella (nivel Bajo o Muy bajo donde exige Alta o Muy alta).', y, { tamano: 9, color: GRIS });
-      s.familias.forEach((f, fi) => {
-        y = barra(doc, `#${fi + 1} ${f.nombre}${f.firme === false ? ' (no recomendable)' : ''}`, f.porcentaje, y,
-          fi === 0 ? MORADO : [47, 92, 232]);
-        (f.carencias || []).forEach(c => { y = parrafo(doc, `Sin evaluar: ${c}.`, y, { tamano: 8.5, color: GRIS, sangria: 4 }); });
-        (f.brechas || []).forEach(b => { y = parrafo(doc, `Brecha relevante: ${b}.`, y, { tamano: 8.5, color: GRIS, sangria: 4 }); });
-      });
-      y += 2;
-    }
-
-    const cuest = [s.ipaq && `Actividad física (IPAQ): ${s.ipaq}.`, s.psqi && `Calidad de sueño (PSQI): ${s.psqi}.`,
-      s.breq && `Motivación (BREQ-3): ${s.breq}.`, s.barreras && `Barreras (BBAQ-21): ${s.barreras}.`].filter(Boolean);
-    if (cuest.length > 0) {
-      y = parrafo(doc, 'Cuestionarios:', y, { negrita: true, tamano: 10.5 });
-      cuest.forEach(c => { y = parrafo(doc, `• ${c}`, y, { tamano: 9.5 }); });
-      y += 2;
-    }
-
-    if (s.interpretacion) {
-      y = parrafo(doc, 'Interpretación:', y, { negrita: true, tamano: 10.5 });
-      y = parrafo(doc, s.interpretacion, y, { tamano: 9.5, justificado: true });
-      y += 2;
-    }
-    if (s.recomendacion) {
-      y = parrafo(doc, `Recomendación: ${s.recomendacion}`, y, { tamano: 9.5 });
-      y += 2;
-    }
-    if (s.planAdaptacion?.estado === 3) {
-      const pl = s.planAdaptacion;
-      y = parrafo(doc, `Estado ${pl.estado}: ${pl.nombre}`, y, { negrita: true, tamano: 10.5 });
-      y = parrafo(doc, pl.motivo, y, { tamano: 9.5 });
-      if ((pl.prioridades || []).length > 0) {
-        y = parrafo(doc, `Capacidades a priorizar: ${pl.prioridades.map(p => `${ETIQUETAS_CAPACIDAD[p.capacidad] ?? p.capacidad} (${p.nivel})`).join(', ')}.`, y, { tamano: 9.5 });
-      }
-      [...(pl.pautasGenerales || []), ...(pl.pautasComponentes || [])].forEach(p => {
-        y = parrafo(doc, `• ${p.titulo}: ${p.texto} (${p.referencia})`, y, { tamano: 9 });
-      });
-      y += 2;
-    } else if (s.planAdaptacion?.tipo === 'datos_insuficientes') {
-      y = parrafo(doc, `${s.planAdaptacion.motivo} Faltan: ${(s.planAdaptacion.faltantes || []).map(c => ETIQUETAS_CAPACIDAD[c] ?? c).join(', ')}.`, y, { tamano: 9.5 });
-      y += 2;
-    }
-    y = parrafo(doc, 'Esta orientación describe tendencias de tu perfil actual y no reemplaza el criterio de un profesional en ciencias del deporte.', y, { tamano: 8.5, color: GRIS });
-    y += 5;
+    L.etiqueta = `Participante ${i + 1} · ${s.nombre}`;
+    L.paginaNueva(L.etiqueta);
+    bannerParticipante(L, s, i + 1);
+    bloquePerfilFisico(L, s, recursos.cuerpos?.[i]);
+    bloqueRecomendacion(L, s);
+    bloquePrecauciones(L, s);
+    bloqueInterpretacion(L, s);
   });
 
-  pintarPie(doc);
+  L.pintarPies();
   return doc.output('blob');
 }

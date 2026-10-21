@@ -146,7 +146,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     let vivo = true;
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     } catch (e) {
       onError?.(e);
       return undefined;
