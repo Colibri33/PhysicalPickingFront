@@ -203,11 +203,13 @@ class Lienzo {
    * @param {number} x - posición horizontal en mm.
    * @param {number} y - posición vertical en mm.
    * @param {number} w - ancho en mm.
-   * @param {number} h - alto en mm. */
-  imagen(dato, x, y, w, h) {
+   * @param {number} h - alto en mm.
+   * @param {string} [alias] - identificador para reutilizar la imagen sin duplicarla en el archivo. */
+  imagen(dato, x, y, w, h, alias) {
     if (!dato) return;
     const url = dato.startsWith('data:') ? dato : `data:image/png;base64,${dato}`;
-    try { this.doc.addImage(url, 'PNG', x, y, w, h); } catch { /* la imagen es opcional */ }
+    const formato = url.startsWith('data:image/jpeg') ? 'JPEG' : 'PNG';
+    try { this.doc.addImage(url, formato, x, y, w, h, alias); } catch { /* la imagen es opcional */ }
   }
 
   /** Franja superior con el degradado de marca (morado, azul, cian). */
@@ -227,7 +229,7 @@ class Lienzo {
   paginaNueva(etiqueta) {
     this.doc.addPage();
     this.franjaMarca();
-    this.imagen(this.r.logo, MARGEN, 9, 24, 13);
+    this.imagen(this.r.logo, MARGEN, 9, 24, 13, 'logo');
     this.fuente('normal', 8.5, GRIS);
     this.doc.text(etiqueta, 210 - MARGEN, 16, { align: 'right' });
     this.y = 30;
@@ -319,7 +321,7 @@ class Lienzo {
     const total = this.doc.getNumberOfPages();
     for (let i = 1; i <= total; i++) {
       this.doc.setPage(i);
-      this.imagen(this.r.robot, 210 - 8 - 33, 297 - 3 - 37, 33, 37);
+      this.imagen(this.r.robot, 210 - 8 - 33, 297 - 3 - 37, 33, 37, 'robot');
       this.fuente('normal', 7.5, GRIS);
       this.doc.text('PhysicalPicking · Documento personal e intransferible. Uso informativo: no es un diagnóstico clínico.', MARGEN, 289);
       this.doc.text(`Página ${i} de ${total}`, MARGEN, 293.5);
@@ -333,7 +335,7 @@ class Lienzo {
  * @param {string} generadoEn - fecha de generación ya formateada. */
 function cabeceraPortada(L, totalParticipantes, generadoEn) {
   L.franjaMarca();
-  L.imagen(L.r.logo, MARGEN, 11, 52, 28);
+  L.imagen(L.r.logo, MARGEN, 11, 52, 28, 'logo');
   L.fuente('titulo', 21, MORADO_OSC);
   L.doc.text('Mis datos personales', 210 - MARGEN, 24, { align: 'right' });
   L.fuente('normal', 9, GRIS);
@@ -356,7 +358,7 @@ function bloqueCuenta(L, datos) {
   if (cons.length > 0) {
     const c = cons[0];
     filas.push(['Autorización de datos',
-      `${formatearFechaISO(c.created_at ?? c.creado_en)} · política ${texto(c.politica_version ?? c.politicaVersion)}`]);
+      `${formatearFechaISO(c.created_at ?? c.creado_en)} · política ${texto(c.version_politica ?? c.politica_version ?? c.politicaVersion)}`]);
   }
   L.seccion('Tu cuenta');
   const alto = filas.length * 8 + 6;
@@ -532,12 +534,19 @@ function bloqueInterpretacion(L, s) {
 export function generarPdfMisDatos(datos = {}, recursos = {}) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const L = new Lienzo(doc, recursos);
-  const resultados = Array.isArray(datos.resultados) ? datos.resultados : [];
+  const todos = Array.isArray(datos.resultados) ? datos.resultados : [];
+  // Los registros que el servidor no pudo descifrar llegan como { id, error }: no tienen datos que mostrar.
+  const resultados = todos.filter(r => r && !r.error);
+  const ilegibles = todos.length - resultados.length;
   const generadoEn = formatearFechaISO(datos.generadoEn || new Date().toISOString());
   L.etiqueta = 'Mis datos personales';
 
   cabeceraPortada(L, resultados.length, generadoEn);
   bloqueCuenta(L, datos);
+  if (ilegibles > 0) {
+    L.y += 2;
+    L.parrafo(`${ilegibles} ${ilegibles === 1 ? 'registro antiguo no pudo' : 'registros antiguos no pudieron'} recuperarse y no se incluye${ilegibles === 1 ? '' : 'n'} en este documento.`, { tamano: 8.8, color: GRIS });
+  }
 
   if (resultados.length === 0) {
     L.y += 6;

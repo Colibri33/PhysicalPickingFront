@@ -44,10 +44,10 @@ function fotogramas(n) {
   });
 }
 
-/** Renderiza el modelo 3D fuera de pantalla y lo captura como imagen PNG.
+/** Renderiza el modelo 3D fuera de pantalla y lo captura como imagen JPEG.
  * @param {string} sexo - 'masculino' o 'femenino'.
  * @param {Array<Object>} items - capacidades con id, color, nivel y sinDato.
- * @returns {Promise<string|null>} data URL PNG, o null si WebGL o el modelo fallan. */
+ * @returns {Promise<string|null>} data URL JPEG, o null si WebGL o el modelo fallan. */
 async function capturarCuerpo3D(sexo, items) {
   const { default: Cuerpo3D } = await import('../components/Cuerpo3D');
   const host = document.createElement('div');
@@ -67,7 +67,15 @@ async function capturarCuerpo3D(sexo, items) {
     if (fallo || !host.querySelector('.rend3d--listo')) return null;
     await fotogramas(8);
     const lienzo = host.querySelector('canvas');
-    return lienzo ? lienzo.toDataURL('image/png') : null;
+    if (!lienzo) return null;
+    // Se compone sobre el color de la tarjeta del PDF y se comprime en JPEG: evita transparencias y reduce el peso del archivo.
+    const plano = document.createElement('canvas');
+    plano.width = lienzo.width; plano.height = lienzo.height;
+    const g = plano.getContext('2d');
+    g.fillStyle = '#F3F1FD';
+    g.fillRect(0, 0, plano.width, plano.height);
+    g.drawImage(lienzo, 0, 0);
+    return plano.toDataURL('image/jpeg', 0.9);
   } catch {
     return null;
   } finally {
@@ -103,7 +111,7 @@ async function recursosDeRegistro(registro) {
  * @returns {Promise<{logo: string|null, robot: string|null, fuentes: Object, cuerpos: Array<Object>}>} */
 export async function cargarRecursosPdf(datos) {
   const [logo, robot, poppins, poppinsNegrita, fredoka] = await Promise.all([
-    aBase64('brand/logo-completo.png'),
+    aBase64('brand/logo-pdf.png'),
     aBase64('brand/robot.png'),
     aBase64('fonts/Poppins-Regular.ttf'),
     aBase64('fonts/Poppins-SemiBold.ttf'),
@@ -111,6 +119,6 @@ export async function cargarRecursosPdf(datos) {
   ]);
   const cuerpos = [];
   // En serie: cada captura crea su propio contexto WebGL.
-  for (const r of (datos?.resultados ?? [])) cuerpos.push(await recursosDeRegistro(r));
+  for (const r of (datos?.resultados ?? []).filter(x => x && !x.error)) cuerpos.push(await recursosDeRegistro(r));
   return { logo, robot, fuentes: { poppins, poppinsNegrita, fredoka }, cuerpos };
 }
