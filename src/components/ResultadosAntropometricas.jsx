@@ -1,4 +1,11 @@
-/* ─── ResultadosAntropometricas.jsx (antes ResultadosCorporales.jsx) ─── */
+/**
+ * @module components/ResultadosAntropometricas
+ * @description Muestra los datos antropométricos, las reglas de ajuste activadas y la comparación entre el perfil físico base y el ajustado.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): presenta los ajustes antropométricos; las reglas y los cálculos residen en logic/modelo.
+ *  - D (Inversión de dependencias): depende de REGLAS_AJUSTE_ANTROPOMETRICO y de calcularAjustesAntropometricos, no de reglas embebidas.
+ */
 import Icono from './Icono';
 import {
   VARS_FISICAS,
@@ -8,12 +15,19 @@ import {
   clamp,
 } from '../logic/modelo';
 
+/** Formatea un delta con un decimal y signo explícito para valores positivos.
+ * @param {number} d - diferencia numérica.
+ * @returns {string} texto con signo. */
 function signo(d) {
   const r = Math.round(d * 10) / 10;
   return r > 0 ? `+${r}` : `${r}`;
 }
 
-
+/** Presenta datos antropométricos, reglas activadas y comparación base frente a ajustado.
+ * @param {Object} props
+ * @param {Object} props.analisis - análisis con antropometricas y fisicas (0-100).
+ * @param {Function} props.onContinuar - avanza al perfil consolidado.
+ * @returns {JSX.Element} tarjeta de resultados. */
 export default function ResultadosAntropometricas({ analisis, onContinuar }) {
   const c      = analisis.antropometricas;
   const antrop = prepararAntropometricas(c);
@@ -21,6 +35,7 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
   const ajAntrop = calcularAjustesAntropometricos(antrop);
 
   const reglasActivas = REGLAS_AJUSTE_ANTROPOMETRICO.filter(r => {
+    // Una condición que lanza error por datos incompletos se considera inactiva.
     try { return r.condicion(antrop); } catch { return false; }
   });
 
@@ -38,7 +53,6 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
     <div className="panel-card">
       <h2 className="panel-title">Ajustes antropometricos</h2>
 
-      {/* Grid de datos ingresados */}
       <div className="antrop-grid">
         {Object.entries(etiquetas).map(([k, lbl]) => {
           const val = c[k];
@@ -54,7 +68,6 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
         })}
       </div>
 
-      {/* Reglas activas */}
       <h3 className="section-subtitle mt-lg">Reglas de ajuste activadas</h3>
       {reglasActivas.length === 0 ? (
         <p className="empty-text">
@@ -88,7 +101,6 @@ export default function ResultadosAntropometricas({ analisis, onContinuar }) {
         </div>
       )}
 
-      {/* Comparación base → ajustado antropometricamente */}
       <h3 className="section-subtitle mt-lg">Base normalizada <Icono n="derecha" /> tras ajuste antropometrico</h3>
       <div className="compare-list">
         {VARS_FISICAS.map(v => {

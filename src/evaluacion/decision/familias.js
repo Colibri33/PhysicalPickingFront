@@ -1,10 +1,13 @@
-/* evaluacion/decision/familias.js
-   Las 13 familias deportivas confirmadas. Solo identificacion para
-   validar la salida del motor y armar el informe. La matriz de
-   demanda + Mitchell de referencia vive en matrizDemanda.js y la
-   regla auditable en compatibilidad.js (el DecisionEngine externo
-   debe reproducirla; no se duplica aqui).
-   Verificar que estos ids coincidan con familias.json del motor. */
+/**
+ * @module evaluacion/decision/familias
+ * @description Catálogo de las 13 familias deportivas confirmadas (solo identificación).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el catálogo de familias.
+ * Notas: sirve para validar la salida del motor y armar el informe. La matriz de demandas está en matrizDemanda.js y la regla en
+ * compatibilidad.js. Verificar que los ids coincidan con familias.json del motor.
+ */
+/** Familias deportivas con id y nombre. */
 export const FAMILIAS_DEPORTIVAS = [
   { id: 'deportes_equipo', nombre: 'Deportes de equipo' },
   { id: 'voleibol', nombre: 'Voleibol' },

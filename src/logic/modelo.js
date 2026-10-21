@@ -1,76 +1,46 @@
-/* ═══════════════════════════════════════════════════════════════
-   PhysicalPicking · logic/modelo.js  v6.0
-   Motor científico puro — sin React, sin DOM.
-   v5: sin dermatoglifia · perfiles deportivos · ranking · interpretacion
-   v6: sin modulo cognitivo · "corporales" pasa a "antropometricas"
-
-   NOTA DE ARQUITECTURA (v6): el calculo de esta seccion (consolidado,
-   perfiles, ranking de DEPORTES e interpretacion) es el calculo
-   PROVISIONAL HEREDADO del prototipo. Se conserva para no romper las
-   pantallas actuales. El flujo definitivo (validacion → evaluacion →
-   normalizacion por baremos → perfil funcional → reglas de
-   seguridad → DecisionEngine → ranking de las 13 familias) vive en
-   src/evaluacion/ y reemplazara este calculo cuando se integren los
-   baremos y el DecisionEngine.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module logic/modelo
+ * @description Motor científico puro (v6): variables físicas, normalización, antropometría, perfiles funcionales, ranking de actividades e interpretación.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el cálculo provisional heredado del prototipo, sin React ni DOM.
+ *  - O (Abierto/Cerrado): variables, reglas de ajuste, perfiles y actividades son catálogos de datos; se amplían sin modificar las funciones de cálculo.
+ * Notas: v5 eliminó la dermatoglifia e incorporó perfiles, ranking e interpretación; v6 eliminó el módulo cognitivo y renombró "corporales" a "antropometricas".
+ * Este cálculo (consolidado, perfiles, ranking de actividades e interpretación) es PROVISIONAL y heredado; se conserva para no romper las pantallas actuales.
+ * El flujo definitivo (validación, evaluación, normalización por baremos, perfil funcional, reglas de seguridad, DecisionEngine y ranking de 13 familias)
+ * reside en src/evaluacion/ y lo reemplazará al integrarse los baremos.
+ */
 
 /*
- * Rangos calibrados para población general físicamente activa.
- * No son baremos de alto rendimiento; representan el espectro
- * real que abarca desde niveles bajos hasta niveles altos
- * en personas activas no necesariamente deportistas.
- *
- * IMPORTANTE — TRANSPARENCIA METODOLÓGICA: estos rangos son una
- * calibración interna del proyecto (definida junto con el diseño de
- * los perfiles funcionales), no provienen de una tabla de normas
- * publicada, validada o citada de un protocolo especifico (p. ej.
- * no son los baremos oficiales de un test de Cooper, 1RM, Course
- * Navette, etc.). Se documentan aqui por transparencia: si este
- * sistema se usa con fines clinicos, de investigacion o de seleccion
- * deportiva formal, estos rangos deben ser revisados y sustituidos
- * por normas validadas para la poblacion objetivo real.
- *
- * `paso` (step) define la precision del slider — no es parte del
- * rango cientifico, es una decision de UX segun que tan fino tiene
- * sentido medir cada unidad (enteros para repeticiones/kg, decimas
- * para tiempos con cronometro, etc.).
- *
- * FUENTE UNICA DE VERDAD: estas son las unicas definiciones de
- * rango/paso de variables fisicas del sistema. El backend
- * (src/utils/validacion.js) MANTIENE UNA COPIA ESPEJO de estos
- * mismos valores para poder validar sin depender de este modulo del
- * frontend (son dos despliegues/repositorios separados sin build
- * compartido) — si cambias un rango aqui, DEBES actualizar tambien
- * el backend. Ver el comentario equivalente alla.
+ * Variables físicas y rangos de referencia, calibrados para población general físicamente activa
+ * (no son baremos de alto rendimiento).
+ * Transparencia metodológica: es una calibración interna del proyecto, no una tabla de normas publicada
+ * ni los baremos oficiales de un protocolo (Cooper, 1RM, Course Navette, etc.). Para uso clínico, de
+ * investigación o de selección deportiva formal deben sustituirse por normas validadas.
+ * `paso` define la precisión del control de captura; es una decisión de interfaz, no un criterio científico.
+ * Fuente única de verdad de rango y paso. El backend (src/utils/validacion.js) mantiene una copia espejo
+ * (son despliegues separados sin build compartido): todo cambio aquí debe replicarse allá.
  */
 export const VARS_FISICAS = [
-  /* Fuerza máxima de prensión (AFISAL-INEFC, Tabla 8): SUMA del mejor
-     intento de cada mano (a mayor suma mejor). La UI captura
-     `fuerzaDer`/`fuerzaIzq` (0-100 c/u) y guarda aquí la suma 0-200;
-     el baremo se aplica sobre esa suma. */
+  /* Fuerza de prensión (AFISAL-INEFC, Tabla 8): suma del mejor intento de cada mano. La UI captura
+     `fuerzaDer`/`fuerzaIzq` (0-100 c/u) y aquí se guarda la suma (0-200), sobre la que se aplica el baremo. */
   { id: 'fuerza',       nombre: 'Fuerza prensil',   color: '#6d28d9', unidad: 'kg',           minimo: 20,   maximo: 200,  paso: 1,   direccion: 'mayor_mejor' },
   { id: 'fuerzaExp',    nombre: 'Fuerza explosiva', color: '#9333ea', unidad: 'cm',           minimo: 5,    maximo: 65,   paso: 1,   direccion: 'mayor_mejor' },
-  /* Resistencia aeróbica (Léger, course navette 20 m): se registra el
-     NIVEL MÁXIMO ALCANZADO según el protocolo de Léger: número entero
-     de 1 a 21 (a mayor nivel mejor; sin decimales ni medios niveles). Solo se
-     aplica si el PAR-Q+ la autoriza (prueba máxima); si no, queda sin
-     dato y no penaliza en el flujo definitivo. Reemplaza a la antigua
-     variable de resistencia en metros (Cooper), retirada. */
+  /* Resistencia aeróbica (Léger, course navette 20 m): nivel máximo alcanzado, entero de 1 a 21. Solo se
+     aplica si el PAR-Q+ autoriza la prueba máxima; de lo contrario queda sin dato y no penaliza en el flujo
+     definitivo. Sustituye a la antigua variable en metros (Cooper). */
   { id: 'resistencia',  nombre: 'Resistencia aeróbica', color: '#0f9d66', unidad: 'nivel',    minimo: 1,    maximo: 21,   paso: 1,   direccion: 'mayor_mejor' },
   { id: 'flexibilidad', nombre: 'Flexibilidad',      color: '#db2777', unidad: 'cm',           minimo: -20,  maximo: 30,   paso: 1,   direccion: 'mayor_mejor' },
-  /* Equilibrio monopodal sin visión (AFISAL-INEFC, Tabla 9):
-     2 intentos, uno por pierna; se cuenta cada vez que se baja el pie
-     y el resultado es la SUMA de ambas piernas (a menos intentos mejor).
-     La UI captura `equilibrioDer`/`equilibrioIzq` (0-30 c/u) y guarda
-     aquí el total 0-60; el baremo se aplica sobre ese total. */
+  /* Equilibrio monopodal sin visión (AFISAL-INEFC, Tabla 9): un intento por pierna, contando cada vez que
+     se apoya el pie; el resultado es la suma de ambas (menos es mejor). La UI captura `equilibrioDer`/
+     `equilibrioIzq` (0-30 c/u) y aquí se guarda el total (0-60), sobre el que se aplica el baremo. */
   { id: 'equilibrio',   nombre: 'Equilibrio',        color: '#7c3aed', unidad: 'intentos',     minimo: 0,    maximo: 60,   paso: 1,   direccion: 'menor_mejor' },
 ];
 
 /*
- * Rangos de COHERENCIA fisica de las variables antropometricas
- * (antes "corporales"). No son baremos ni puntos de corte: solo
- * rechazan valores absurdos. Fuente unica para StepAntropometricas y
- * src/evaluacion; el backend (utils/validacion.js) mantiene copia espejo.
+ * Rangos de coherencia física de las variables antropométricas (antes "corporales"): no son baremos
+ * ni puntos de corte, solo rechazan valores absurdos. Fuente única para StepAntropometricas y
+ * src/evaluacion; el backend (utils/validacion.js) mantiene una copia espejo.
  */
 export const RANGOS_ANTROPOMETRICOS = {
   peso:      { etiqueta: 'Peso (kg)',              min: 1,  max: 400 },
@@ -80,20 +50,14 @@ export const RANGOS_ANTROPOMETRICOS = {
   grasaVisc: { etiqueta: 'Grasa visceral (nivel)', min: 0,  max: 60  },
 };
 
-/* ── Reglas de ajuste antropometrico (calculo provisional heredado) ──
-   Solo variables vigentes: % grasa, % masa muscular, velocidad,
-   agilidad y coordinacion fueron retirados con sus reglas. */
+/* Reglas de ajuste antropométrico (cálculo provisional heredado). Solo variables vigentes: % grasa, % masa muscular,
+   velocidad, agilidad y coordinación se retiraron junto con sus reglas. */
 export const REGLAS_AJUSTE_ANTROPOMETRICO = [
   { variable: 'resistencia',  condicion: c => c.grasaVisc >= 10,                   delta:  -8, descripcion: 'Grasa visceral nivel >= 10: penaliza la resistencia aerobica.'       },
   { variable: 'equilibrio',   condicion: c => c.imc > 30,                          delta:  -6, descripcion: 'IMC > 30: puede afectar el equilibrio y control postural.'           },
 ];
 
-/*
- * Perfiles funcionales generales.
- * Cada perfil describe una tendencia del evaluado,
- * no un baremo deportivo ni una clasificación definitiva.
- * El resultado orienta el perfil; no determina un deporte exacto.
- */
+/* Perfiles funcionales generales: describen una tendencia del evaluado, no un baremo deportivo ni una clasificación definitiva. */
 export const PERFILES_DEPORTIVOS = [
   {
     id: 'resistencia', nombre: 'Resistencia aeróbica', color: '#0f9d66', descripcion: 'Tendencia hacia actividades aerobicas sostenidas. El perfil muestra capacidad para mantener esfuerzo durante periodos prolongados.',
@@ -106,13 +70,9 @@ export const PERFILES_DEPORTIVOS = [
 ];
 
 /*
- * Orientaciones de actividad física.
- * No son baremos deportivos rígidos ni clasificaciones definitivas.
- * Describen familias de actividades con tendencias de perfil similares.
- * La afinidad calculada indica tendencia, no aptitud ni selección.
- * NOTA: los ideales conservan dimensiones de perfiles retirados
- * (velocidad, coordinativo); el ranking solo usa las dimensiones
- * calculables (ver filtro en calcularRankingDeportes).
+ * Orientaciones de actividad física: familias de actividades con tendencias de perfil similares.
+ * La afinidad indica tendencia, no aptitud ni selección. Los perfiles ideales conservan dimensiones
+ * de perfiles retirados (velocidad, coordinativo); el ranking solo usa las calculables.
  */
 export const DEPORTES = [
   { nombre: 'Actividades aerobicas',     color: '#0f9d66', descripcion: 'Actividades de intensidad moderada y larga duracion (caminata rapida, aerobicos, eliptico) que priorizan la resistencia cardiovascular sostenida.', perfilIdeal: { resistencia: 85, potencia: 40, velocidad: 55, coordinativo: 50 } },
@@ -132,12 +92,19 @@ export const DEPORTES = [
   { nombre: 'Fitness funcional',         color: '#475569', descripcion: 'Entrenamiento integrado de fuerza, movilidad, resistencia y coordinacion; una excelente base o complemento para cualquier perfil.', perfilIdeal: { resistencia: 68, potencia: 68, velocidad: 62, coordinativo: 68 } },
 ];
 
-/* ════════════════════════════════════
-   FUNCIONES PURAS DE CALCULO
-════════════════════════════════════ */
-
+/** Limita un valor al intervalo [min, max].
+ * @param {number} val - valor a acotar.
+ * @param {number} min - cota inferior.
+ * @param {number} max - cota superior.
+ * @returns {number} valor acotado. */
 export function clamp(val, min, max) { return Math.min(max, Math.max(min, val)); }
 
+/** Normaliza un valor a 0-100 según su rango y dirección (mayor_mejor o menor_mejor).
+ * @param {number} valor - valor medido.
+ * @param {number} minimo - mínimo del rango de referencia.
+ * @param {number} maximo - máximo del rango de referencia.
+ * @param {'mayor_mejor'|'menor_mejor'} direccion - sentido en que el valor mejora.
+ * @returns {number} puntaje entero 0-100 (50 si el rango es degenerado). */
 export function normalizarValor(valor, minimo, maximo, direccion) {
   if (maximo === minimo) return 50;
   const n = direccion === 'mayor_mejor'
@@ -146,6 +113,10 @@ export function normalizarValor(valor, minimo, maximo, direccion) {
   return Math.round(clamp(n, 0, 100));
 }
 
+/** Normaliza los valores capturados de un conjunto de variables, omitiendo los vacíos.
+ * @param {Array<Object>} vars - definiciones de variables (id, minimo, maximo, direccion).
+ * @param {Object} reales - valores capturados por id.
+ * @returns {Object<string, number>} puntajes 0-100 por id. */
 export function normalizarFormulario(vars, reales) {
   const resultado = {};
   vars.forEach(v => {
@@ -156,13 +127,17 @@ export function normalizarFormulario(vars, reales) {
   return resultado;
 }
 
+/** Calcula el índice de masa corporal y su clasificación OMS.
+ * @param {number} peso - peso en kg.
+ * @param {number} talla - talla en cm.
+ * @returns {{valor: number|null, categoria: string, nivel: string|null}} IMC con una cifra decimal y su categoría. */
 export function calcularIMC(peso, talla) {
   if (!peso || !talla || talla <= 0) return { valor: null, categoria: '', nivel: null };
   const tallaM = talla / 100;
   const imc = peso / (tallaM * tallaM);
   let categoria = '';
   let nivel = null;
-  // Baremos OMS sin distincion de sexo.
+  // Baremos OMS, sin distinción de sexo.
   if (imc < 18.5) { categoria = 'Bajo peso'; nivel = 'Bajo'; }
   else if (imc < 25) { categoria = 'Rango normal'; nivel = 'Promedio'; }
   else if (imc < 30) { categoria = 'Pre obesidad'; nivel = 'Aumentado'; }
@@ -172,12 +147,10 @@ export function calcularIMC(peso, talla) {
   return { valor: parseFloat(imc.toFixed(1)), categoria, nivel };
 }
 
-/*
- * calcularICC — índice cintura-cadera (cintura / cadera).
- * Cortes WHO 2008 (icc.pdf, Tabla A1): ≥0,90 hombres y ≥0,85 mujeres
- * = riesgo sustancialmente aumentado. Sin genero masculino/femenino
- * se informa el valor sin categoria.
- */
+/** Calcula el índice cintura-cadera (cintura / cadera) con dos decimales.
+ * @param {number|string} cintura - perímetro de cintura.
+ * @param {number|string} cadera - perímetro de cadera.
+ * @returns {{valor: number|null}} índice, o null si los datos no son válidos. */
 export function calcularICC(cintura, cadera) {
   const ci = parseFloat(cintura);
   const ca = parseFloat(cadera);
@@ -185,6 +158,10 @@ export function calcularICC(cintura, cadera) {
   return { valor: Math.round((ci / ca) * 100) / 100 };
 }
 
+/** Clasifica el riesgo según el ICC y el género (cortes WHO 2008: 0,90 hombres y 0,85 mujeres).
+ * @param {number} icc - índice cintura-cadera.
+ * @param {'masculino'|'femenino'|string} genero - género del evaluado.
+ * @returns {string} categoría de riesgo, o cadena vacía si no es posible clasificar. */
 export function clasificarICC(icc, genero) {
   if (!Number.isFinite(icc)) return '';
   if (genero === 'masculino') return icc >= 0.90 ? 'Riesgo sustancialmente aumentado' : 'Sin riesgo aumentado';
@@ -192,17 +169,19 @@ export function clasificarICC(icc, genero) {
   return '';
 }
 
-/*
- * Las reglas comparan contra numeros (c.grasaVisc >= 10). Los campos del
- * formulario llegan como texto, por eso se convierten aqui; un campo
- * vacio queda en null y no activa ninguna regla.
- */
+/* Las reglas comparan contra números y los campos del formulario llegan como texto; un campo vacío queda en null y no activa ninguna regla. */
+/** Convierte a número los campos de texto que usan las reglas de ajuste.
+ * @param {Object} antropometricas - datos antropométricos del formulario.
+ * @returns {{grasaVisc: number|null, imc: number|null}} valores numéricos. */
 export function prepararAntropometricas(antropometricas) {
   const a = antropometricas ?? {};
   const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
   return { grasaVisc: num(a.grasaVisc), imc: num(a.imc) };
 }
 
+/** Evalúa las reglas de ajuste antropométrico y acumula los deltas por variable física.
+ * @param {{grasaVisc: number|null, imc: number|null}} antropometricas - valores numéricos.
+ * @returns {Object<string, number>} delta por id de variable. */
 export function calcularAjustesAntropometricos(antropometricas) {
   const deltas = Object.fromEntries(VARS_FISICAS.map(v => [v.id, 0]));
   REGLAS_AJUSTE_ANTROPOMETRICO.forEach(regla => {
@@ -213,6 +192,10 @@ export function calcularAjustesAntropometricos(antropometricas) {
   return deltas;
 }
 
+/** Consolida el puntaje base, el ajuste antropométrico y el total acotado a 0-100 por variable.
+ * @param {Object<string, number>} fisicas - puntajes base por variable.
+ * @param {Object} antropometricas - datos antropométricos del formulario.
+ * @returns {Object<string, {base: number, ajAntrop: number, total: number}>} consolidado por variable. */
 export function calcularConsolidado(fisicas, antropometricas) {
   const ajAntrop = calcularAjustesAntropometricos(prepararAntropometricas(antropometricas));
   const resultado = {};
@@ -228,6 +211,10 @@ export function calcularConsolidado(fisicas, antropometricas) {
   return resultado;
 }
 
+/** Calcula el puntaje de cada perfil funcional como promedio ponderado de los totales consolidados.
+ * @param {Object} consolidado - consolidado por variable.
+ * @param {Object} [antropometricas] - sin uso actual; se conserva por compatibilidad de firma.
+ * @returns {Object<string, number>} puntaje 0-100 por perfil. */
 export function calcularPerfilesDeportivos(consolidado, antropometricas) {
   const tot = id => consolidado[id]?.total ?? 0;
   const fuentes = {
@@ -245,6 +232,9 @@ export function calcularPerfilesDeportivos(consolidado, antropometricas) {
   return resultado;
 }
 
+/** Ordena las familias de actividad por afinidad frente al perfil del usuario.
+ * @param {Object<string, number>} perfilesUsuario - puntaje por perfil.
+ * @returns {Array<Object>} actividades con afinidad (0-100) y brechas, de mayor a menor afinidad. */
 export function calcularRankingDeportes(perfilesUsuario) {
   return DEPORTES
     .map(deporte => {
@@ -259,13 +249,11 @@ export function calcularRankingDeportes(perfilesUsuario) {
     .sort((a, b) => b.afinidad - a.afinidad);
 }
 
-/*
- * calcularFortalezasDeporte — a partir de las brechas ya calculadas
- * por calcularRankingDeportes, deriva las etiquetas de "puntos fuertes"
- * de un deporte para el perfil del usuario evaluado (perfil funcional
- * con puntaje >= umbral). Es la MISMA fuente de datos que alimenta el
- * ranking — no aplica reglas ni umbrales independientes por deporte.
- */
+/* Usa la misma fuente de datos que el ranking: no aplica reglas ni umbrales independientes por deporte. */
+/** Deriva las etiquetas de puntos fuertes a partir de las brechas del ranking.
+ * @param {Object} brechas - brechas por dimensión, calculadas por calcularRankingDeportes.
+ * @param {number} [umbral] - puntaje mínimo del perfil para considerarlo fortaleza.
+ * @returns {string[]} etiquetas "Perfil (n%)" ordenadas de mayor a menor. */
 export function calcularFortalezasDeporte(brechas, umbral = 60) {
   return Object.entries(brechas)
     .filter(([, v]) => v.usuario >= umbral)
@@ -276,16 +264,13 @@ export function calcularFortalezasDeporte(brechas, umbral = 60) {
     });
 }
 
-/*
- * generarInterpretacion — orientación de perfil general.
- *
- * Genera texto descriptivo del perfil funcional del evaluado.
- * NO determina un deporte ni clasifica por baremos rígidos.
- * Describe tendencias y áreas de oportunidad en lenguaje
- * accesible para cualquier evaluador o persona activa.
- */
+/** Genera el texto descriptivo del perfil funcional, sus fortalezas, áreas de mejora y orientación de actividades.
+ * Describe tendencias; no determina un deporte ni clasifica por baremos rígidos.
+ * @param {Object} consolidado - consolidado por variable.
+ * @param {Object<string, number>} perfilesDeportivos - puntaje por perfil.
+ * @param {Array<Object>} rankingDeportes - ranking ordenado de actividades.
+ * @returns {{parrafo: string, fortalezas: string[], debilidades: string[], recomendacion: string}} interpretación. */
 export function generarInterpretacion(consolidado, perfilesDeportivos, rankingDeportes) {
-  // ── Ordenar variables físicas por puntaje final ──
   const totalesFisicas = VARS_FISICAS
     .map(v => ({ id: v.id, nombre: v.nombre, total: consolidado[v.id]?.total ?? 0 }))
     .sort((a, b) => b.total - a.total);
@@ -293,18 +278,16 @@ export function generarInterpretacion(consolidado, perfilesDeportivos, rankingDe
   const fortalezasFis  = totalesFisicas.slice(0, 3).filter(v => v.total >= 60);
   const debilidadesFis = [...totalesFisicas].reverse().slice(0, 3).filter(v => v.total < 50);
 
-  // ── Perfil dominante ──
   const entradasPerfiles = Object.entries(perfilesDeportivos)
     .map(([id, val]) => ({ id, val, nombre: PERFILES_DEPORTIVOS.find(p => p.id === id)?.nombre ?? id }))
     .sort((a, b) => b.val - a.val);
 
   const perfilDominante  = entradasPerfiles[0];
   const perfilSecundario = entradasPerfiles[1];
-  // Diferencia entre el primero y el segundo para detectar perfil mixto
+  // Una diferencia menor a 10 puntos entre los dos primeros perfiles indica perfil mixto.
   const diferenciaPerfiles = (perfilDominante?.val ?? 0) - (perfilSecundario?.val ?? 0);
   const esMixto = diferenciaPerfiles < 10;
 
-  // ── Párrafo de interpretación ──
   let parrafo = '';
 
   if (esMixto || !perfilDominante || perfilDominante.val < 45) {
@@ -329,7 +312,6 @@ export function generarInterpretacion(consolidado, perfilesDeportivos, rankingDe
     parrafo += `Las areas con mayor margen de desarrollo son ${debilidadesFis.map(d => d.nombre.toLowerCase()).join(' y ')}. `;
   }
 
-  // ── Orientación de actividades (no ranking rígido) ──
   const top3 = rankingDeportes.slice(0, 3);
   const recomendacion = top3.length > 0
     ? `Segun la tendencia del perfil, las familias de actividad con mayor afinidad son: ${
@@ -337,22 +319,16 @@ export function generarInterpretacion(consolidado, perfilesDeportivos, rankingDe
       }. Esta orientacion es una tendencia de perfil, no una determinacion absoluta.`
     : '';
 
-  // ── Listas de fortalezas / áreas de mejora ──
   const fortalezas  = fortalezasFis.map(f => `${f.nombre} — ${f.total}%`);
   const debilidades = debilidadesFis.map(d => `${d.nombre} — ${d.total}%`);
 
   return { parrafo: parrafo.trim(), fortalezas, debilidades, recomendacion };
 }
 
-/*
- * validarFormularioVariables
- *
- * Todos los campos son obligatorios (campo vacío = error que bloquea).
- * Valores fuera del rango de referencia generan una ADVERTENCIA, no un bloqueo:
- * el sistema los acepta, normaliza con clamp y marca la fila visualmente.
- *
- * @returns {{ ok: boolean, errores: string[], advertencias: string[] }}
- */
+/** Valida las variables físicas: vacío o no numérico bloquea; fuera de rango solo advierte (se normaliza con clamp).
+ * @param {Array<Object>} vars - definiciones de variables.
+ * @param {Object} reales - valores capturados por id.
+ * @returns {{ok: boolean, errores: string[], advertencias: string[]}} resultado de la validación. */
 export function validarFormularioVariables(vars, reales) {
   const errores      = [];
   const advertencias = [];
@@ -360,7 +336,6 @@ export function validarFormularioVariables(vars, reales) {
   vars.forEach(v => {
     const raw = reales[v.id];
 
-    // Campo vacío → bloqueo
     if (raw === null || raw === undefined || String(raw).trim() === '') {
       errores.push(`${v.nombre}: campo obligatorio.`);
       return;
@@ -368,14 +343,12 @@ export function validarFormularioVariables(vars, reales) {
 
     const n = parseFloat(raw);
 
-    // No numérico, NaN o Infinito → bloqueo (nunca confiar solo en
-    // que el control de UI —slider o input— haya prevenido esto).
+    // No se confía solo en el control de la interfaz: un valor no numérico, NaN o infinito bloquea.
     if (!Number.isFinite(n)) {
       errores.push(`${v.nombre}: debe ser un numero valido.`);
       return;
     }
 
-    // Fuera de rango → advertencia, no bloqueo (el clamp lo maneja)
     if (n < v.minimo || n > v.maximo) {
       advertencias.push(
         `${v.nombre}: ${n} ${v.unidad} esta fuera del rango de referencia (${v.minimo}–${v.maximo} ${v.unidad}). Se normalizara como 0% o 100%.`
@@ -389,15 +362,16 @@ export function validarFormularioVariables(vars, reales) {
 export const EQUILIBRIO_POR_PIERNA_MAX = 30;
 export const FUERZA_POR_MANO_MAX = 100;
 
-/*
- * esNivelLegerValido — se registra el nivel máximo alcanzado del
- * Course Navette: número entero entre 1 y 21.
- */
+/** Verifica que el nivel de Léger sea un entero entre 1 y 21.
+ * @param {*} n - valor a evaluar.
+ * @returns {boolean} true si es válido. */
 export function esNivelLegerValido(n) {
   return typeof n === 'number' && Number.isFinite(n) && n >= 1 && n <= 21 &&
     Number.isInteger(n);
 }
 
+/** Crea el estado vacío de un análisis completo.
+ * @returns {Object} estado inicial con todas las secciones del análisis. */
 export function estadoAnalisisInicial() {
   return {
     participante: { nombre: '', edad: '', genero: '', perfil: '', deporte: '' },
@@ -411,8 +385,7 @@ export function estadoAnalisisInicial() {
     realesF:  Object.fromEntries(VARS_FISICAS.map(v => [v.id, ''])),
     fisicas:  Object.fromEntries(VARS_FISICAS.map(v => [v.id, 0])),
     antropometricas: { peso: '', talla: '', cintura: '', cadera: '', grasaVisc: '', imc: null, icc: null },
-    // Respuestas de cuestionarios por modulo (ver src/evaluacion).
-    // Vacio hasta que exista su captura en la UI o la importacion.
+    // Respuestas por módulo de src/evaluacion; vacío hasta que exista su captura en la interfaz o su importación.
     cuestionarios: { parq: {}, complementarias: {}, ipaq: {}, psqi: {}, breq3: {}, bbaq21: {} },
   };
 }

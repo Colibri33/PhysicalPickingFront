@@ -1,10 +1,24 @@
-/* StepIpaq.jsx — IPAQ versión corta (paso 5). Días 0-7 + tiempo por día. */
+/**
+ * @module components/StepIpaq
+ * @description Paso 5: IPAQ versión corta (días 0-7 y tiempo por día).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura y validación de actividad física.
+ *  - D (Inversión de dependencias): cálculo y validación en logic/ipaq.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { ITEMS_IPAQ, faltantesIpaq, calcularIpaq } from '../logic/ipaq';
 
 const DIAS = [0, 1, 2, 3, 4, 5, 6, 7];
 
+/** Entrada de tiempo diario en horas y minutos.
+ * @param {Object} props
+ * @param {string} props.id - Pregunta.
+ * @param {number} props.minutos - Minutos totales.
+ * @param {boolean} props.noSabe - Respuesta "no sabe".
+ * @param {Function} props.onChange - Recibe el nuevo valor.
+ * @returns {JSX.Element} */
 function TiempoDia({ id, minutos, noSabe, onChange }) {
   const horas = typeof minutos === 'number' ? Math.floor(minutos / 60) : '';
   const mins = typeof minutos === 'number' ? minutos % 60 : '';
@@ -45,6 +59,15 @@ function TiempoDia({ id, minutos, noSabe, onChange }) {
   );
 }
 
+/**
+ * Paso del cuestionario IPAQ corto.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @param {Function} props.updateAnalisis - Actualiza parcialmente el análisis.
+ * @param {Function} props.onContinuar - Avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @returns {JSX.Element}
+ */
 export default function StepIpaq({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const ipaq = analisis.ipaq ?? { respuestas: {} };
   const respuestas = ipaq.respuestas ?? {};
@@ -52,15 +75,20 @@ export default function StepIpaq({ analisis, updateAnalisis, onContinuar, mostra
   const resultado = calcularIpaq(respuestas);
   const [marcados, setMarcados] = useState([]);
 
+  /** Marca las preguntas sin responder.
+   * @param {Array} f - Identificadores faltantes. */
   function marcarFaltantes(f) {
     setMarcados([]);
     setTimeout(() => setMarcados(f), 40);
   }
 
+  /** Registra los días de una actividad y ajusta su tiempo asociado.
+   * @param {string} id - Pregunta de días.
+   * @param {number} valor - Días (0-7). */
   function handleDias(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     const r2 = { ...respuestas, [id]: valor };
-    // Al poner 0 días se limpia el tiempo; al poner >0 se inicializa en 0 si estaba vacío.
+    // Con 0 días se elimina el tiempo; con más de 0 se inicializa en 0 si estaba vacío.
     const mapaTiempo = { i1: 'i2', i3: 'i4', i5: 'i6' };
     const t = mapaTiempo[id];
     if (t) {
@@ -70,11 +98,15 @@ export default function StepIpaq({ analisis, updateAnalisis, onContinuar, mostra
     updateAnalisis({ ipaq: { respuestas: r2 } });
   }
 
+  /** Registra el tiempo diario de una actividad.
+   * @param {string} id - Pregunta de tiempo.
+   * @param {number} valor - Minutos. */
   function handleTiempo(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     updateAnalisis({ ipaq: { respuestas: { ...respuestas, [id]: valor } } });
   }
 
+  /** Valida y avanza al siguiente paso. */
   function handleContinuar() {
     const f = faltantesIpaq(respuestas);
     if (f.length > 0) {
@@ -86,6 +118,12 @@ export default function StepIpaq({ analisis, updateAnalisis, onContinuar, mostra
     onContinuar();
   }
 
+  /** Bloque de días con su tiempo, visible si hay días.
+   * @param {string} idTiempo - Pregunta de tiempo.
+   * @param {string} idDias - Pregunta de días.
+   * @param {string} titulo - Título.
+   * @param {string} ayuda - Texto de ayuda.
+   * @returns {JSX.Element} */
   function bloqueDias(idTiempo, idDias, titulo, ayuda) {
     const dias = respuestas[idDias];
     const visibleTiempo = typeof dias === 'number' && dias > 0;

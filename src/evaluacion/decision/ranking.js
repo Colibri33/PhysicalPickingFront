@@ -1,16 +1,16 @@
-/* evaluacion/decision/ranking.js
-   Etapa 8: ranking de las 13 familias. Toma la salida del motor tal
-   cual (no reordena ni recalcula) y verifica que cubra las 13.
-   Además deriva la RECOMENDACIÓN FIRME: la primera familia firme del
-   ranking (sin carencias en demandas definitorias y sin brechas
-   severas, ver compatibilidad.js).
-   R-DEC-03 (decision propia, 2026-10): si ninguna familia es firme NO
-   se presenta ninguna familia como recomendación (no se "rellena" con
-   la primera del ranking). El flujo deriva entonces el Estado 3
-   (Adaptación desde cero) o pide los datos faltantes, ver
-   reglas/planAdaptacion.js. */
+/**
+ * @module evaluacion/decision/ranking
+ * @description Ranking de las 13 familias (etapa 8): valida la salida del motor y deriva la recomendación firme.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la presentación del ranking y la derivación de la recomendación.
+ *  - D (Inversión de dependencias): consume la salida del motor tal cual (sin reordenar ni recalcular) y el catálogo de familias.
+ * Notas: la recomendación firme es la primera familia firme (ver compatibilidad.js). R-DEC-03 (decisión propia, 2026-10): si ninguna es firme,
+ * no se presenta ninguna recomendación; el flujo deriva al Estado 3 (Adaptación desde cero) o solicita datos (reglas/planAdaptacion.js).
+ */
 import { FAMILIAS_DEPORTIVAS } from './familias.js';
 
+/** Etiquetas legibles de las capacidades. */
 const ETIQUETAS = {
   fuerza: 'fuerza',
   fuerza_explosiva: 'fuerza explosiva',
@@ -19,22 +19,29 @@ const ETIQUETAS = {
   equilibrio: 'equilibrio',
 };
 
-/** Motivos por los que una familia no es firme (compatible con registros antiguos). */
+/** Obtiene los motivos por los que una familia no es firme, compatible con registros antiguos.
+ * @param {Object} fam - familia del ranking.
+ * @returns {Object[]} motivos. */
 export function motivosNoFirme(fam) {
   if (Array.isArray(fam?.motivosNoFirme)) return fam.motivosNoFirme;
-  // Registros anteriores a R-DEC-02: solo existian carencias.
+  // Registros anteriores a R-DEC-02 solo contenían carencias.
   return (fam?.carencias ?? [])
     .filter(c => c.relevanteMitchell || c.demandaAlta || c.demanda === 'Alta' || c.demanda === 'Muy alta')
     .map(c => ({ tipo: 'sin_dato', capacidad: c.capacidad, demanda: c.demanda }));
 }
 
-/** Texto legible de los motivos (p. ej. "fuerza explosiva: Muy bajo frente a demanda Muy alta"). */
+/** Genera el texto legible de los motivos (p. ej. "fuerza explosiva: Muy bajo frente a demanda Muy alta").
+ * @param {Object} fam - familia del ranking.
+ * @returns {string[]} textos. */
 export function textoMotivosNoFirme(fam) {
   return motivosNoFirme(fam).map(m => (m.tipo === 'brecha_severa'
     ? `${ETIQUETAS[m.capacidad] ?? m.capacidad}: ${m.nivel} frente a demanda ${m.demanda}`
     : `${ETIQUETAS[m.capacidad] ?? m.capacidad}: sin dato (demanda ${m.demanda})`));
 }
 
+/** Construye el ranking validado y la recomendación firme a partir de la salida del motor.
+ * @param {Object} resultadoMotor - resultado de ejecutarDecisionEngine.
+ * @returns {Object} estado, familias, recomendada, sinFamiliaCompatible y advertencias. */
 export function construirRanking(resultadoMotor) {
   const lista = resultadoMotor?.salida?.compatibilidad?.ranking;
   if (!Array.isArray(lista)) {
@@ -54,9 +61,7 @@ export function construirRanking(resultadoMotor) {
     ...f,
     nombre: f.nombre ?? FAMILIAS_DEPORTIVAS.find(x => x.id === (f.id ?? f.familia))?.nombre ?? null,
   }));
-  // Recomendación firme: primera familia firme (registros antiguos del
-  // motor no traen `firme`: se consideran firmes para no reescribir
-  // el historial).
+  // Los registros antiguos sin `firme` se consideran firmes para no reescribir el historial.
   const esFirme = (f) => f.firme !== false;
   const recomendada = familias.find(esFirme) ?? null;
   const sinFamiliaCompatible = familias.length > 0 && !recomendada;
@@ -67,7 +72,7 @@ export function construirRanking(resultadoMotor) {
       'no se muestra un deporte recomendado (ver plan de adaptación o datos faltantes).',
     );
   } else if (lider && !esFirme(lider)) {
-    // Solo ocurre en registros guardados con el orden anterior.
+    // Solo en registros guardados con el orden anterior.
     advertencias.push(
       `${lider.nombre ?? lider.id} lidera por compatibilidad (${lider.porcentaje ?? '—'}%) ` +
       `pero no es recomendable (${textoMotivosNoFirme(lider).join('; ')}). ` +

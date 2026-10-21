@@ -1,6 +1,12 @@
-/* StepComplementarias.jsx — Preguntas complementarias de PhysicalPicking (paso 3).
-   Elaboración propia: NO es PAR-Q+ oficial y se presenta como bloque separado.
-   A. Antecedentes de lesiones · B. Limitaciones · C. Experiencia deportiva. */
+/**
+ * @module components/StepComplementarias
+ * @description Paso 3: preguntas complementarias (antecedentes de lesiones, limitaciones y experiencia deportiva).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura y validación del bloque complementario.
+ *  - D (Inversión de dependencias): catálogos y validación en logic/complementarias.
+ * Notas: elaboración propia: no es el PAR-Q+ oficial y se presenta como bloque separado.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import {
@@ -8,6 +14,13 @@ import {
   PRUEBAS_BATERIA_UI, algunaLesion, faltantesComplementarias,
 } from '../logic/complementarias';
 
+/** Selector Sí/No de una pregunta.
+ * @param {Object} props
+ * @param {string} props.id - Pregunta.
+ * @param {boolean} props.valor - Respuesta actual.
+ * @param {Function} props.onChange - Recibe la nueva respuesta.
+ * @param {Array} props.marcados - Preguntas marcadas como faltantes.
+ * @returns {JSX.Element} */
 function SiNo({ id, valor, onChange, marcados }) {
   return (
     <div className="parq-opciones" role="radiogroup" aria-label={id}>
@@ -29,6 +42,15 @@ function SiNo({ id, valor, onChange, marcados }) {
 
 const EXPERIENCIA_VACIA = { deporte: '', anios: '', tipo: '', modalidad: '', habilidad: '' };
 
+/**
+ * Paso de preguntas complementarias.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @param {Function} props.updateAnalisis - Actualiza parcialmente el análisis.
+ * @param {Function} props.onContinuar - Avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @returns {JSX.Element}
+ */
 export default function StepComplementarias({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const comp = analisis.complementarias ?? { respuestas: {} };
   const respuestas = comp.respuestas ?? {};
@@ -38,11 +60,16 @@ export default function StepComplementarias({ analisis, updateAnalisis, onContin
   const conPractica = respuestas.practica_deporte === true;
   const [marcados, setMarcados] = useState([]);
 
+  /** Marca las preguntas sin responder.
+   * @param {Array} f - Identificadores faltantes. */
   function marcarFaltantes(f) {
     setMarcados([]);
     setTimeout(() => setMarcados(f), 40);
   }
 
+  /** Registra una respuesta Sí/No.
+   * @param {string} id - Pregunta.
+   * @param {boolean} valor - Respuesta. */
   function handle(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     const r2 = { ...respuestas, [id]: valor };
@@ -59,11 +86,18 @@ export default function StepComplementarias({ analisis, updateAnalisis, onContin
     updateAnalisis({ complementarias: { respuestas: r2 } });
   }
 
+  /** Registra una respuesta de texto.
+   * @param {string} id - Pregunta.
+   * @param {string} valor - Texto. */
   function handleTexto(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     updateAnalisis({ complementarias: { respuestas: { ...respuestas, [id]: valor.slice(0, 500) } } });
   }
 
+  /** Modifica un campo de una experiencia deportiva.
+   * @param {number} idx - Índice.
+   * @param {string} campo - Campo.
+   * @param {*} valor - Nuevo valor. */
   function handleExperiencia(idx, campo, valor) {
     const lista = [...(respuestas.experiencias ?? [])];
     lista[idx] = { ...lista[idx], [campo]: valor };
@@ -71,14 +105,18 @@ export default function StepComplementarias({ analisis, updateAnalisis, onContin
     updateAnalisis({ complementarias: { respuestas: { ...respuestas, experiencias: lista } } });
   }
 
+  /** Agrega una experiencia vacía. */
   function agregarExperiencia() {
     updateAnalisis({ complementarias: { respuestas: { ...respuestas, experiencias: [...(respuestas.experiencias ?? []), { ...EXPERIENCIA_VACIA }] } } });
   }
 
+  /** Elimina una experiencia.
+   * @param {number} idx - Índice. */
   function quitarExperiencia(idx) {
     updateAnalisis({ complementarias: { respuestas: { ...respuestas, experiencias: (respuestas.experiencias ?? []).filter((_, i) => i !== idx) } } });
   }
 
+  /** Valida y avanza al siguiente paso. */
   function handleContinuar() {
     const f = faltantesComplementarias(respuestas, edad);
     if (f.length > 0) {

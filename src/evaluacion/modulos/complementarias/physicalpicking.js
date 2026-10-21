@@ -1,28 +1,28 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/modulos/complementarias/physicalpicking.js
-   PREGUNTAS COMPLEMENTARIAS PROPIAS DE PHYSICALPICKING
-   (elaboracion propia). NO forman parte del PAR-Q+ oficial y no se
-   presentan como preguntas del instrumento. Tres bloques:
-
-     A. Antecedentes de lesiones (lesion 2 anos, cirugia
-        musculoesqueletica, dolor recurrente + zona, fecha, tratamiento)
-     B. Limitaciones relevantes para las pruebas
-     C. Experiencia deportiva (practica previa, deportes, anos, nivel,
-        practica actual)
-
-   Estas variables quedan disponibles para el perfil funcional y para
-   el DecisionEngine (capa de experiencia y alertas de antecedentes).
-   No calculan nada: la regla de 2 anos y la interpretacion por
-   familia viven en el DecisionEngine (no se duplican aqui).
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/modulos/complementarias/physicalpicking
+ * @description Preguntas complementarias propias de PhysicalPicking: antecedentes de lesión, limitaciones para las pruebas y experiencia deportiva.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la definición y estructuración de estas preguntas.
+ *  - O (Abierto/Cerrado): los bloques se amplían declarando ítems, sin modificar el validador genérico.
+ *  - L (Sustitución de Liskov): cumple el contrato de módulo de ejecutarModulo.
+ *  - D (Inversión de dependencias): valida mediante el validador declarativo compartido.
+ * Notas: elaboración propia; NO forman parte del PAR-Q+ oficial. No calcula: la regla de 2 años y la interpretación por familia
+ * residen en el DecisionEngine. Alimenta la capa de experiencia y las alertas de antecedentes.
+ */
 
 import { ORIGEN, TIPO_MODULO, DESTINO, ESTADO_MODULO } from '../../trazabilidad.js';
 import { validarItems } from '../../validacion/validarRespuestas.js';
 
+/** Construye opciones de respuesta sin etiqueta.
+ * @param {...string} valores - valores permitidos.
+ * @returns {{valor: string, etiqueta: null}[]} opciones. */
 const op = (...valores) => valores.map(valor => ({ valor, etiqueta: null }));
 
+/** Ids de las pruebas de la batería a las que puede afectar una limitación. */
 export const PRUEBAS_BATERIA = ['dinamometria_manual', 'salto_vertical', 'sit_and_reach', 'equilibrio_monopodal_sin_vision', 'leger_course_navette_20m'];
 
+/** Niveles de experiencia deportiva admitidos. */
 export const NIVELES_EXPERIENCIA_MODULO = ['recreativo', 'formativo_club', 'federado_competitivo'];
 
 const CAMPOS_EXPERIENCIA = [
@@ -38,6 +38,7 @@ const CAMPOS_EXPERIENCIA = [
 
 const ANTECEDENTES_IDS = ['lesion_2anios', 'cirugia_musculoesqueletica', 'dolor_articular'];
 
+/** Ítems agrupados por bloque: antecedentes, limitaciones y experiencia. */
 export const BLOQUES_COMPLEMENTARIOS = {
   antecedentes: [
     { id: 'lesion_2anios', tema: 'lesion_deportiva_ultimos_2_anios', tipo: 'si_no', texto: '¿Ha sufrido alguna lesión deportiva en los últimos 2 años?' },
@@ -67,10 +68,10 @@ export const BLOQUES_COMPLEMENTARIOS = {
 
 const ITEMS = Object.values(BLOQUES_COMPLEMENTARIOS).flat();
 
-/* Antecedentes de lesion tal como se declararon (solo los 3 Si/No y la
-   zona). Lo usa la regla de seguridad R-SEG-04 cuando el bloque queda
-   invalido por OTRA pregunta (p. ej. experiencia), para no perder la
-   alerta. No valida ni completa nada. */
+/** Extrae los antecedentes de lesión declarados, sin validar ni completar.
+ * Lo usa la regla R-SEG-04 cuando el bloque es inválido por otra pregunta, para no perder la alerta.
+ * @param {Object} r - respuestas del bloque.
+ * @returns {Object|null} antecedentes declarados; null si no hay ninguno afirmativo. */
 export function antecedentesDeclarados(r) {
   if (!r || typeof r !== 'object') return null;
   const lesion2anios = r.lesion_2anios === true;
@@ -84,6 +85,7 @@ export function antecedentesDeclarados(r) {
   };
 }
 
+/** Módulo de preguntas complementarias conforme al contrato de ejecutarModulo. */
 export const MODULO_COMPLEMENTARIAS = {
   id: 'complementarias_physicalpicking',
   nombre: 'Preguntas complementarias de PhysicalPicking (elaboracion propia, no es PAR-Q+)',
@@ -102,10 +104,17 @@ export const MODULO_COMPLEMENTARIAS = {
   ],
   bloques: BLOQUES_COMPLEMENTARIOS,
 
+  /** Obtiene las respuestas del cuestionario complementario.
+   * @param {Object} datos - datos ingresados.
+   * @returns {Object|undefined} respuestas. */
   extraer(datos) {
     return datos?.cuestionarios?.complementarias;
   },
 
+  /** Valida los ítems y exige zona, fecha y tratamiento si hay algún antecedente, y experiencias si practicó deporte.
+   * @param {Object} respuestas - respuestas extraídas.
+   * @param {Object} contexto - datos del evaluado (edad acota los años de práctica).
+   * @returns {Object} resultado de validación. */
   validar(respuestas, contexto) {
     const v = validarItems(ITEMS, respuestas, contexto);
     const alguna = ANTECEDENTES_IDS.some(id => respuestas?.[id] === true);
@@ -132,6 +141,9 @@ export const MODULO_COMPLEMENTARIAS = {
     return v;
   },
 
+  /** Estructura antecedentes, limitaciones y experiencia; los datos dependientes solo se conservan si aplican.
+   * @param {Object} r - respuestas validadas.
+   * @returns {{resultadoEvaluacion: Object, advertencias: string[], estado: string}} resultado de la evaluación. */
   evaluar(r) {
     const advertencias = [];
     if (r.practica_deporte === true && (r.experiencias ?? []).some(e => e?.deporte)) {
@@ -166,6 +178,9 @@ export const MODULO_COMPLEMENTARIAS = {
     };
   },
 
+  /** Conserva el resultado sin nivel; no entra al porcentaje.
+   * @param {Object} resultado - resultado de evaluar.
+   * @returns {{datoNormalizado: Object, nivel: null}} dato normalizado. */
   normalizar(resultado) {
     return { datoNormalizado: resultado, nivel: null };
   },

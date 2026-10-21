@@ -1,36 +1,23 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/reglas/preparacionSeguridad.js
-   Etapa 6: reglas de preparacion / seguridad previas al motor.
-
-   Solo contiene reglas YA DEFINIDAS en el proyecto:
-   - R-SEG-01 (decision propia): el Leger no se aplica a personas con
-     dificultades expuestas en el PAR-Q+. Con seguimiento con algun Si
-     o incompleto, no se autoriza automaticamente la prueba maxima.
-     Extension conservadora coherente con esa regla: PAR-Q+ sin
-     responder o con preguntas generales incompletas tampoco autoriza.
-   - R-SEG-02 (decision propia): si no hay autorizacion, VO2max queda
-     sin dato (no penaliza); se marca "Leger no aplicado".
-   - R-SEG-03: las limitaciones declaradas en las preguntas
-     complementarias se reportan por prueba (solo aviso, sin excluir).
-   - R-SEG-04 (decision propia, 2026-10): un antecedente de lesion
-     declarado en las preguntas complementarias (lesion deportiva en
-     los ultimos 2 anos, cirugia musculoesqueletica o dolor articular
-     recurrente) genera la alerta de adaptacion y recuperacion previa
-     antes de iniciar nuevamente un deporte. Solo alerta: no excluye
-     familias ni cambia el porcentaje.
-
-   Las reglas de ESTADO DE PREPARACION (Estados 1-3: base fisica +
-   IPAQ + PSQI) ya existen dentro del DecisionEngine; aqui no se
-   duplican. Esta etapa solo le entrega las condiciones previas.
-
-   Ninguna regla de esta etapa modifica niveles de capacidades ni el
-   porcentaje de compatibilidad.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/reglas/preparacionSeguridad
+ * @description Reglas de preparación y seguridad previas al motor (etapa 6): autorización de pruebas máximas y alertas.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el conjunto de reglas R-SEG.
+ *  - O (Abierto/Cerrado): una regla nueva se añade a REGLAS y a la función de aplicación sin alterar las existentes.
+ *  - D (Inversión de dependencias): opera sobre el perfil funcional y las clasificaciones del PAR-Q+, no sobre los módulos de captura.
+ * Notas: R-SEG-01 (decisión propia): el Léger no se autoriza automáticamente con PAR-Q+ con seguimiento positivo o incompleto, sin responder o
+ * con generales incompletas (extensión conservadora). R-SEG-02: sin autorización, VO2máx queda sin dato y no penaliza. R-SEG-03: las limitaciones
+ * declaradas se reportan por prueba, solo como aviso. R-SEG-04 (2026-10): un antecedente de lesión declarado genera alerta de adaptación y
+ * recuperación previa, sin excluir familias ni alterar el porcentaje. Los Estados 1-3 de preparación residen en el DecisionEngine. Ninguna regla
+ * modifica niveles de capacidades ni el porcentaje de compatibilidad.
+ */
 
 import { ORIGEN } from '../trazabilidad.js';
 import { CLASIFICACION_PARQ } from '../modulos/seguridad/parq.js';
 import { CAPACIDADES } from '../modulos/fisicas.js';
 
+/** Catálogo de reglas de seguridad aplicadas. */
 export const REGLAS = [
   { id: 'R-SEG-01', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Autorizacion de pruebas maximas (resistencia aeróbica · Léger) segun PAR-Q+.' },
   { id: 'R-SEG-02', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Sin autorizacion, resistencia aeróbica queda sin dato y no penaliza.' },
@@ -44,7 +31,9 @@ const ANTECEDENTES_LESION = [
   { campo: 'dolorArticular', texto: 'dolor articular recurrente' },
 ];
 
-/** R-SEG-04: alerta por antecedente de lesion (null si no aplica). */
+/** R-SEG-04: genera la alerta por antecedente de lesión.
+ * @param {Object} [antecedentes] - antecedentes declarados.
+ * @returns {Object|null} alerta, o null si no aplica. */
 export function alertaAntecedenteLesion(antecedentes) {
   const presentes = ANTECEDENTES_LESION.filter(a => antecedentes?.[a.campo] === true);
   if (presentes.length === 0) return null;
@@ -63,6 +52,9 @@ export function alertaAntecedenteLesion(antecedentes) {
 
 const AUTORIZA = new Set([CLASIFICACION_PARQ.SIN_POSITIVOS, CLASIFICACION_PARQ.SEGUIMIENTO_SIN_POSITIVOS]);
 
+/** Aplica las reglas R-SEG-01 a R-SEG-04 sobre el perfil funcional.
+ * @param {Object} perfil - perfil funcional.
+ * @returns {Object} autorización de prueba máxima, avisos por prueba, alertas y advertencias. */
 export function aplicarReglasPreparacionSeguridad(perfil) {
   const alertas = [];
   const advertencias = [];

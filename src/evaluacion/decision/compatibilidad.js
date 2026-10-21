@@ -1,58 +1,46 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/decision/compatibilidad.js
-   Regla de compatibilidad + desempate Mitchell (referencia auditable
-   del DecisionEngine). Funciones puras, sin números sobre niveles:
-   - cumpleDemanda(): tabla ordinal CUMPLE_DESDE (cumple / no cumple).
-   - Compatibilidad = requisitos cumplidos / requisitos evaluados
-     (solo capacidades CON dato; sin dato no penaliza, baja cobertura).
-   - Cobertura = capacidades evaluadas / 5.
-   - Carencias v1.1 (decision propia, auditable): demandas NO EVALUABLES
-     por falta de dato. Una carencia en demanda Alta/Muy alta o en
-     capacidad Mitchell-relevante deja a la familia como NO FIRME: su
-     porcentaje no se toca (sigue sin penalizar), pero no puede
-     encabezar por delante de familias firmes en empates ni
-     presentarse como recomendación firme (ver ranking.js). Motivo:
-     la demanda es el nivel mínimo exigible; recomendar en primer
-     lugar una familia sin haber evaluado su demanda definitoria
-     (p. ej. fondo con VO2max Muy alta sin dato) es una mala
-     aplicación de la matriz, aunque el porcentaje sea 100% de lo
-     evaluado.
-   - R-DEC-02 Brecha severa v1.2 (decision propia, 2026-10): una brecha
-     severa (nivel Muy bajo/Bajo donde la familia exige Alta/Muy alta;
-     definicion ya existente en matrizDemanda.js) tambien deja a la
-     familia como NO FIRME. Motivo: si faltar el dato de la demanda
-     definitoria impide recomendar, tener ese dato en nivel bajo no
-     puede permitirlo. No se introduce ningun peso ni umbral nuevo y
-     el porcentaje no cambia.
-   - Mitchell NO modifica el porcentaje: solo cuenta brechas en
-     capacidades relevantes para desempatar.
-   - Orden del ranking: familias firmes primero; dentro de cada grupo,
-     compatibilidad ↓, carencias relevantes ↑ (menos), brechas
-     relevantes ↑ (menos), brechas severas ↑ (menos), cobertura ↓,
-     empates permitidos (orden estable, sin desempate arbitrario).
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/decision/compatibilidad
+ * @description Reglas puras de compatibilidad ordinal por familia, firmeza de la recomendación y desempate Mitchell (referencia auditable del DecisionEngine).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la regla de compatibilidad y de orden del ranking.
+ *  - O (Abierto/Cerrado): la matriz de demandas y la relevancia Mitchell son datos inyectados; cambian sin modificar las funciones.
+ *  - D (Inversión de dependencias): la matriz se recibe por parámetro; las tablas de cumplimiento provienen de matrizDemanda.js.
+ * Notas: compatibilidad = requisitos cumplidos / evaluados; sin dato no penaliza (baja la cobertura = evaluadas / 5). Sin conversiones
+ * numéricas de niveles. Carencias (v1.1, decisión propia): una demanda Alta/Muy alta o una capacidad Mitchell-relevante sin dato deja la
+ * familia como NO FIRME, sin alterar su porcentaje, porque la demanda es el mínimo exigible y recomendar sin evaluarla es una mala aplicación
+ * de la matriz. R-DEC-02 (v1.2, 2026-10): una brecha severa (nivel Muy bajo/Bajo ante demanda Alta/Muy alta) también deja la familia NO FIRME,
+ * sin pesos ni umbrales nuevos. Mitchell no modifica el porcentaje: solo cuenta brechas relevantes para desempatar. Orden del ranking:
+ * firmes primero; luego compatibilidad (desc), carencias relevantes, brechas relevantes y brechas severas (asc), cobertura (desc);
+ * se permiten empates con orden estable.
+ */
 
 import {
   CAPACIDADES_MATRIZ, CUMPLE_DESDE, DEMANDA_ALTA, NIVEL_BAJO,
   capacidadesRelevantes,
 } from './matrizDemanda.js';
 
-/** ¿El nivel cumple la demanda? (false si falta el nivel o la demanda es desconocida). */
+/** Determina si un nivel cumple una demanda.
+ * @param {string|null} nivel - nivel de la capacidad.
+ * @param {string} demanda - demanda de la familia.
+ * @returns {boolean|null} true si cumple; false si no cumple o la demanda es desconocida; null si no hay dato. */
 export function cumpleDemanda(nivel, demanda) {
-  if (nivel == null) return null; // sin dato: no evaluable
+  if (nivel == null) return null;
   return (CUMPLE_DESDE[demanda] ?? []).includes(nivel);
 }
 
-/** ¿La brecha es severa? (demanda Alta/Muy alta incumplida en nivel Muy bajo/Bajo). */
+/** Determina si una brecha es severa (demanda Alta/Muy alta con nivel Muy bajo/Bajo).
+ * @param {string} nivel - nivel de la capacidad.
+ * @param {string} demanda - demanda de la familia.
+ * @returns {boolean} true si es severa. */
 export function esBrechaSevera(nivel, demanda) {
   return DEMANDA_ALTA.includes(demanda) && NIVEL_BAJO.includes(nivel);
 }
 
-/**
- * evaluarFamilia — compatibilidad de un perfil de niveles contra una familia.
- * @param {{[cap]: nivel|null}} niveles (NIVELES o null por capacidad)
- * @param {object} familia (entrada de MATRIZ_DEMANDA)
- */
+/** Evalúa la compatibilidad de un perfil de niveles contra una familia.
+ * @param {Object<string, string|null>} niveles - nivel o null por capacidad.
+ * @param {Object} familia - entrada de MATRIZ_DEMANDA.
+ * @returns {Object} compatibilidad, cobertura, brechas, carencias, firmeza y motivos de no firmeza. */
 export function evaluarFamilia(niveles, familia) {
   const relevantes = new Set(capacidadesRelevantes(familia));
   const brechas = [];
@@ -63,8 +51,7 @@ export function evaluarFamilia(niveles, familia) {
     const demanda = familia.demandas[cap];
     const cumple = cumpleDemanda(niveles?.[cap] ?? null, demanda);
     if (cumple === null) {
-      // Sin dato: fuera del numerador Y del denominador (no penaliza),
-      // pero se registra la carencia para firmeza y desempate.
+      // Sin dato: fuera de numerador y denominador; se registra como carencia para firmeza y desempate.
       carencias.push({
         capacidad: cap,
         demanda,
@@ -86,7 +73,6 @@ export function evaluarFamilia(niveles, familia) {
   const brechasRelevantes = brechas.filter(b => b.relevanteMitchell).length;
   const brechasSeveras = brechas.filter(b => b.severa).length;
   const carenciasRelevantes = carencias.filter(c => c.relevanteMitchell).length;
-  // Motivos por los que la familia no puede ser recomendacion firme.
   const motivosNoFirme = [
     ...carencias.filter(c => c.relevanteMitchell || c.demandaAlta)
       .map(c => ({ tipo: 'sin_dato', capacidad: c.capacidad, demanda: c.demanda })),
@@ -105,20 +91,18 @@ export function evaluarFamilia(niveles, familia) {
     brechasSeveras,
     carencias,
     carenciasRelevantes,
-    // Firme = todas sus demandas definitorias evaluadas (ninguna carencia
-    // en demanda Alta/Muy alta ni en capacidad relevante) y sin brechas
-    // severas (R-DEC-02).
+    // Firme: sin carencias en demandas Alta/Muy alta ni capacidades relevantes, y sin brechas severas (R-DEC-02).
     firme: motivosNoFirme.length === 0,
     motivosNoFirme,
   };
 }
 
-/** Orden del ranking (empates permitidos: devuelve 0 y conserva el orden de entrada).
-   Las familias firmes (todas sus demandas definitorias evaluadas) van primero;
-   las provisionales (carencia en demanda Alta/Muy alta o capacidad Mitchell-relevante)
-   van después, aunque tengan alto porcentaje. */
+/** Comparador del ranking: las familias firmes preceden a las provisionales aunque estas tengan mayor porcentaje.
+ * Devuelve 0 en empate para conservar el orden de entrada.
+ * @param {Object} a - resultado de evaluarFamilia.
+ * @param {Object} b - resultado de evaluarFamilia.
+ * @returns {number} valor de ordenación. */
 export function compararFamilias(a, b) {
-  // Primero las firmes (firme !== false), luego las provisionales
   const fa = a.firme === false ? 0 : 1;
   const fb = b.firme === false ? 0 : 1;
   if (fa !== fb) return fb - fa;
@@ -132,7 +116,10 @@ export function compararFamilias(a, b) {
   return 0;
 }
 
-/** Evalúa y ordena todas las familias (no muta la entrada). */
+/** Evalúa y ordena todas las familias sin mutar la entrada.
+ * @param {Object<string, string|null>} niveles - nivel o null por capacidad.
+ * @param {Object[]} matriz - familias con sus demandas.
+ * @returns {Object[]} resultados ordenados. */
 export function ordenarFamilias(niveles, matriz) {
   return matriz.map(f => evaluarFamilia(niveles, f)).sort(compararFamilias);
 }

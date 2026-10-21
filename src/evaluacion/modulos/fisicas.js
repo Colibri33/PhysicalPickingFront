@@ -1,15 +1,14 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/modulos/fisicas.js
-   Modulos de las 5 capacidades de la bateria confirmada. Cada uno:
-     respuesta original (valor crudo) → evaluacion (valor + unidad) →
-     normalizacion a nivel ordinal mediante un baremo INYECTADO.
-   No contiene baremos: los recibe del registro (AFISAL y Léger propio
-   provisional, ver index.js). Si el registro no trae el baremo de una
-   capacidad, nivel = null y estado 'pendiente_baremo'.
-
-   Reutiliza las definiciones de captura existentes (VARS_FISICAS de
-   logic/modelo.js) para leer el valor y su unidad; no duplica rangos.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/modulos/fisicas
+ * @description Genera los módulos de las cinco capacidades de la batería confirmada: valor crudo, evaluación y nivel ordinal por baremo inyectado.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el mapeo capacidad-prueba y su evaluación.
+ *  - O (Abierto/Cerrado): una capacidad nueva se declara en CAPACIDADES; los hooks leerDato, validarDato y evaluarDato personalizan sin tocar la fábrica.
+ *  - L (Sustitución de Liskov): cada módulo generado cumple el contrato de ejecutarModulo.
+ *  - D (Inversión de dependencias): los baremos llegan por `recursos.baremos`; no se incluyen aquí.
+ * Notas: sin baremo para una capacidad, nivel = null y estado 'pendiente_baremo'. Reutiliza VARS_FISICAS (logic/modelo.js) para leer valor y unidad.
+ */
 
 import { VARS_FISICAS, esNivelLegerValido } from '../../logic/modelo.js';
 import { ORIGEN, TIPO_MODULO, DESTINO, ESTADO_MODULO } from '../trazabilidad.js';
@@ -18,11 +17,8 @@ import { vo2MaxDesdeNivel, nivelEnteroDeRegistro, BAREMO_LEGER_VO2MAX } from '..
 
 const AFISAL = 'AFISAL-INEFC (Rodriguez et al., 1998; Espana; n=238; grupos 18-24 y 25-34)';
 
-/**
- * Capacidades del DecisionEngine (ids identicos a su escala.json).
- * variableOrigen = id de la variable que hoy captura el frontend
- * (VARS_FISICAS). null = la captura no existe aun.
- */
+/** Capacidades del DecisionEngine (ids idénticos a su escala.json).
+ * variableOrigen es el id de la variable capturada en VARS_FISICAS; null si la captura no existe. */
 export const CAPACIDADES = [
   {
     id: 'fuerza', nombre: 'Fuerza', prueba: 'dinamometria_manual', variableOrigen: 'fuerza',
@@ -51,11 +47,12 @@ export const CAPACIDADES = [
     requiereAutorizacion: 'prueba_maxima',
     baremoId: 'physicalpicking_vo2max', referenciaBaremo: BAREMO_LEGER_VO2MAX.fuente,
     pendientes: [],
+    /** Lee el nivel máximo alcanzado del test de Léger.
+     * @param {Object} datos - datos ingresados.
+     * @returns {{palier: number}|undefined} nivel válido, si existe. */
     leerDato(datos) {
-      // La batería captura el nivel máximo alcanzado (entero 1-21) en
-      // `realesF.resistencia` (espejado en `leger.palier`); se acepta
-      // cualquiera de los dos. Valores >21 son la antigua resistencia en metros
-      // (retirada) y se ignoran aquí.
+      // Nivel máximo alcanzado (1-21) en realesF.resistencia o leger.palier. Valores > 21 corresponden a la antigua
+      // resistencia en metros (retirada) y se ignoran.
       const candidatos = [datos?.realesF?.resistencia, datos?.leger?.palier];
       for (const raw of candidatos) {
         if (raw === null || raw === undefined || raw === '') continue;
@@ -65,6 +62,9 @@ export const CAPACIDADES = [
       }
       return undefined;
     },
+    /** Valida que el nivel sea un entero de 1 a 21.
+     * @param {Object} respuestas - respuestas extraídas.
+     * @returns {Object} resultado de validación. */
     validarDato(respuestas) {
       const p = respuestas?.palier;
       if (typeof p !== 'number' || !Number.isFinite(p)) {
@@ -75,6 +75,9 @@ export const CAPACIDADES = [
       }
       return { ok: true, errores: [], advertencias: [], faltantes: [], omitidosPorCondicion: [], respondidos: 1 };
     },
+    /** Estima el VO2máx a partir del nivel alcanzado.
+     * @param {Object} respuestas - respuestas validadas.
+     * @returns {{resultadoEvaluacion: Object, advertencias: string[]}} resultado de la evaluación. */
     evaluarDato(respuestas) {
       const palier = respuestas?.palier;
       const nivelEntero = nivelEnteroDeRegistro(palier);
@@ -93,10 +96,16 @@ export const CAPACIDADES = [
   },
 ];
 
+/** Busca la definición de captura de una variable física.
+ * @param {string|null} variableOrigen - id en VARS_FISICAS.
+ * @returns {Object|null} definición o null. */
 function definicionCaptura(variableOrigen) {
   return VARS_FISICAS.find(v => v.id === variableOrigen) ?? null;
 }
 
+/** Construye el módulo de evaluación de una capacidad.
+ * @param {Object} cap - entrada de CAPACIDADES.
+ * @returns {Object} módulo conforme al contrato de ejecutarModulo. */
 function crearModuloCapacidad(cap) {
   const def = definicionCaptura(cap.variableOrigen);
   return {
@@ -116,6 +125,9 @@ function crearModuloCapacidad(cap) {
     pendientes: cap.pendientes,
     requiereAutorizacion: cap.requiereAutorizacion ?? null,
 
+    /** Extrae el valor crudo de la capacidad (y parciales bilaterales).
+     * @param {Object} datos - datos ingresados.
+     * @returns {Object|undefined} respuestas de la prueba. */
     extraer(datos) {
       if (typeof cap.leerDato === 'function') return cap.leerDato(datos);
       if (!cap.variableOrigen) return undefined;
@@ -124,7 +136,7 @@ function crearModuloCapacidad(cap) {
       const n = typeof raw === 'number' ? raw : parseFloat(raw);
       if (!Number.isFinite(n)) return { [cap.variableOrigen]: raw };
       const out = { [cap.variableOrigen]: n };
-      // Equilibrio bilateral AFISAL: parciales por pierna (trazabilidad del total).
+      // Parciales por pierna: trazabilidad del total bilateral AFISAL.
       if (cap.id === 'equilibrio') {
         for (const k of ['equilibrioDer', 'equilibrioIzq']) {
           const p = datos?.realesF?.[k];
@@ -132,7 +144,7 @@ function crearModuloCapacidad(cap) {
           if (Number.isFinite(pn)) out[k] = pn;
         }
       }
-      // Dinamometría bilateral: mejor intento por mano (trazabilidad de la suma AFISAL).
+      // Mejor intento por mano: trazabilidad de la suma bilateral AFISAL.
       if (cap.id === 'fuerza') {
         for (const k of ['fuerzaDer', 'fuerzaIzq']) {
           const p = datos?.realesF?.[k];
@@ -143,6 +155,8 @@ function crearModuloCapacidad(cap) {
       return out;
     },
 
+    /** Informa la ausencia de datos de la prueba.
+     * @returns {{advertencias: string[], datosFaltantes: string[]}} advertencias y faltantes. */
     sinDatos() {
       if (cap.id === 'vo2max') {
         return { advertencias: ['Resistencia aeróbica (Léger): sin nivel registrado (prueba maxima no realizada o no autorizada).'], datosFaltantes: ['palier_leger'] };
@@ -152,6 +166,9 @@ function crearModuloCapacidad(cap) {
         : { advertencias: [`${cap.nombre}: la captura de la prueba aun no existe en el frontend.`], datosFaltantes: ['captura_no_implementada'] };
     },
 
+    /** Valida el valor; fuera del rango de captura solo advierte.
+     * @param {Object} respuestas - respuestas extraídas.
+     * @returns {Object} resultado de validación. */
     validar(respuestas) {
       if (typeof cap.validarDato === 'function') return cap.validarDato(respuestas);
       const v = respuestas[cap.variableOrigen];
@@ -159,13 +176,15 @@ function crearModuloCapacidad(cap) {
       const advertencias = [];
       if (typeof v !== 'number' || !Number.isFinite(v)) errores.push(`${cap.nombre}: debe ser un numero valido.`);
       else if (def && (v < def.minimo || v > def.maximo)) {
-        // Mismo criterio que el formulario actual: fuera del rango de
-        // referencia de captura es advertencia, no bloqueo.
+        // Criterio del formulario: fuera del rango de captura es advertencia, no bloqueo.
         advertencias.push(`${cap.nombre}: ${v} ${def.unidad} fuera del rango de captura (${def.minimo}-${def.maximo}).`);
       }
       return { ok: errores.length === 0, errores, advertencias, faltantes: [], omitidosPorCondicion: [], respondidos: 1 };
     },
 
+    /** Estructura el resultado de la prueba y contrasta el desglose bilateral con el total.
+     * @param {Object} respuestas - respuestas validadas.
+     * @returns {{resultadoEvaluacion: Object, advertencias: string[]}} resultado de la evaluación. */
     evaluar(respuestas) {
       if (typeof cap.evaluarDato === 'function') return cap.evaluarDato(respuestas);
       const advertencias = [];
@@ -198,6 +217,11 @@ function crearModuloCapacidad(cap) {
       return { resultadoEvaluacion, advertencias };
     },
 
+    /** Asigna el nivel ordinal mediante el baremo inyectado.
+     * @param {Object} resultado - resultado de evaluar.
+     * @param {Object} contexto - datos del evaluado.
+     * @param {{baremos: Map}} recursos - registro de baremos.
+     * @returns {Object} dato normalizado, nivel y estado. */
     normalizar(resultado, contexto, recursos) {
       const b = aplicarBaremo(recursos?.baremos, cap.baremoId, resultado?.valor, contexto);
       return {
@@ -211,10 +235,10 @@ function crearModuloCapacidad(cap) {
   };
 }
 
+/** Módulos de las capacidades de la batería. */
 export const MODULOS_FISICOS = CAPACIDADES.map(crearModuloCapacidad);
 
-/** Variables que el frontend captura hoy pero que NO forman parte de
- *  la bateria confirmada (se informan como conflicto, no se evaluan). */
+/** Variables capturadas que no forman parte de la batería confirmada (se informan como conflicto, no se evalúan). */
 export const VARIABLES_CAPTURADAS_FUERA_DE_BATERIA = VARS_FISICAS
   .map(v => v.id)
   .filter(id => !CAPACIDADES.some(c => c.variableOrigen === id));

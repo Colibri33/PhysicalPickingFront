@@ -1,5 +1,12 @@
-/* AsistenteIA.jsx — interpretación con IA + chat de dudas.
-   Recibe el resumen ya calculado; la IA solo redacta/explica, no calcula. */
+/**
+ * @module components/AsistenteIA
+ * @description Interpretación del perfil mediante IA y chat de dudas sobre el resultado.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): presenta y solicita texto generado; no calcula resultados.
+ *  - D (Inversión de dependencias): depende de iaService, parseInterpretacion y capacidades, no de un proveedor concreto.
+ * Notas: recibe el resumen ya calculado; la IA solo redacta y explica.
+ */
 import { useState, useRef, useEffect } from 'react';
 import { interpretarConIA, preguntarALaIA } from '../ia/iaService';
 import { parseInterpretacion } from '../ia/parseInterpretacion';
@@ -8,7 +15,13 @@ import Icono from './Icono';
 
 const SUGERENCIAS = ['¿Por qué me recomendaron este deporte?', '¿Qué debo mejorar primero?', '¿Qué significa el mapa 3D?', '¿Qué es el test de Léger?'];
 
-/* ── Interpretación ── */
+/** Fila de lista con icono, título y detalle.
+ * @param {Object} props
+ * @param {string} props.icono - Nombre del icono.
+ * @param {string} [props.titulo] - Texto destacado.
+ * @param {string} props.detalle - Texto descriptivo.
+ * @param {string} props.tono - Variante visual.
+ * @returns {JSX.Element} */
 function Fila({ icono, titulo, detalle, tono }) {
   return (
     <li className={`ia-fila ia-fila--${tono}`}>
@@ -18,6 +31,10 @@ function Fila({ icono, titulo, detalle, tono }) {
   );
 }
 
+/** Resumen visual de capacidades con su nivel en escala de cinco pasos.
+ * @param {Object} props
+ * @param {Object} props.capacidades - Niveles por capacidad.
+ * @returns {JSX.Element|null} null si no hay capacidades. */
 function Capacidades({ capacidades }) {
   const lista = capacidadesParaMostrar(capacidades);
   if (lista.length === 0) return null;
@@ -44,6 +61,11 @@ function Capacidades({ capacidades }) {
 
 const AVATAR_IA = `${import.meta.env?.BASE_URL ?? '/'}brand/ia-avatar.jpg`;
 
+/** Vista de la interpretación estructurada, o texto plano si no pudo analizarse.
+ * @param {Object} props
+ * @param {Object} props.data - Interpretación procesada por parseInterpretacion.
+ * @param {Object} props.capacidades - Niveles por capacidad.
+ * @returns {JSX.Element} */
 export function InterpretacionVista({ data, capacidades }) {
   if (data.textoPlano !== undefined) return <div className="ia-texto">{data.textoPlano}</div>;
   return (
@@ -96,12 +118,17 @@ export function InterpretacionVista({ data, capacidades }) {
   );
 }
 
-/* ── Chat ── */
+/** Convierte **negrita** en elementos <strong>.
+ * @param {string} t - Texto de una línea.
+ * @returns {Array} fragmentos de texto y elementos. */
 function enLinea(t) {
   return t.split(/(\*\*[^*]+\*\*)/g).map((p, i) => (/^\*\*[^*]+\*\*$/.test(p) ? <strong key={i}>{p.slice(2, -2)}</strong> : p));
 }
 
-/* Markdown mínimo y seguro: **negrita**, viñetas "- " y párrafos. */
+/** Renderiza Markdown mínimo (negrita, viñetas y párrafos) sin HTML arbitrario.
+ * @param {Object} props
+ * @param {string} props.texto - Mensaje a mostrar.
+ * @returns {JSX.Element} */
 function Mensaje({ texto }) {
   const bloques = [];
   let lista = null;
@@ -119,8 +146,14 @@ function Mensaje({ texto }) {
   );
 }
 
+/** Hora local actual formateada para el chat.
+ * @returns {string} hora y minutos. */
 const hora = () => new Date().toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' });
 
+/** Panel de interpretación con IA y chat de dudas.
+ * @param {Object} props
+ * @param {Object} props.resumen - Resumen calculado que se envía a la IA.
+ * @returns {JSX.Element} */
 export default function AsistenteIA({ resumen }) {
   const [interp, setInterp] = useState('');
   const [cargando, setCargando] = useState(false);
@@ -131,9 +164,10 @@ export default function AsistenteIA({ resumen }) {
   const cajaRef = useRef(null);
   useEffect(() => {
     const c = cajaRef.current;
-    if (c) c.scrollTop = c.scrollHeight; // solo el chat, no la página
+    if (c) c.scrollTop = c.scrollHeight; // Desplaza solo el chat, no la página.
   }, [msgs, enviando]);
 
+  /** Solicita la interpretación a la IA. */
   async function generar() {
     setCargando(true); setError('');
     try { setInterp(await interpretarConIA(resumen)); }
@@ -141,6 +175,8 @@ export default function AsistenteIA({ resumen }) {
     finally { setCargando(false); }
   }
 
+  /** Envía una pregunta al chat (máx. 1000 caracteres).
+   * @param {string} [t] - Texto; si se omite usa el campo de entrada. */
   async function enviar(t) {
     const q = (t ?? texto).trim();
     if (!q || enviando) return;

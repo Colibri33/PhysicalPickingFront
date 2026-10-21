@@ -1,4 +1,12 @@
-/* StepPsqi.jsx — PSQI / ICSP-VC (paso 6). Calidad de sueño último mes. */
+/**
+ * @module components/StepPsqi
+ * @description Paso del cuestionario PSQI / ICSP-VC sobre calidad de sueño durante el último mes.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura respuestas y valida completitud; el puntaje se delega a logic/psqi.
+ *  - D (Inversión de dependencias): ítems, opciones y cálculo provienen de logic/psqi; el estado se recibe por props.
+ * Notas: los ítems del compañero de habitación (p10a-p10e) no puntúan; son información adicional.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import {
@@ -7,6 +15,13 @@ import {
   tieneCompanero, faltantesPsqi, calcularPsqi,
 } from '../logic/psqi';
 
+/** Grupo de botones de opción tipo radio para una pregunta.
+ * @param {Object} props
+ * @param {string} props.id - id de la pregunta.
+ * @param {*} props.valor - valor seleccionado.
+ * @param {Array<{valor: *, etiqueta: string}>} props.opciones - opciones disponibles.
+ * @param {Function} props.onChange - recibe (id, valor) al elegir.
+ * @returns {JSX.Element} grupo de opciones. */
 function Opciones({ id, valor, opciones, onChange }) {
   return (
     <div className="breq-opciones breq-opciones-4" role="radiogroup" aria-label={`psqi-${id}`}>
@@ -23,6 +38,13 @@ function Opciones({ id, valor, opciones, onChange }) {
   );
 }
 
+/** Formulario del PSQI con resumen de componentes y puntaje global.
+ * @param {Object} props
+ * @param {Object} props.analisis - análisis actual (psqi).
+ * @param {Function} props.updateAnalisis - actualiza campos del análisis.
+ * @param {Function} props.onContinuar - avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @returns {JSX.Element} tarjeta del paso. */
 export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const psqi = analisis.psqi ?? { respuestas: {} };
   const respuestas = psqi.respuestas ?? {};
@@ -31,18 +53,27 @@ export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostra
   const conCompanero = tieneCompanero(respuestas);
   const [marcados, setMarcados] = useState([]);
 
+  /** Resalta las preguntas sin responder; las descripciones se asocian a su pregunta base.
+   * @param {string[]} f - ids faltantes. */
   function marcarFaltantes(f) {
     const ids = f.map(id => String(id).replace(/_descripcion$/, ''));
+    // Reinicio previo y asignación diferida para reiniciar la animación de resaltado.
     setMarcados([]);
     setTimeout(() => setMarcados(ids), 40);
   }
 
+  /** Retira el resaltado de una pregunta o de su descripción asociada.
+   * @param {string} id - id de la pregunta. */
   function limpiarMarca(id) {
     setMarcados(prev => prev.filter(m => m !== id && m !== String(id).replace(/_descripcion$/, '')));
   }
 
+  // Clase CSS de la pregunta según esté marcada como faltante.
   const cls = id => `breq-pregunta${marcados.includes(id) ? ' pregunta-faltante' : ''}`;
 
+  /** Registra una respuesta y elimina las dependientes que dejan de aplicar.
+   * @param {string} id - id de la pregunta.
+   * @param {*} valor - valor respondido. */
   function handle(id, valor) {
     limpiarMarca(id);
     const r2 = { ...respuestas, [id]: valor };
@@ -55,11 +86,15 @@ export default function StepPsqi({ analisis, updateAnalisis, onContinuar, mostra
     updateAnalisis({ psqi: { respuestas: r2 } });
   }
 
+  /** Guarda una descripción libre (máximo 500 caracteres).
+   * @param {string} id - id del campo de descripción.
+   * @param {string} valor - texto ingresado. */
   function handleTexto(id, valor) {
     limpiarMarca(id);
     updateAnalisis({ psqi: { respuestas: { ...respuestas, [id]: valor.slice(0, 500) } } });
   }
 
+  /** Exige todas las respuestas antes de avanzar. */
   function handleContinuar() {
     const f = faltantesPsqi(respuestas);
     if (f.length > 0) {

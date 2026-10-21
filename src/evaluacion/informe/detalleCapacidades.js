@@ -1,16 +1,13 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/informe/detalleCapacidades.js
-   Datos para el panel "Tu perfil de rendimiento". Solo organiza lo que
-   ya produjo el flujo; no inventa porcentajes ni valores:
-   - valor medido y unidad de cada prueba (modulos fisica_*),
-   - nivel ordinal asignado por el baremo (AFISAL-INEFC / Léger propio),
-   - estado frente a la familia elegida (misma regla del motor:
-     cumpleDemanda / esBrechaSevera),
-   - referencia = corte del MISMO baremo (sexo y edad del participante)
-     para el nivel mínimo que exige la familia; sin familia, el corte
-     del siguiente nivel,
-   - diferencia = valor medido frente a esa referencia.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/informe/detalleCapacidades
+ * @description Datos del panel "Tu perfil de rendimiento": valor, nivel, estado frente a la familia elegida, referencia y diferencia por capacidad.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la presentación por capacidad del resultado del flujo.
+ *  - D (Inversión de dependencias): reutiliza las reglas del motor (cumpleDemanda, esBrechaSevera) y los baremos; no los duplica.
+ * Notas: solo organiza lo producido por el flujo; no inventa porcentajes ni valores. La referencia es el corte del mismo baremo (sexo y edad del
+ * participante) para el nivel mínimo que exige la familia o, sin familia, para el siguiente nivel; la diferencia compara el valor medido con ella.
+ */
 import { NIVELES } from '../niveles.js';
 import { CAPACIDADES } from '../modulos/fisicas.js';
 import { BAREMOS_AFISAL } from '../normalizacion/afisal.js';
@@ -20,9 +17,10 @@ import { MATRIZ_DEMANDA, DEMANDA_ALTA, capacidadesRelevantes } from '../decision
 import { cumpleDemanda, esBrechaSevera } from '../decision/compatibilidad.js';
 import { PAUTAS_POR_COMPONENTE } from '../reglas/planAdaptacion.js';
 
+/** Orden de presentación de las capacidades. */
 export const ORDEN_CAPACIDADES = ['fuerza', 'fuerza_explosiva', 'vo2max', 'flexibilidad', 'equilibrio'];
 
-/* Textos fijos: describen la prueba tal como la captura la app y su baremo. */
+/** Descripción fija de cada prueba, tal como la captura la app, y de su baremo. */
 export const INFO_CAPACIDAD = Object.freeze({
   fuerza: {
     nombre: 'Fuerza prensil', zona: 'Manos y antebrazos', unidad: 'kg',
@@ -55,10 +53,21 @@ const NIVEL_MINIMO = Object.freeze({ Baja: 'Bajo', Media: 'Medio', Alta: 'Alto',
 const REGISTRO = new Map([...BAREMOS_AFISAL, ...BAREMOS_LEGER].map(b => [b.id, b]));
 const COMPONENTE = { fuerza: 'fuerza', fuerza_explosiva: 'fuerza', vo2max: 'aerobico', flexibilidad: 'flexibilidad', equilibrio: 'equilibrio' };
 
+/** Redondea a un decimal.
+ * @param {number} x - valor.
+ * @returns {number} valor redondeado. */
 const redondear = (x) => Math.round(x * 10) / 10;
+/** Formatea con coma decimal.
+ * @param {number} x - valor.
+ * @returns {string} texto. */
 const fmt = (x) => (Number.isInteger(x) ? String(x) : String(redondear(x)).replace('.', ','));
 
-/** Corte del baremo para alcanzar `nivelObjetivo` o mejor. null si no aplica. */
+/** Obtiene el corte del baremo para alcanzar un nivel o mejor.
+ * @param {Object} baremo - baremo de cortes ordenados.
+ * @param {Object} grupo - grupo de sexo y edad.
+ * @param {string} nivelObjetivo - nivel a alcanzar.
+ * @param {string} unidad - unidad de medida.
+ * @returns {{op: string, valor: number, unidad: string, texto: string}|null} umbral, o null si no aplica. */
 export function umbralParaNivel(baremo, grupo, nivelObjetivo, unidad) {
   const li = NIVELES.indexOf(nivelObjetivo);
   if (!baremo || !grupo || li <= 0) return null;
@@ -68,12 +77,17 @@ export function umbralParaNivel(baremo, grupo, nivelObjetivo, unidad) {
     const op = baremo.limite === 'inferior_inclusivo' ? '≥' : '>';
     return { op, valor, unidad, texto: `${op} ${fmt(valor)} ${unidad}` };
   }
-  // menor_mejor (conteos enteros): nivel li o mejor ⇔ valor < cortes[4 - li]
+  // menor_mejor (conteos enteros): nivel li o mejor equivale a valor < cortes[4 - li].
   const k = NIVELES.length - 1 - li;
   const valor = baremo.limite === 'inferior_inclusivo' ? cortes[k] - 1 : cortes[k];
   return { op: '≤', valor, unidad, texto: `≤ ${fmt(valor)} ${unidad}` };
 }
 
+/** Calcula la diferencia entre el valor medido y el umbral.
+ * @param {number|null} valor - valor medido.
+ * @param {Object|null} umbral - umbral de referencia.
+ * @param {string} direccion - 'mayor_mejor' o 'menor_mejor'.
+ * @returns {{cumple: boolean, valor: number, texto: string}|null} diferencia, o null si falta dato. */
 function diferencia(valor, umbral, direccion) {
   if (valor == null || !umbral) return null;
   const d = direccion === 'menor_mejor' ? umbral.valor - valor : valor - umbral.valor;
@@ -87,22 +101,27 @@ function diferencia(valor, umbral, direccion) {
   };
 }
 
-/* Nivel de Léger necesario para un VO2 dado (misma ecuación de leger.js). */
+/** Calcula el nivel de Léger necesario para un VO2máx dado (inversa de la ecuación de leger.js).
+ * @param {number} vo2 - VO2máx en ml/kg/min.
+ * @returns {number} nivel entero mínimo. */
 function nivelLegerPara(vo2) {
   const v = (vo2 - LEGER_PARAMS.constanteVO2) / LEGER_PARAMS.coeficienteVO2;
   return Math.max(1, Math.ceil((v - LEGER_PARAMS.velocidadPalier1) / LEGER_PARAMS.incrementoPorPalier + 1 - 1e-9));
 }
 
+/** Describe el grupo de baremo en texto.
+ * @param {Object|null} grupo - grupo de sexo y edad.
+ * @returns {string|null} etiqueta, o null. */
 function etiquetaGrupo(grupo) {
   if (!grupo) return null;
   const sexo = grupo.sexo === 'masculino' ? 'hombres' : grupo.sexo === 'femenino' ? 'mujeres' : 'todos';
   return `${sexo} ${grupo.edadMin}-${grupo.edadMax} años`;
 }
 
-/**
- * @param {object} flujo salida de ejecutarFlujoEvaluacion()
- * @param {string|null} familiaId familia contra la que se compara (null = solo el perfil)
- */
+/** Construye el detalle por capacidad a partir del flujo.
+ * @param {Object} flujo - salida de ejecutarFlujoEvaluacion().
+ * @param {string|null} [familiaId] - familia de comparación; null para solo el perfil.
+ * @returns {Object[]} detalle por capacidad en ORDEN_CAPACIDADES. */
 export function detalleCapacidades(flujo, familiaId = null) {
   const modulos = flujo?.etapas?.modulos ?? {};
   const niveles = flujo?.etapas?.decisionEngine?.entrada?.capacidades ?? {};
@@ -130,7 +149,7 @@ export function detalleCapacidades(flujo, familiaId = null) {
       estado = 'sin_dato';
     }
 
-    // Referencia: nivel mínimo de la familia; sin familia, el siguiente nivel.
+    // Referencia: nivel mínimo de la familia o, sin familia, el siguiente nivel.
     const ni = NIVELES.indexOf(nivel);
     const nivelObjetivo = familia ? NIVEL_MINIMO[demanda] : (ni >= 0 && ni < NIVELES.length - 1 ? NIVELES[ni + 1] : null);
     const umbral = umbralParaNivel(baremo, grupo, nivelObjetivo, info.unidad);
@@ -154,7 +173,9 @@ export function detalleCapacidades(flujo, familiaId = null) {
   });
 }
 
-/** Capacidad con mayor margen de mejora: brecha severa > brecha (más niveles de distancia) > nivel más bajo. */
+/** Selecciona la capacidad con mayor margen de mejora: brecha severa, luego brecha (más niveles de distancia), luego nivel más bajo.
+ * @param {Object[]} detalles - salida de detalleCapacidades.
+ * @returns {Object|null} capacidad priorizada, o null si no hay datos. */
 export function mayorOportunidad(detalles) {
   const peso = { severa: 3, brecha: 2 };
   const candidatos = detalles.filter(d => d.nivelIndex >= 0);

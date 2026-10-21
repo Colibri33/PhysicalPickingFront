@@ -1,28 +1,41 @@
-/* ═══════════════════════════════════════════════════════════════
-   PhysicalPicking · components/PantallaAuth.jsx
-   Pantalla inicial: Login / Registro / Invitado
-   ═══════════════════════════════════════════════════════════════ */
-
+/**
+ * @module components/PantallaAuth
+ * @description Pantalla inicial con inicio de sesión, registro y acceso como invitado.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura de credenciales y navegación entre vistas de acceso.
+ *  - D (Inversión de dependencias): autenticación delegada a authService y callbacks recibidos por props.
+ * Notas: el modo invitado guarda los datos solo en el navegador y requiere confirmación.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { login, registrar } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
 import CampoContrasena from './CampoContrasena';
 
+/** Pantalla de acceso (inicio, login, registro).
+ * @param {Object} props
+ * @param {Function} props.onLoginExitoso - Recibe el usuario autenticado.
+ * @param {Function} props.onInvitado - Activa el modo invitado.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @param {Function} props.onOlvideContrasena - Abre la recuperación de contraseña.
+ * @param {Function} props.onVerTerminos - Abre los términos.
+ * @param {Function} props.onVerPrivacidad - Abre la política de privacidad.
+ * @returns {JSX.Element} */
 export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast, onOlvideContrasena, onVerTerminos, onVerPrivacidad }) {
   const [vista, setVista] = useState('inicio'); // 'inicio' | 'login' | 'registro'
 
-  /* ── Login state ── */
   const [loginEmail, setLoginEmail]       = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
-  /* ── Registro state ── */
   const [regNombre,   setRegNombre]   = useState('');
   const [regEmail,    setRegEmail]    = useState('');
   const [regPassword, setRegPassword] = useState('');
 
   const [enviando, setEnviando] = useState(false);
 
+  /** Inicia sesión con las credenciales ingresadas.
+   * @param {Event} e - Evento de envío. */
   async function handleLogin(e) {
     e.preventDefault();
     setEnviando(true);
@@ -32,6 +45,8 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     onLoginExitoso(res.usuario);
   }
 
+  /** Registra una cuenta y vuelve al login.
+   * @param {Event} e - Evento de envío. */
   async function handleRegistro(e) {
     e.preventDefault();
     setEnviando(true);
@@ -44,6 +59,7 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     setLoginPassword('');
   }
 
+  /** Entra como invitado tras advertir sobre la pérdida de datos. */
   function handleInvitado() {
     const confirmado = window.confirm(
       'En modo invitado, tus datos se guardan SOLO en este navegador, no en un servidor. ' +
@@ -53,7 +69,6 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     if (confirmado) onInvitado();
   }
 
-  /* ────────────────────────────────── PANTALLA INICIAL ── */
   if (vista === 'inicio') return (
     <div className="auth-screen">
       <FondoAnimado />
@@ -90,7 +105,6 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     </div>
   );
 
-  /* ────────────────────────────────── LOGIN ── */
   if (vista === 'login') return (
     <div className="auth-screen">
       <FondoAnimado />
@@ -142,7 +156,6 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
     </div>
   );
 
-  /* ────────────────────────────────── REGISTRO ── */
   return (
     <div className="auth-screen">
       <FondoAnimado />

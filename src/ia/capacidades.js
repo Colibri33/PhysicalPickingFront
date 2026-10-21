@@ -1,5 +1,13 @@
-/* capacidades.js — "tus capacidades de un vistazo": se calcula localmente
-   con los niveles que ya dio el motor (no depende de la IA). */
+/**
+ * @module ia/capacidades
+ * @description Resume las capacidades físicas para mostrar, a partir de los niveles ya calculados por el motor.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la presentación resumida de capacidades.
+ *  - O (Abierto/Cerrado): ETIQUETAS es un catálogo; se agregan capacidades sin tocar la función.
+ * Notas: cálculo local, independiente de la IA.
+ */
+
 const NIVELES = ['Muy bajo', 'Bajo', 'Medio', 'Alto', 'Muy alto'];
 const ETIQUETAS = {
   fuerza: ['fuerza', 'Fuerza de agarre'],
@@ -9,6 +17,9 @@ const ETIQUETAS = {
   equilibrio: ['equilibrio', 'Equilibrio'],
 };
 
+/** Construye la lista de capacidades con nivel válido, con ícono, nombre y paso (1-5).
+ * @param {Object} [capacidades] - capacidades del motor indexadas por id, con campo nivel.
+ * @returns {Array<{id: string, icono: string, nombre: string, nivel: string, paso: number}>} capacidades a mostrar. */
 export function capacidadesParaMostrar(capacidades = {}) {
   return Object.entries(ETIQUETAS).map(([id, [icono, nombre]]) => {
     const nivel = capacidades?.[id]?.nivel;

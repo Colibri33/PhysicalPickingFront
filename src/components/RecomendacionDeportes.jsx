@@ -1,10 +1,12 @@
-/* ─── RecomendacionDeportes.jsx v7 ───
-   Paso final: recomendación desde el ranking del DecisionEngine
-   (13 familias, matriz + Mitchell). No calcula nada propio: consume
-   el flujo de src/evaluacion, la misma fuente del informe final.
-   Si ninguna familia es firme no muestra un deporte: presenta el
-   Estado 3 o los datos faltantes (R-DEC-03).
-*/
+/**
+ * @module components/RecomendacionDeportes
+ * @description Paso final: recomendación a partir del ranking de 13 familias del DecisionEngine.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): presentar la recomendación; no calcula nada propio.
+ *  - D (Inversión de dependencias): consume el flujo de src/evaluacion, la misma fuente del informe final.
+ * Notas: si ninguna familia es firme no se muestra un deporte, sino el Estado 3 o los datos faltantes (R-DEC-03).
+ */
 import { useMemo, useState } from 'react';
 import Icono from './Icono';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
@@ -21,6 +23,10 @@ const ETIQUETAS_CAPACIDAD = {
   equilibrio: 'Equilibrio',
 };
 
+/** Motivo de demanda según la clasificación de Mitchell.
+ * @param {string} familiaId - Identificador de la familia.
+ * @param {string} capacidad - Capacidad evaluada.
+ * @returns {string|null} motivo, o null si no aplica. */
 function motivoMitchell(familiaId, capacidad) {
   const fam = MATRIZ_DEMANDA.find(f => f.id === familiaId);
   const m = /^(I+)([ABC])$/.exec(fam?.mitchell ?? '');
@@ -30,14 +36,21 @@ function motivoMitchell(familiaId, capacidad) {
   return null;
 }
 
+/** Pantalla de recomendación deportiva.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @param {Function} [props.onNuevo] - Inicia una evaluación nueva.
+ * @param {Function} [props.onGuardar] - Guarda el análisis.
+ * @param {boolean} [props.analisisGuardado] - Indica si ya se guardó.
+ * @param {boolean} [props.guardando] - Guardado en curso.
+ * @returns {JSX.Element} */
 export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, analisisGuardado, guardando }) {
   const flujo = useMemo(
     () => ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis)),
     [analisis],
   );
   const ranking = flujo.etapas.ranking.familias ?? [];
-  // Recomendación firme: primera familia sin carencias definitorias ni
-  // brechas severas. Si no hay ninguna, no se muestra un deporte (R-DEC-03).
+  // Recomendación firme: primera familia sin carencias definitorias ni brechas severas (R-DEC-03).
   const recomendada = flujo.etapas.ranking.recomendada ?? null;
   const lider = ranking[0] ?? null;
   const liderProvisional = recomendada && lider && lider.firme === false;
@@ -58,7 +71,6 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
 
       <AlertaAntecedentes alertas={flujo.informe.seguridad.alertas} />
 
-      {/* Resumen de la familia principal, o Estado 3 / datos faltantes */}
       {top ? (
         <div className="rec-perfil-banner" style={{ borderColor: 'var(--purple, #5B3FE0)' }}>
           <span className="rec-perfil-etiqueta">Recomendación firme</span>
@@ -79,14 +91,13 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       )}
 
       {ranking.length > 0 && (
-        <MapaCorporalBrechas flujo={flujo} familiaId={familiaSel} onFamiliaChange={setFamiliaSel} />
+        <MapaCorporalBrechas flujo={flujo} familiaId={familiaSel} onFamiliaChange={setFamiliaSel} sexo={analisis.participante?.genero} />
       )}
 
       {!top && recomendaciones.length > 0 && (
         <h3 className="section-subtitle mt-lg">Compatibilidad por familia (ninguna recomendable todavía)</h3>
       )}
 
-      {/* Lista de familias recomendadas (fuente unica: ranking del DecisionEngine) */}
       <div className="rec-lista">
         {recomendaciones.map((fam, idx) => {
           const relevantes = (fam.brechas ?? []).filter(b => b.relevanteMitchell);
@@ -156,7 +167,6 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
         </span>
       </div>
 
-      {/* Acciones */}
       <div className="action-row mt-lg">
         {onGuardar && (
           <button className="btn btn-primary" onClick={onGuardar} disabled={analisisGuardado || guardando} type="button">

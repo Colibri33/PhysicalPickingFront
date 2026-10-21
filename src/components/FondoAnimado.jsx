@@ -1,15 +1,19 @@
-/* ─── FondoAnimado.jsx ───
-   Fondo con puntos flotantes de la identidad PhysicalPicking
-   (morado/azul/cian) que reaccionan al mouse. Se usa detras de las
-   pantallas de login/registro para dar el toque de tecnologia sin
-   verse excesivamente "IA" — son solo particulas suaves, no un
-   efecto neon agresivo. Basado en el mockup aprobado.
-*/
+/**
+ * @module components/FondoAnimado
+ * @description Fondo de canvas con partículas flotantes que se repelen del puntero, usado en pantallas de autenticación.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la animación decorativa de fondo.
+ *  - I (Segregación de interfaces): no recibe props.
+ * Notas: efecto sutil de partículas con la paleta de la identidad PhysicalPicking.
+ */
 import { useRef, useEffect } from 'react';
 
 const COLORES = ['#22D3EE', '#8B6BFF', '#5B3FE0', '#7EF0FA', '#2F5CE8'];
 const N_PUNTOS = 46;
 
+/** Canvas decorativo animado con requestAnimationFrame; libera listeners y animación al desmontarse.
+ * @returns {JSX.Element} canvas oculto a tecnologías de asistencia. */
 export default function FondoAnimado() {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: -9999, y: -9999 });
@@ -19,6 +23,7 @@ export default function FondoAnimado() {
     const ctx = canvas.getContext('2d');
     let w, h, raf;
 
+    /** Ajusta el buffer del canvas a su tamaño de pantalla. */
     function resize() {
       w = canvas.width = canvas.offsetWidth;
       h = canvas.height = canvas.offsetHeight;
@@ -35,6 +40,7 @@ export default function FondoAnimado() {
       color: COLORES[Math.floor(Math.random() * COLORES.length)],
     }));
 
+    /** Avanza y dibuja un fotograma; las partículas cercanas al puntero se desplazan y crecen. */
     function tick() {
       ctx.clearRect(0, 0, w, h);
       for (const p of puntos) {
@@ -62,10 +68,13 @@ export default function FondoAnimado() {
     }
     tick();
 
+    /** Registra la posición del puntero relativa al canvas.
+     * @param {MouseEvent} e - evento de movimiento. */
     function handleMove(e) {
       const rect = canvas.getBoundingClientRect();
       mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     }
+    /** Aleja el puntero fuera del canvas para desactivar la repulsión. */
     function handleLeave() {
       mouseRef.current = { x: -9999, y: -9999 };
     }

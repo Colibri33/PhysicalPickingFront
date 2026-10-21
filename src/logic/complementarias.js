@@ -1,15 +1,14 @@
-/* logic/complementarias.js — Preguntas complementarias PROPIAS de
-   PhysicalPicking (NO son PAR-Q+ oficial y nunca se presentan como tal).
-   Tres bloques:
-     A. Antecedentes de lesiones previas (lesión 2 años, cirugía
-        musculoesquelética, dolor recurrente + zona, fecha, tratamiento).
-     B. Limitaciones relevantes para las pruebas.
-     C. Experiencia deportiva (práctica previa, deportes, años, nivel,
-        práctica actual).
-   Los ids son idénticos a los del módulo de evaluación
-   (modulos/complementarias/physicalpicking.js) para copia directa.
-   Textos de lesiones/experiencia según especificación del proyecto;
-   textos de limitaciones = redacción propia provisional. */
+/**
+ * @module logic/complementarias
+ * @description Preguntas complementarias propias de PhysicalPicking (antecedentes de lesiones, limitaciones y experiencia deportiva) y su validación de completitud.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contenido o la validación de este bloque complementario.
+ *  - O (Abierto/Cerrado): niveles, modalidades, habilidades y preguntas son catálogos de datos extensibles.
+ * Notas: NO es el PAR-Q+ oficial y nunca se presenta como tal. Los ids coinciden con los del módulo de evaluación
+ * (modulos/complementarias/physicalpicking.js) para copia directa. Textos de lesiones y experiencia según la especificación
+ * del proyecto; los de limitaciones son redacción propia provisional.
+ */
 
 export const NIVELES_EXPERIENCIA = [
   { valor: 'recreativo', etiqueta: 'Recreativo' },
@@ -41,20 +40,32 @@ export const PREGUNTAS_ANTECEDENTES = [
   { id: 'dolor_articular', texto: '¿Presenta dolor recurrente en alguna articulación (rodilla, hombro, espalda, tobillo, etc.)?' },
 ];
 
+/** Crea el estado inicial vacío del bloque.
+ * @returns {{respuestas: Object}} estado sin respuestas. */
 export function estadoComplementariasInicial() {
   return { respuestas: {} };
 }
 
+/** Indica si el antecedente reporta lesión, cirugía o dolor articular recurrente.
+ * @param {Object} [respuestas] - respuestas del bloque.
+ * @returns {boolean} true si alguna respuesta es afirmativa. */
 export function algunaLesion(respuestas = {}) {
   return respuestas.lesion_2anios === true
     || respuestas.cirugia_musculoesqueletica === true
     || respuestas.dolor_articular === true;
 }
 
+/** Verifica que el valor sea una cadena no vacía.
+ * @param {*} v - valor a evaluar.
+ * @returns {boolean} true si es texto con contenido. */
 function esTexto(v) {
   return typeof v === 'string' && v.trim() !== '';
 }
 
+/** Valida que una experiencia deportiva tenga todos sus campos y años coherentes.
+ * @param {Object} e - experiencia (deporte, anios, tipo, modalidad, habilidad).
+ * @param {number} edadMax - límite superior de años de práctica (edad de la persona).
+ * @returns {boolean} true si está completa y es válida. */
 function experienciaCompleta(e, edadMax) {
   if (!e || typeof e !== 'object') return false;
   if (!esTexto(e.deporte)) return false;
@@ -65,6 +76,10 @@ function experienciaCompleta(e, edadMax) {
   return true;
 }
 
+/** Determina los campos obligatorios sin responder, según las ramas condicionales activas.
+ * @param {Object} [respuestas] - respuestas del bloque.
+ * @param {number} [edad] - edad en años; si no es entera se admite hasta 120 años de práctica.
+ * @returns {string[]} ids de los campos pendientes. */
 export function faltantesComplementarias(respuestas = {}, edad) {
   const faltan = [];
   for (const p of PREGUNTAS_ANTECEDENTES) {

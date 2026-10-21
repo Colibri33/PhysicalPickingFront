@@ -1,18 +1,22 @@
-/* evaluacion/modulos/cuestionarios/ipaq.js
-   IPAQ versión corta (7 ítems): nivel de actividad física actual.
-   Destino: PREPARACION (alimenta el estado de preparación del
-   DecisionEngine junto con la base física).
-   Textos transcritos de IPAQ_cuestionario_0.pdf (versión en español
-   del formato corto). Referencia original: Craig et al. (2003).
-   Calificación MET-min/semana y categorías según el propio cuestionario. */
+/**
+ * @module evaluacion/modulos/cuestionarios/ipaq
+ * @description Módulo IPAQ versión corta (7 ítems) para el nivel de actividad física actual.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la definición del IPAQ.
+ *  - D (Inversión de dependencias): la calificación se delega en logic/ipaq.js y el armado en la fábrica de cuestionarios.
+ * Notas: destino PREPARACION (estado de preparación del DecisionEngine). Textos de IPAQ_cuestionario_0.pdf; referencia: Craig et al. (2003).
+ * MET-min/semana y categorías según el propio cuestionario.
+ */
 import { crearModuloCuestionario } from './base.js';
 import { ORIGEN, DESTINO } from '../../trazabilidad.js';
 import { calcularIpaq } from '../../../logic/ipaq.js';
 
-// Límites de COHERENCIA (no son reglas de calificación del IPAQ).
+// Límites de coherencia, no reglas de calificación del IPAQ.
 const DIAS = { tipo: 'numero', entero: true, min: 0, max: 7 };
 const MIN_DIA = { tipo: 'numero', min: 0, max: 1440, permiteNoSabe: true };
 
+/** Módulo IPAQ. */
 export const MODULO_IPAQ = crearModuloCuestionario({
   id: 'ipaq',
   nombre: 'IPAQ (Actividad física)',
@@ -34,9 +38,15 @@ export const MODULO_IPAQ = crearModuloCuestionario({
   ],
   contratoNormalizado: "{ categoria: 'Bajo' | 'Moderado' | 'Alto', metMinSemana: number } → entrada.ipaq del DecisionEngine",
   pendientes: [],
+  /** Calcula MET-min/semana y categoría.
+   * @param {Object} respuestas - respuestas validadas.
+   * @returns {Object} resultado de calcularIpaq. */
   calificar(respuestas) {
     return calcularIpaq(respuestas);
   },
+  /** Normaliza categoría y MET-min/semana.
+   * @param {Object|null} resultado - resultado de calcularIpaq.
+   * @returns {{datoNormalizado: Object|null, nivel: string|null}} dato normalizado y categoría. */
   normalizar(resultado) {
     if (!resultado) return { datoNormalizado: null, nivel: null };
     return {

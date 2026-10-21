@@ -1,13 +1,16 @@
-/* informeMisDatosPdf.js — genera el PDF legible de "Mis datos"
-   (derecho de acceso / Habeas Data) a partir del JSON que devuelve
-   GET /arco/exportar. Se genera en el propio navegador con jsPDF:
-   portada de marca, guía de lectura, datos de cuenta, consentimientos
-   y un informe explicado por cada evaluación guardada. */
+/**
+ * @module utils/informeMisDatosPdf
+ * @description Genera en el navegador, con jsPDF, el PDF legible de "Mis datos" (derecho de acceso, Habeas Data) a partir del JSON de GET /arco/exportar.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contenido y el formato del PDF de Mis datos.
+ *  - D (Inversión de dependencias): depende del contrato JSON del endpoint de exportación y de alertaAntecedenteLesion (evaluacion/reglas), sin recalcular reglas de seguridad.
+ * Notas: el documento incluye portada de marca, guía de lectura, datos de cuenta, consentimientos y un informe explicado por cada evaluación guardada.
+ */
 
 import { jsPDF } from 'jspdf';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad.js';
 
-/* ── Marca ── */
 const MORADO = [91, 63, 224];
 const TINTA = [31, 41, 55];
 const GRIS = [107, 114, 128];
@@ -35,6 +38,9 @@ const ETIQUETAS_CAPACIDAD = {
   equilibrio: 'Equilibrio',
 };
 
+/** Formatea una fecha ISO en formato local legible.
+ * @param {string} iso - fecha en formato ISO 8601.
+ * @returns {string} fecha formateada, "—" si falta o el original si no es válida. */
 export function formatearFechaISO(iso) {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -42,24 +48,36 @@ export function formatearFechaISO(iso) {
   return d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** Convierte un valor a texto, usando un reemplazo si está vacío.
+ * @param {*} valor - valor a convertir.
+ * @param {string} [reemplazo] - texto a usar cuando el valor es nulo o vacío.
+ * @returns {string} texto resultante. */
 function texto(valor, reemplazo = '—') {
   if (valor === null || valor === undefined || valor === '') return reemplazo;
   return String(valor);
 }
 
+/** Convierte un booleano a "sí" o "no".
+ * @param {*} valor - valor a convertir.
+ * @returns {string} "sí", "no" o el texto del valor. */
 function siNo(valor) {
   if (valor === true) return 'sí';
   if (valor === false) return 'no';
   return texto(valor);
 }
 
+/** Extrae el total de una entrada del consolidado (objeto o número).
+ * @param {Object|number|null} c - entrada del consolidado.
+ * @returns {number|null} total o null. */
 function totalConsolidado(c) {
   if (c === null || c === undefined) return null;
   if (typeof c === 'object') return c.total ?? null;
   return c;
 }
 
-/* Resume un registro a lo esencial y legible (sin volcar JSON crudo). */
+/** Resume un registro guardado a lo esencial y legible, sin volcar JSON crudo.
+ * @param {Object} [registro] - registro del historial.
+ * @returns {Object} resumen con participante, seguridad, variables, familias, cuestionarios, interpretación y plan. */
 export function resumirRegistro(registro = {}) {
   const p = registro.participante || {};
   const familias = registro.evaluacion?.etapas?.ranking?.familias
@@ -91,7 +109,7 @@ export function resumirRegistro(registro = {}) {
     parq: registro.parq?.resultado ?? null,
     pruebaMaxima: registro.evaluacion?.informe?.seguridad?.pruebaMaxima ?? null,
     alertasSeguridad: (() => {
-      // R-SEG-04: en registros anteriores a la regla se deriva de los antecedentes guardados.
+      // R-SEG-04: en registros previos a la regla, la alerta se deriva de los antecedentes guardados.
       const alertas = registro.evaluacion?.informe?.seguridad?.alertas ?? [];
       if (alertas.some(a => a.codigo === 'ANTECEDENTE_LESION')) return alertas;
       const lesion = alertaAntecedenteLesion(registro.complementarias?.resultado?.antecedentes);
@@ -103,8 +121,7 @@ export function resumirRegistro(registro = {}) {
     barreras: Array.isArray(barreras?.significativas) && barreras.significativas.length > 0
       ? `Barreras relevantes: ${barreras.significativas.join(', ')}` : null,
     interpretacion: texto(registro.interpretacion?.parrafo, ''),
-    // Con el flujo nuevo la recomendación sale del DecisionEngine; el texto
-    // del modelo heredado solo se usa en registros sin ranking del motor.
+    // La recomendación proviene del DecisionEngine; el texto del modelo heredado solo se usa en registros sin ranking del motor.
     recomendacion: registro.evaluacion?.etapas?.ranking?.familias && 'recomendada' in registro.evaluacion.etapas.ranking
       ? texto(registro.evaluacion.etapas.ranking.recomendada
         ? `${registro.evaluacion.etapas.ranking.recomendada.nombre ?? registro.evaluacion.etapas.ranking.recomendada.id} (${registro.evaluacion.etapas.ranking.recomendada.porcentaje ?? '—'}% de compatibilidad).`
@@ -126,13 +143,22 @@ export function resumirRegistro(registro = {}) {
   };
 }
 
-/* ═══ Motor de paginado ═══ */
-
+/** Agrega una página si el contenido no cabe en el espacio restante.
+ * @param {Object} doc - documento jsPDF.
+ * @param {number} y - posición vertical actual en mm.
+ * @param {number} [necesario] - alto requerido en mm.
+ * @returns {number} posición vertical vigente. */
 function nuevaPaginaSiFalta(doc, y, necesario = 20) {
   if (y + necesario > PIE_Y - 6) { doc.addPage(); return 20; }
   return y;
 }
 
+/** Escribe un párrafo con ajuste de línea y salto de página automático.
+ * @param {Object} doc - documento jsPDF.
+ * @param {string} textoStr - texto a escribir.
+ * @param {number} y - posición vertical actual en mm.
+ * @param {Object} [opciones] - sangria, tamano, negrita, color, justificado, interlineado.
+ * @returns {number} nueva posición vertical. */
 function parrafo(doc, textoStr, y, { sangria = 0, tamano = 10, negrita = false, color = TINTA, justificado = false, interlineado = 5.2 } = {}) {
   doc.setFont('helvetica', negrita ? 'bold' : 'normal');
   doc.setFontSize(tamano);
@@ -147,6 +173,11 @@ function parrafo(doc, textoStr, y, { sangria = 0, tamano = 10, negrita = false, 
   return y;
 }
 
+/** Escribe un título de sección con subrayado de marca.
+ * @param {Object} doc - documento jsPDF.
+ * @param {string} titulo - título de la sección.
+ * @param {number} y - posición vertical actual en mm.
+ * @returns {number} nueva posición vertical. */
 function seccion(doc, titulo, y) {
   y = nuevaPaginaSiFalta(doc, y, 16);
   doc.setFont('helvetica', 'bold');
@@ -160,8 +191,12 @@ function seccion(doc, titulo, y) {
   return y + 6;
 }
 
+/** Dibuja una tabla etiqueta-valor con fondo alterno.
+ * @param {Object} doc - documento jsPDF.
+ * @param {Array<[string, *]>} filas - pares [etiqueta, valor].
+ * @param {number} y - posición vertical actual en mm.
+ * @returns {number} nueva posición vertical. */
 function tabla(doc, filas, y) {
-  // filas: [[etiqueta, valor]] con zebra suave
   filas.forEach(([k, v], i) => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
@@ -187,6 +222,13 @@ function tabla(doc, filas, y) {
   return y + 2;
 }
 
+/** Dibuja una barra de porcentaje con su etiqueta.
+ * @param {Object} doc - documento jsPDF.
+ * @param {string} etiqueta - texto de la barra.
+ * @param {number|null} porcentaje - valor 0-100.
+ * @param {number} y - posición vertical actual en mm.
+ * @param {number[]} [color] - color RGB de relleno.
+ * @returns {number} nueva posición vertical. */
 function barra(doc, etiqueta, porcentaje, y, color = MORADO) {
   y = nuevaPaginaSiFalta(doc, y, 12);
   doc.setFont('helvetica', 'normal');
@@ -209,6 +251,11 @@ function barra(doc, etiqueta, porcentaje, y, color = MORADO) {
   return y + 8.5;
 }
 
+/** Pinta la portada de marca.
+ * @param {Object} doc - documento jsPDF.
+ * @param {number} totalEvaluaciones - cantidad de evaluaciones incluidas.
+ * @param {string} generadoEn - fecha de generación ya formateada.
+ * @returns {number} posición vertical inicial del contenido. */
 function pintarPortada(doc, totalEvaluaciones, generadoEn) {
   doc.setFillColor(...MORADO);
   doc.rect(0, 0, 210, 44, 'F');
@@ -225,6 +272,9 @@ function pintarPortada(doc, totalEvaluaciones, generadoEn) {
   return 52;
 }
 
+/** Pinta el pie con aviso de uso y numeración en todas las páginas.
+ * @param {Object} doc - documento jsPDF.
+ * @returns {void} */
 function pintarPie(doc) {
   const total = doc.getNumberOfPages();
   for (let i = 1; i <= total; i++) {
@@ -238,8 +288,9 @@ function pintarPie(doc) {
   }
 }
 
-/* ═══ Documento ═══ */
-
+/** Genera el PDF de Mis datos con cuenta, consentimientos y el informe de cada evaluación.
+ * @param {Object} [datos] - JSON de /arco/exportar (perfil, consentimientos, resultados, generadoEn).
+ * @returns {Blob} documento PDF. */
 export function generarPdfMisDatos(datos = {}) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const resultados = Array.isArray(datos.resultados) ? datos.resultados : [];
@@ -247,7 +298,6 @@ export function generarPdfMisDatos(datos = {}) {
 
   let y = pintarPortada(doc, resultados.length, generadoEn);
 
-  /* Guía de lectura */
   y = seccion(doc, 'Cómo leer este documento', y);
   y = parrafo(doc,
     'Este documento reúne toda la información que PhysicalPicking conserva sobre tu cuenta, en lenguaje claro. ' +
@@ -258,7 +308,6 @@ export function generarPdfMisDatos(datos = {}) {
     y, { justificado: true });
   y += 3;
 
-  /* 1. Cuenta */
   y = seccion(doc, '1. Datos de la cuenta', y);
   const perfil = datos.perfil || {};
   y = tabla(doc, [
@@ -267,7 +316,6 @@ export function generarPdfMisDatos(datos = {}) {
     ['Cuenta creada', formatearFechaISO(perfil.created_at ?? perfil.creado_en)],
   ], y);
 
-  /* 2. Consentimientos */
   y = seccion(doc, '2. Autorizaciones de tratamiento (Habeas Data)', y);
   const cons = Array.isArray(datos.consentimientos) ? datos.consentimientos : [];
   if (cons.length === 0) {
@@ -283,7 +331,6 @@ export function generarPdfMisDatos(datos = {}) {
   }
   y += 3;
 
-  /* 3+. Evaluaciones */
   y = seccion(doc, `3. Historial de evaluaciones (${resultados.length})`, y);
   if (resultados.length === 0) {
     y = parrafo(doc, 'Aún no tienes evaluaciones guardadas. Cuando completes una, su informe explicado aparecerá aquí.', y);
@@ -307,7 +354,7 @@ export function generarPdfMisDatos(datos = {}) {
       ['Actividad / deporte', s.actividad],
     ], y);
 
-    /* Seguridad primero: es lo que condiciona la actividad física */
+    /* La seguridad se presenta primero porque condiciona la actividad física. */
     y = parrafo(doc, 'Seguridad (PAR-Q+):', y, { negrita: true, tamano: 10.5 });
     if (s.parq === 'apto') {
       y = parrafo(doc, 'Cuestionario de aptitud: sin señales que exijan consulta médica previa. ' +
@@ -324,7 +371,6 @@ export function generarPdfMisDatos(datos = {}) {
     });
     y += 2;
 
-    /* Perfil físico con barras */
     if (s.variables.length > 0) {
       y = parrafo(doc, 'Perfil físico (porcentaje sobre tu referencia personal):', y, { negrita: true, tamano: 10.5 });
       s.variables.forEach(v => { y = barra(doc, v.nombre, v.total, y); });
@@ -336,7 +382,6 @@ export function generarPdfMisDatos(datos = {}) {
       y += 2;
     }
 
-    /* Compatibilidad */
     if (s.familias.length > 0) {
       y = parrafo(doc, 'Compatibilidad por familia deportiva:', y, { negrita: true, tamano: 10.5 });
       y = parrafo(doc, 'Porcentaje de requisitos cumplidos. Una familia no es recomendable si le falta el dato de su demanda principal o si tienes una brecha severa en ella (nivel Bajo o Muy bajo donde exige Alta o Muy alta).', y, { tamano: 9, color: GRIS });
@@ -349,7 +394,6 @@ export function generarPdfMisDatos(datos = {}) {
       y += 2;
     }
 
-    /* Cuestionarios */
     const cuest = [s.ipaq && `Actividad física (IPAQ): ${s.ipaq}.`, s.psqi && `Calidad de sueño (PSQI): ${s.psqi}.`,
       s.breq && `Motivación (BREQ-3): ${s.breq}.`, s.barreras && `Barreras (BBAQ-21): ${s.barreras}.`].filter(Boolean);
     if (cuest.length > 0) {
@@ -358,7 +402,6 @@ export function generarPdfMisDatos(datos = {}) {
       y += 2;
     }
 
-    /* Interpretación y recomendación */
     if (s.interpretacion) {
       y = parrafo(doc, 'Interpretación:', y, { negrita: true, tamano: 10.5 });
       y = parrafo(doc, s.interpretacion, y, { tamano: 9.5, justificado: true });

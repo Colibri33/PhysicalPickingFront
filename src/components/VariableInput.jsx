@@ -1,27 +1,22 @@
-/* ─── VariableInput.jsx v7 — slider real ───
-   Fila de ingreso de un valor REAL de test (no normalizado) mediante
-   <input type="range">. El slider trabaja exactamente en la misma
-   unidad y escala que el test (kg, segundos, metros, repeticiones,
-   ms, %) — la normalizacion a 0-100 ocurre despues, en el Step
-   correspondiente (StepFisicas), igual que antes con
-   el input numerico. Este componente NO cambia el significado ni la
-   estructura de los datos, solo la forma de capturarlos.
-
-   Usada en StepFisicas.
-
-   IMPORTANTE sobre la validacion de "campo obligatorio": un slider
-   HTML siempre tiene un valor numerico (no puede estar "vacio"), asi
-   que para no romper la regla de "todos los campos son obligatorios"
-   el valor NO se escribe en el estado del analisis hasta que el
-   usuario efectivamente mueve el slider al menos una vez. Antes de
-   eso se muestra visualmente en el punto medio del rango pero el
-   campo sigue contando como "sin responder" para la validacion
-   (analisis.realesF[id] permanece '' hasta el primer cambio real,
-   igual que con el input numerico anterior).
-*/
+/**
+ * @module components/VariableInput
+ * @description Fila de captura de un valor real de test (unidad original, no normalizado) mediante control deslizante, con vista previa del porcentaje normalizado.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): solo captura y previsualiza un valor; la normalización definitiva ocurre en StepFisicas.
+ *  - D (Inversión de dependencias): el valor y el cambio se controlan desde el padre (valor, onChange).
+ * Notas: un slider HTML siempre tiene valor, por lo que el estado no se actualiza hasta el primer movimiento del usuario; antes se muestra el punto medio y el campo cuenta como sin responder (valor '') para la validación de obligatoriedad.
+ */
 import { normalizarValor } from '../logic/modelo';
 import Icono from './Icono';
 
+/** Renderiza el slider de una variable con rango, valor actual y barra de vista previa.
+ * @param {Object} props
+ * @param {Object} props.variable - definición (id, nombre, unidad, minimo, maximo, paso, direccion, color).
+ * @param {string|number} props.valor - valor real actual; '' si no se ha respondido.
+ * @param {Function} props.onChange - recibe (id, valor) al mover el slider.
+ * @param {string} [props.error] - mensaje de validación a mostrar.
+ * @returns {JSX.Element} fila de ingreso. */
 export default function VariableInput({ variable: v, valor, onChange, error }) {
   const respondido = valor !== '' && valor !== null && valor !== undefined;
   const paso = v.paso ?? 1;
@@ -74,7 +69,6 @@ export default function VariableInput({ variable: v, valor, onChange, error }) {
         </span>
       </div>
 
-      {/* Barra de progreso (previsualizacion del % normalizado) */}
       <div className="norm-bar-track">
         <div
           className="norm-bar-fill"

@@ -1,7 +1,17 @@
-/* ─── RadarChart.jsx ───
-   Radar SVG puro. Sin dependencias externas.
-   Acepta datos={ [id]: pct } y variables=[{ id, nombre, color }]
-*/
+/**
+ * @module components/RadarChart
+ * @description Gráfico de radar en SVG puro, sin dependencias externas.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): solo traduce porcentajes por variable a geometría SVG.
+ *  - I (Segregación de interfaces): contrato mínimo de datos y variables.
+ */
+
+/** Dibuja guías, ejes, polígono de datos, puntos y etiquetas de valor.
+ * @param {Object} props
+ * @param {Object<string, number>} props.datos - porcentaje (0-100) indexado por id de variable.
+ * @param {Array<{id: string, nombre: string, color: string}>} props.variables - variables en orden de ejes.
+ * @returns {JSX.Element} gráfico SVG. */
 export default function RadarChart({ datos, variables }) {
   const cx = 150, cy = 155, r = 105;
   const n  = variables.length;
@@ -11,7 +21,6 @@ export default function RadarChart({ datos, variables }) {
     y: cy + radio * Math.sin(angulo(i)),
   });
 
-  /* Guías */
   const guias = [20, 40, 60, 80, 100].map(pct => {
     const rad = r * pct / 100;
     const pts = variables.map((_, i) => `${punto(i, rad).x},${punto(i, rad).y}`).join(' ');
@@ -27,20 +36,17 @@ export default function RadarChart({ datos, variables }) {
     );
   });
 
-  /* Ejes */
   const ejes = variables.map((_, i) => {
     const p = punto(i, r);
     return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="#e1e4ea" strokeWidth="1" />;
   });
 
-  /* Polígono de datos */
   const ptsDatos = variables.map((v, i) => {
     const rad = r * (datos[v.id] ?? 0) / 100;
     const p   = punto(i, rad);
     return `${p.x},${p.y}`;
   }).join(' ');
 
-  /* Puntos individuales */
   const puntos = variables.map((v, i) => {
     const rad = r * (datos[v.id] ?? 0) / 100;
     const p   = punto(i, rad);
@@ -50,7 +56,6 @@ export default function RadarChart({ datos, variables }) {
     );
   });
 
-  /* Etiquetas de valor */
   const etiquetas = variables.map((v, i) => {
     const p = punto(i, r + 18);
     return (

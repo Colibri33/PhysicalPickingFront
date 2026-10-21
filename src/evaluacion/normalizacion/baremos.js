@@ -1,33 +1,23 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/normalizacion/baremos.js
-   Etapa 4 del flujo: normalizacion a niveles.
-   INTERFAZ de baremos. En esta etapa NO se incluye ningun baremo:
-   el registro por defecto esta vacio y toda capacidad queda con
-   nivel = null y la advertencia "baremo pendiente".
-
-   Contrato de un baremo (lo que se debe cargar despues):
-   {
-     id:        'afisal_dinamometria',            // lo referencia cada capacidad
-     capacidad: 'fuerza',
-     version:   '1.0',
-     fuente:    { referencia: '...', origen: 'baremo' },
-     tipo:      'cortes_ordenados' | 'funcion',
-
-     // tipo 'cortes_ordenados': N-1 cortes para N niveles (5 niveles → 4 cortes)
-     direccion: 'mayor_mejor' | 'menor_mejor',
-     limite:    'inferior_inclusivo' | 'superior_inclusivo',   // semantica del corte
-     grupos: [{ sexo: 'masculino'|'femenino'|null, edadMin, edadMax, cortes: [..] }],
-
-     // tipo 'funcion': clasificacion programatica (p. ej. si un baremo
-     // necesita una formula previa). Debe devolver un nivel de NIVELES.
-     clasificar: (valor, contexto) => nivel
-   }
-   La direccion, la semantica de los limites y los grupos por sexo y
-   edad los define cada baremo; este modulo no asume ninguno.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/normalizacion/baremos
+ * @description Contrato, validación y aplicación de baremos para normalizar valores a niveles ordinales (etapa 4).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la mecánica de normalización por baremo.
+ *  - O (Abierto/Cerrado): nuevos baremos se incorporan como datos ('cortes_ordenados') o como función ('funcion') sin modificar este módulo.
+ *  - D (Inversión de dependencias): opera sobre el contrato del baremo y un registro inyectado, no sobre baremos concretos.
+ * Notas: contrato de un baremo: { id, capacidad, version, fuente: {referencia, origen}, tipo: 'cortes_ordenados' | 'funcion' }.
+ * 'cortes_ordenados' añade direccion ('mayor_mejor'|'menor_mejor'), limite ('inferior_inclusivo'|'superior_inclusivo') y
+ * grupos [{ sexo, edadMin, edadMax, cortes }] con N-1 cortes para N niveles; 'funcion' añade clasificar(valor, contexto) → nivel.
+ * Sin baremo registrado, la capacidad queda con nivel = null y la advertencia "baremo pendiente".
+ */
 
 import { NIVELES, esNivelValido } from '../niveles.js';
 
+/** Crea un registro de baremos validando cada definición.
+ * @param {Object[]} baremos - definiciones de baremo.
+ * @returns {Map<string, Object>} registro indexado por id.
+ * @throws {Error} si alguna definición es inválida. */
 export function crearRegistroBaremos(baremos = []) {
   const registro = new Map();
   for (const b of baremos) {
@@ -38,6 +28,9 @@ export function crearRegistroBaremos(baremos = []) {
   return registro;
 }
 
+/** Valida la estructura de una definición de baremo.
+ * @param {Object} b - definición de baremo.
+ * @returns {string[]} errores encontrados; vacío si es válida. */
 export function validarDefinicionBaremo(b) {
   const e = [];
   if (!b || typeof b !== 'object') return ['No es un objeto.'];
@@ -59,6 +52,10 @@ export function validarDefinicionBaremo(b) {
   return e;
 }
 
+/** Localiza el grupo de sexo y edad aplicable a un contexto.
+ * @param {Object} baremo - baremo de tipo 'cortes_ordenados'.
+ * @param {{sexo?: string, edad?: number}} contexto - datos del evaluado.
+ * @returns {Object|undefined} grupo coincidente, si existe. */
 export function buscarGrupo(baremo, contexto) {
   const { sexo, edad } = contexto ?? {};
   return baremo.grupos.find(g =>
@@ -67,16 +64,25 @@ export function buscarGrupo(baremo, contexto) {
     (g.edadMax == null || (edad != null && edad <= g.edadMax)));
 }
 
+/** Asigna el nivel según el número de cortes superados.
+ * @param {number} valor - valor medido.
+ * @param {number[]} cortes - cortes ascendentes.
+ * @param {string} direccion - 'mayor_mejor' o 'menor_mejor'.
+ * @param {string} limite - semántica del corte.
+ * @returns {string} nivel de NIVELES. */
 function nivelPorCortes(valor, cortes, direccion, limite) {
   const supera = (c) => (limite === 'inferior_inclusivo' ? valor >= c : valor > c);
-  const indice = cortes.filter(supera).length;          // 0..cortes.length
+  const indice = cortes.filter(supera).length;
   return direccion === 'mayor_mejor' ? NIVELES[indice] : NIVELES[NIVELES.length - 1 - indice];
 }
 
-/**
- * aplicarBaremo — devuelve el nivel ordinal o null con el motivo.
- * Nunca lanza: los problemas se reportan como advertencias/faltantes.
- */
+/** Aplica un baremo y devuelve el nivel ordinal o null con el motivo.
+ * Nunca lanza: los problemas se reportan como advertencias o datos faltantes.
+ * @param {Map<string, Object>} registro - registro de baremos.
+ * @param {string} baremoId - id del baremo a aplicar.
+ * @param {number|null} valor - valor evaluado.
+ * @param {{sexo?: string, edad?: number}} contexto - datos del evaluado.
+ * @returns {{nivel: string|null, baremoAplicado: Object|null, advertencias: string[], datosFaltantes: string[]}} resultado de la normalización. */
 export function aplicarBaremo(registro, baremoId, valor, contexto) {
   const salida = { nivel: null, baremoAplicado: null, advertencias: [], datosFaltantes: [] };
   if (valor === null || valor === undefined) { salida.datosFaltantes.push('valor_evaluado'); return salida; }

@@ -1,12 +1,23 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/informe/construirInforme.js
-   Etapa 9: informe final. Solo organiza para lectura lo producido en
-   las etapas anteriores; no calcula. Las alertas de seguridad van
-   antes de la recomendacion.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/informe/construirInforme
+ * @description Informe final (etapa 9): organiza para lectura lo producido por las etapas anteriores; no calcula.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la estructura del informe.
+ *  - D (Inversión de dependencias): recibe los resultados de cada etapa como parámetros, sin invocar las etapas.
+ * Notas: las alertas de seguridad se presentan antes de la recomendación.
+ */
 
 import { ESTADO_MODULO } from '../trazabilidad.js';
 
+/** Construye el informe final.
+ * @param {Object} p - resultados de las etapas.
+ * @param {Object} p.resultados - sobres de trazabilidad por módulo.
+ * @param {Object} p.reglas - resultado de las reglas de preparación y seguridad.
+ * @param {Object} p.decision - resultado de ejecutarDecisionEngine.
+ * @param {Object} p.ranking - resultado de construirRanking.
+ * @param {Object|null} [p.planAdaptacion] - plan de adaptación o solicitud de datos.
+ * @returns {Object} informe con resumen, seguridad, recomendación, módulos, advertencias y pendientes. */
 export function construirInforme({ resultados, reglas, decision, ranking, planAdaptacion = null }) {
   const modulos = Object.values(resultados).map(m => ({
     moduloId: m.moduloId,
@@ -41,9 +52,9 @@ export function construirInforme({ resultados, reglas, decision, ranking, planAd
       estado: decision.salida?.estado ?? null,
       experiencia: decision.salida?.experiencia ?? null,
     } : null,
-    // Estado 3 / datos insuficientes cuando ninguna familia es firme.
+    // Estado 3 o datos insuficientes cuando ninguna familia es firme.
     preparacion: planAdaptacion,
-    // El perfil funcional completo esta en etapas.perfilFuncional (no se duplica).
+    // El perfil funcional completo está en etapas.perfilFuncional; no se duplica.
     modulos,
     advertencias: [...reglas.advertencias, ...ranking.advertencias, ...(decision.errores ?? [])],
     pendientesConfiguracion,

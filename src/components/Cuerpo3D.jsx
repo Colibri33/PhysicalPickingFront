@@ -1,18 +1,13 @@
-/* ─── Cuerpo3D.jsx ───
-   Visor 3D del cuerpo para "Tu perfil de rendimiento".
-   Carga un modelo GLB (hombre/mujer según el sexo del participante),
-   lo hace girar (vista frontal/posterior o arrastrando), acerca la
-   cámara a la zona elegida y pinta cada capacidad con un brillo del
-   color de su estado.
-
-   IMPORTANTE (honestidad del indicador): las zonas son una METÁFORA
-   VISUAL de las 5 pruebas evaluadas. No son mediciones directas de
-   músculos, órganos ni lesiones, ni un diagnóstico médico.
-
-   No calcula nada: recibe colores, niveles y textos ya resueltos por
-   MapaCorporalBrechas. Si WebGL o el modelo fallan, llama a onError y
-   el padre muestra la silueta 2D.
-*/
+/**
+ * @module components/Cuerpo3D
+ * @description Visor 3D del cuerpo que resalta cada capacidad evaluada con el color de su estado, con giro, zoom a la zona elegida y etiquetas con líneas guía.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): solo dibuja y gestiona la interacción 3D; no calcula niveles ni colores.
+ *  - O (Abierto/Cerrado): se añade una zona agregando entradas a ZONAS_3D, ORDEN, ANCLAS y POSICION.
+ *  - D (Inversión de dependencias): recibe colores, niveles y textos ya resueltos (items) desde MapaCorporalBrechas y notifica fallos con onError para que el padre use la silueta 2D.
+ * Notas: las zonas son una metáfora visual de las 5 pruebas evaluadas; no son mediciones de músculos, órganos ni lesiones ni un diagnóstico médico.
+ */
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -23,11 +18,9 @@ const MODELOS = {
   femenino: `${BASE}models/cuerpo-mujer.glb`,
 };
 
-/* Coordenadas en fracciones de la estatura (pies y = 0, cabeza y = 1,
-   centrado en x/z; el frente mira a +z). Cada zona son elipsoides
-   [cx, cy, cz, rx, ry, rz]; se extienden en profundidad para verse
-   también en la vista posterior. Medidas sobre los modelos del proyecto
-   (pose en A). */
+// Zonas como elipsoides [cx, cy, cz, rx, ry, rz] en fracciones de la estatura
+// (pies y=0, cabeza y=1, centrado en x/z, frente hacia +z). Se extienden en
+// profundidad para verse también en la vista posterior; medidas sobre los modelos (pose en A).
 const ZONAS_3D = {
   fuerza: [
     [-0.185, 0.585, 0, 0.055, 0.095, 0.08], [0.185, 0.585, 0, 0.055, 0.095, 0.08],
@@ -46,8 +39,7 @@ const ZONAS_3D = {
 const ORDEN = ['fuerza', 'fuerza_explosiva', 'vo2max', 'flexibilidad', 'equilibrio'];
 const MAX_BLOBS = 12;
 
-/* Punto del cuerpo al que apunta la línea guía de cada etiqueta
-   [x, y, z frontal, z posterior]. */
+// Punto del cuerpo al que apunta la línea guía de cada etiqueta: [x, y, z frontal, z posterior].
 const ANCLAS = {
   fuerza: [0.2, 0.55, 0.05, -0.05],
   fuerza_explosiva: [0.075, 0.4, 0.085, -0.09],
@@ -55,7 +47,7 @@ const ANCLAS = {
   flexibilidad: [-0.07, 0.575, 0.085, -0.095],
   equilibrio: [0.065, 0.16, 0.06, -0.06],
 };
-/* Posición fija de cada etiqueta (lado y altura en %). */
+// Posición fija de cada etiqueta: lado y altura en porcentaje.
 const POSICION = {
   vo2max: { lado: 'izq', top: 17 },
   flexibilidad: { lado: 'izq', top: 50 },
@@ -66,6 +58,9 @@ const POSICION = {
 
 const GRIS = new THREE.Color('#A9A4C4');
 
+/** Inyecta en el sombreador del material el resplandor por zonas, calculado en espacio del modelo.
+ * @param {THREE.Material} mat - material a modificar.
+ * @param {Object} uniformes - uniformes compartidos (centros, radios, colores, intensidades). */
 function prepararMaterial(mat, uniformes) {
   mat.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniformes);
@@ -101,6 +96,8 @@ totalEmissiveRadiance += zg.rgb * 0.5;`);
   mat.customProgramCacheKey = () => 'pp-zonas-v1';
 }
 
+/** Genera la textura radial del disco del piso.
+ * @returns {THREE.CanvasTexture} textura con degradado cian-azul. */
 function texturaSuelo() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
@@ -116,11 +113,23 @@ function texturaSuelo() {
   return t;
 }
 
+/** Visor 3D con modelo GLB por sexo, zonas resaltadas y etiquetas interactivas.
+ * @param {Object} props
+ * @param {string} props.vista - 'frontal' o 'posterior'.
+ * @param {Array<Object>} props.items - capacidades con id, nombre, color, nivel, sinDato, lineas, icono y marca.
+ * @param {string} props.sel - id de la zona seleccionada.
+ * @param {Function} props.onSel - se invoca con el id de la zona elegida.
+ * @param {number} [props.zoom=1] - factor de acercamiento a la zona seleccionada.
+ * @param {boolean} [props.compacto=false] - oculta los textos de las etiquetas.
+ * @param {string} [props.sexo='masculino'] - modelo a cargar ('masculino' o 'femenino').
+ * @param {Function} [props.onError] - se invoca si falla WebGL o la carga del modelo.
+ * @param {string} [props.etiqueta] - etiqueta accesible del visor.
+ * @returns {JSX.Element} contenedor del visor. */
 export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto = false, sexo = 'masculino', onError, etiqueta }) {
   const cont = useRef(null);
   const lineasRef = useRef({});
   const insigniasRef = useRef({});
-  const estado = useRef({}); // lo lee el bucle de dibujo sin re-crear la escena
+  const estado = useRef({}); // el bucle de dibujo lo lee sin recrear la escena
   const [listo, setListo] = useState(false);
 
   // Props que el bucle consulta en cada fotograma.
@@ -157,7 +166,6 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     const luzVioleta = new THREE.DirectionalLight('#8B7CF6', 1.2); luzVioleta.position.set(2.4, 0.6, -2); scene.add(luzVioleta);
     const luzFrente = new THREE.DirectionalLight('#dfe6ff', 0.7); luzFrente.position.set(-1.2, 0.8, 2.6); scene.add(luzFrente);
 
-    // Uniformes de las zonas
     const uC = Array.from({ length: MAX_BLOBS }, () => new THREE.Vector3(9, 9, 9));
     const uR = Array.from({ length: MAX_BLOBS }, () => new THREE.Vector3(0.01, 0.01, 0.01));
     const uZ = new Array(MAX_BLOBS).fill(0);
@@ -169,7 +177,6 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     const uInt = ORDEN.map(() => 0);
     const uniformes = { uC: { value: uC }, uR: { value: uR }, uZ: { value: uZ }, uCol: { value: uCol }, uInt: { value: uInt } };
 
-    // Piso: aros cian
     const piso = new THREE.Group();
     const aro = (r, op) => new THREE.Mesh(new THREE.RingGeometry(r, r + 0.004, 96), new THREE.MeshBasicMaterial({ color: '#22D3EE', transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false }));
     const a1 = aro(0.42, 0.55); const a2 = aro(0.3, 0.35);
@@ -192,8 +199,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
         const caja = new THREE.Box3().setFromObject(raiz);
         const alto = caja.max.y - caja.min.y;
         const centro = caja.getCenter(new THREE.Vector3());
-        // Hornea posición/rotación/escala en la geometría: así las
-        // coordenadas del sombreador son las fracciones de estatura.
+        // Se hornea la transformación en la geometría para que las coordenadas del sombreador sean fracciones de estatura.
         const m4 = new THREE.Matrix4().makeScale(1 / alto, 1 / alto, 1 / alto)
           .multiply(new THREE.Matrix4().makeTranslation(-centro.x, -caja.min.y, -centro.z));
         raiz.traverse((o) => {
@@ -216,7 +222,6 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       (e) => { if (vivo) onError?.(e); },
     );
 
-    // Tamaño
     let ancho = 1; let alto = 1;
     const medir = () => {
       const r = host.getBoundingClientRect();
@@ -231,7 +236,6 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     ro.observe(host);
     medir();
 
-    // Interacción: arrastrar para girar, clic para elegir zona
     let objetivoAng = 0; let ang = 0;
     let arrastre = null;
     const ray = new THREE.Raycaster();
@@ -240,6 +244,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       const r = renderer.domElement.getBoundingClientRect();
       puntero.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     };
+    // Devuelve la zona más cercana al punto del modelo bajo el puntero, o null.
     const zonaEn = (e) => {
       if (!malla) return null;
       alPuntero(e);
@@ -280,7 +285,6 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     el.addEventListener('pointerup', subir);
     el.addEventListener('pointercancel', () => { arrastre = null; });
 
-    // Bucle
     let visible = true;
     const io = typeof IntersectionObserver !== 'undefined'
       ? new IntersectionObserver(([en]) => { visible = en.isIntersecting; }, { threshold: 0 }) : null;
@@ -292,6 +296,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     let vistaPrevia = null;
     const v3 = new THREE.Vector3();
 
+    // Fotograma: pausa si está fuera de vista o la pestaña oculta.
     const cuadro = () => {
       raf = requestAnimationFrame(cuadro);
       if (!visible || document.hidden) return;
@@ -310,7 +315,6 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       a1.rotation.z = reducido ? 0 : t * 0.25;
       a2.rotation.z = reducido ? 0 : -t * 0.35;
 
-      // Colores e intensidades por zona
       ORDEN.forEach((id, zi) => {
         const it = e.items?.find(x => x.id === id);
         if (it) uCol[zi].set(it.color);
@@ -319,7 +323,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
         uInt[zi] = apagado ? 0.28 : elegido ? 1.25 + (reducido ? 0 : Math.sin(t * 3.2) * 0.22) : 0.82;
       });
 
-      // Cámara: acercar a la zona elegida si hay zoom
+      // Con zoom, la cámara se acerca a la altura de la zona elegida.
       const z = Math.max(1, e.zoom);
       const frente = Math.cos(ang) >= 0; // aproximado: cara hacia la cámara
       const ancla = ANCLAS[e.sel];
@@ -335,7 +339,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
 
       renderer.render(scene, camara);
 
-      // Líneas guía y marcas: proyectan los anclajes 3D a la pantalla
+      // Proyecta los anclajes 3D a pantalla para las líneas guía; los centros de insignias se miden solo tras invalidarse.
       if (!centrosInsignias.valido) {
         const hr = host.getBoundingClientRect();
         ORDEN.forEach((id) => {
@@ -381,12 +385,12 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       renderer.dispose();
       renderer.domElement.remove();
     };
-    // La escena se crea una vez por sexo; el resto llega por `estado`.
+    // La escena se crea una vez por sexo; el resto de datos llega por `estado`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sexo]);
 
-  // Invalida las posiciones de las insignias al cambiar el diseño
-  useEffect(() => { /* el ResizeObserver del bucle recalcula al medir */ }, [compacto, items]);
+  // Efecto sin acción: la invalidación de posiciones de insignias la realiza el ResizeObserver del bucle.
+  useEffect(() => { /* sin acción */ }, [compacto, items]);
 
   return (
     <div className={`rend3d${compacto ? ' rend3d--compacto' : ''}${listo ? ' rend3d--listo' : ''}`} ref={cont} role="group" aria-label={etiqueta}>

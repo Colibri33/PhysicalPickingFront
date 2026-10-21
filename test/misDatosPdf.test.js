@@ -1,3 +1,11 @@
+/**
+ * @module test/misDatosPdf.test
+ * @description Pruebas del resumen y la generación del PDF de Mis datos.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contrato de informeMisDatosPdf.
+ */
+
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {

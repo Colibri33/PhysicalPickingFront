@@ -1,34 +1,38 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/decision/decisionEngine.js
-   DecisionEngine DE REFERENCIA v1 (auditable, sustituible).
-   Aplica EXCLUSIVAMENTE la regla aprobada:
-     - compatibilidad por familia: cumple/no cumple ordinal contra la
-       matriz de demanda (compatibilidad.js);
-     - Mitchell: solo desempate/priorización de brechas (no modifica
-       el porcentaje);
-     - sin pesos, sin conversiones numéricas de niveles.
-   El porcentaje publicado es compatibilidad × 100 (escala de
-   presentación, no metodología). Sin dato en una capacidad: fuera del
-   numerador y del denominador (baja cobertura, no penaliza).
-   La preparación (base física + IPAQ + PSQI) se informa de forma
-   descriptiva, sin umbrales inventados.
-   Para usar otro motor: registrarDecisionEngine(otro) o pasarlo en
-   opciones { decisionEngine }.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/decision/decisionEngine
+ * @description DecisionEngine de referencia v1: compatibilidad ordinal por familia, Mitchell como desempate y preparación descriptiva.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la composición de la salida del motor de referencia.
+ *  - O (Abierto/Cerrado): la matriz y la versión se configuran en el constructor; otro motor se registra sin modificar este.
+ *  - L (Sustitución de Liskov): expone evaluar(entrada), el contrato del puerto, por lo que es sustituible por el motor definitivo.
+ *  - D (Inversión de dependencias): la matriz se inyecta por configuración y la entrada se valida con el puerto.
+ * Notas: aplica solo la regla aprobada, sin pesos ni conversiones numéricas de niveles; el porcentaje es compatibilidad × 100 (escala de presentación).
+ * Sin dato en una capacidad: fuera de numerador y denominador. La preparación se informa de forma descriptiva, sin umbrales inventados.
+ * Para usar otro motor: registrarDecisionEngine(otro) o pasar { decisionEngine } en las opciones.
+ */
 
 import { validarEntradaDecisionEngine } from './decisionEnginePort.js';
 import { MATRIZ_DEMANDA } from './matrizDemanda.js';
 import { ordenarFamilias } from './compatibilidad.js';
 
-// 1.2: R-DEC-02 (brecha severa → no firme) y motivosNoFirme en la salida.
+/** Versión del motor; 1.2 incorpora R-DEC-02 (brecha severa → no firme) y motivosNoFirme en la salida. */
 export const VERSION_MOTOR_REFERENCIA = '1.2-referencia';
 
+/** Motor de referencia auditable y sustituible. */
 export class DecisionEngineReferencia {
+  /** @param {Object} [config] - configuración.
+   * @param {Object[]} [config.matriz] - matriz de demandas.
+   * @param {string} [config.version] - versión del motor. */
   constructor(config = {}) {
     this.matriz = config.matriz ?? MATRIZ_DEMANDA;
     this.version = config.version ?? VERSION_MOTOR_REFERENCIA;
   }
 
+  /** Evalúa la entrada y devuelve ranking, preparación y experiencia.
+   * @param {Object} entrada - entrada conforme al puerto.
+   * @returns {Object} salida del motor.
+   * @throws {Error} si la entrada no cumple el contrato. */
   evaluar(entrada) {
     const contrato = validarEntradaDecisionEngine(entrada);
     if (!contrato.ok) {

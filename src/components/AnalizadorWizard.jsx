@@ -1,14 +1,14 @@
-/* AnalizadorWizard.jsx v7
-   - Sin dermatoglifia
-   - Sin somatotipo
-   - Sin modulo cognitivo (v7); "corporales" → "antropometricas"
-   - Paso 7: Recomendación de deportes (paso final)
-   - Al guardar se adjunta `evaluacion`: salida trazable del flujo de
-     src/evaluacion (validacion → ... → informe). El calculo heredado
-     (consolidado/perfiles/ranking) se conserva sin cambios de forma.
-   - Navegación automática al completar cada bloque
-   - Panel lateral conservado
-*/
+/**
+ * @module components/AnalizadorWizard
+ * @description Asistente de 13 pasos que orquesta la evaluación, el análisis, el guardado en historial y la recomendación de deportes.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): coordina el flujo de pasos y el estado del análisis; el cálculo y la presentación residen en cada Step y en los módulos de lógica.
+ *  - O (Abierto/Cerrado): un paso nuevo se incorpora agregando una entrada en TITULOS y un caso en renderPaso.
+ *  - L (Sustitución de Liskov): los pasos comparten el contrato de props { mostrarToast, analisis, updateAnalisis, onContinuar } y son intercambiables.
+ *  - D (Inversión de dependencias): persistencia, historial y cálculos se consumen desde authService, utils y logic, no se implementan aquí.
+ * Notas: al guardar se adjunta `evaluacion`, salida trazable del flujo de src/evaluacion; el cálculo heredado (consolidado, perfiles, ranking) conserva su forma.
+ */
 import { useState, useEffect, useRef } from 'react';
 import Icono from './Icono';
 import { leerBorrador, guardarBorrador, borrarBorrador } from '../utils/borrador';
@@ -67,8 +67,15 @@ const TITULOS = {
 
 const TOTAL_PASOS = 13;
 
+/** Contenedor principal de la evaluación: gestiona pasos, borrador, historial y guardado.
+ * @param {Object} props
+ * @param {Object|null} props.usuarioActual - usuario autenticado; null en modo invitado.
+ * @param {boolean} props.modoInvitado - indica sesión de invitado.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @param {Function} props.onLogout - cierra la sesión.
+ * @returns {JSX.Element} diseño con barra lateral, cabecera y panel del paso activo. */
 export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarToast, onLogout }) {
-  // Borrador: al refrescar la pagina se recupera el analisis en curso.
+  // Recupera el análisis en curso desde el borrador al recargar la página.
   const borradorInicial = useRef(undefined);
   if (borradorInicial.current === undefined) borradorInicial.current = leerBorrador(usuarioActual?.id ?? null);
   const b0 = borradorInicial.current;
@@ -86,16 +93,18 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
     return () => { cancelado = true; };
   }, [usuarioActual]);
 
-  // Guardar el borrador en cada cambio (solo si ya hay algo escrito).
+  // Persiste el borrador en cada cambio, solo si ya hay contenido.
   useEffect(() => {
     if (!analisis.participante?.nombre && pasoMax <= 1) return;
     guardarBorrador(usuarioActual?.id ?? null, { analisis, paso, pasoMax, analisisGuardado });
   }, [analisis, paso, pasoMax, analisisGuardado, usuarioActual]);
 
-  // Demo: rellena TODO con datos coherentes y deja listo el informe.
+  /** Carga datos de demostración coherentes en todos los pasos y abre el informe final. */
   function rellenarDemo() {
     if (analisis.participante?.nombre && !window.confirm('Esto reemplaza los datos actuales con datos de ejemplo. ¿Continuar?')) return;
-    setAnalisis(generarAnalisisDemo());
+    // Alterna el sexo respecto al análisis actual para variar los casos de demostración.
+    const g = analisis.participante?.genero;
+    setAnalisis(generarAnalisisDemo(Math.random, g === 'masculino' ? 'femenino' : g === 'femenino' ? 'masculino' : null));
     setAnalisisGuardado(false);
     setPasoMax(13);
     setPaso(12);
@@ -103,31 +112,33 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
     mostrarToast('Datos de demostración cargados. Puedes revisar cualquier paso.', 'success');
   }
 
+  /** Navega a un paso ya alcanzado (o al historial).
+   * @param {number} n - número de paso. */
   function irA(n) {
     if (n > pasoMax && n !== PASO_HISTORIAL) return;
     setPaso(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  /** Avanza a un paso y registra el máximo alcanzado.
+   * @param {number} n - número de paso. */
   function avanzarA(n) {
     setPasoMax(p => Math.max(p, n));
     setPaso(n);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  /** Fusiona cambios parciales en el análisis e invalida el estado de guardado.
+   * @param {Object} cambios - campos del análisis a actualizar. */
   function updateAnalisis(cambios) {
     setAnalisis(prev => ({ ...prev, ...cambios }));
-    // Cualquier modificacion de datos invalida el "guardado" previo:
-    // si el usuario cambia algo, al volver a guardar debe crear un
-    // registro nuevo, no confundirse con el analisis ya guardado.
+    // Toda modificación invalida el guardado previo para que un nuevo guardado cree otro registro.
     setAnalisisGuardado(false);
   }
 
+  /** Calcula el registro completo y lo guarda en el historial, evitando envíos duplicados. */
   async function guardarEnHistorial() {
-    // Doble bloqueo: por estado ya confirmado (analisisGuardado) y
-    // por una peticion ya en curso (guardando) — esto es lo que
-    // protege contra 10 clics rapidos antes de que llegue la primera
-    // respuesta del backend, no solo contra volver a guardar despues.
+    // Doble bloqueo: guardado ya confirmado o petición en curso (evita clics repetidos antes de la respuesta).
     if (analisisGuardado) {
       mostrarToast('Este analisis ya fue guardado en el historial.', 'info');
       return;
@@ -170,12 +181,11 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
         evaluacion,
       };
 
-      // analisisGuardado SOLO se confirma tras respuesta exitosa real
-      // del backend — nunca se asume exito de antemano.
+      // El guardado solo se confirma tras una respuesta exitosa del backend.
       const res = await guardarRegistroHistorial(usuarioActual?.id ?? null, registro);
       if (!res || res.ok === false) {
         mostrarToast(res?.error || 'No se pudo guardar el analisis. Intenta de nuevo.', 'error');
-        return; // analisisGuardado permanece false: se puede reintentar
+        return; // analisisGuardado permanece en false para permitir reintento
       }
 
       setAnalisisGuardado(true);
@@ -186,6 +196,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
     }
   }
 
+  /** Descarta el borrador y reinicia el asistente con un análisis vacío. */
   function nuevoAnalisis() {
     borrarBorrador(usuarioActual?.id ?? null);
     setAnalisis(estadoAnalisisInicial());
@@ -197,6 +208,8 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
 
   const props = { mostrarToast, analisis, updateAnalisis };
 
+  /** Devuelve el componente correspondiente al paso activo.
+   * @returns {JSX.Element|null} paso actual. */
   function renderPaso() {
     switch (paso) {
       case 1:  return <StepParticipante      {...props} onContinuar={() => avanzarA(2)} />;

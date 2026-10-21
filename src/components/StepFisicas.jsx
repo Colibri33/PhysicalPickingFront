@@ -1,8 +1,13 @@
-/* ─── StepFisicas.jsx v7 ───
-   Batería física: dinamometría (suma ambas manos), salto, flexibilidad,
-   equilibrio bilateral y resistencia aeróbica (Léger, último
-   nivel máximo alcanzado, entero, solo si el PAR-Q+ lo autoriza; el
-   VO2máx se estima y califica en evaluacion/normalizacion/leger.js). */
+/**
+ * @module components/StepFisicas
+ * @description Paso de la batería física: dinamometría, salto, flexibilidad, equilibrio bilateral y resistencia aeróbica (Léger).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura, valida y normaliza los valores de la batería; los rangos y la normalización se delegan a logic/modelo.
+ *  - O (Abierto/Cerrado): una variable estándar nueva se agrega a VARS_FISICAS y se renderiza con VariableInput sin modificar este paso.
+ *  - D (Inversión de dependencias): rangos, validación y autorización PAR-Q+ provienen de logic/modelo y logic/parq.
+ * Notas: el Léger registra el último nivel máximo alcanzado (entero) y solo se exige si el PAR-Q+ lo autoriza; el VO2máx se estima y califica en evaluacion/normalizacion/leger.js.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import VariableInput from './VariableInput';
@@ -11,6 +16,12 @@ import { evaluarParq } from '../logic/parq';
 
 const LEGER_PALIER_MAX = 21;
 
+/** Entrada de fuerza prensil por mano con suma derivada.
+ * @param {Object} props
+ * @param {Object} props.realesF - valores reales actuales.
+ * @param {Function} props.onCambio - recibe (campo, valor).
+ * @param {string} [props.error] - mensaje de validación.
+ * @returns {JSX.Element} fila de ingreso. */
 function InputFuerza({ realesF, onCambio, error }) {
   const der = realesF.fuerzaDer;
   const izq = realesF.fuerzaIzq;
@@ -49,6 +60,12 @@ function InputFuerza({ realesF, onCambio, error }) {
   );
 }
 
+/** Entrada de equilibrio por pierna con total derivado.
+ * @param {Object} props
+ * @param {Object} props.realesF - valores reales actuales.
+ * @param {Function} props.onCambio - recibe (campo, valor).
+ * @param {string} [props.error] - mensaje de validación.
+ * @returns {JSX.Element} fila de ingreso. */
 function InputEquilibrio({ realesF, onCambio, error }) {
   const der = realesF.equilibrioDer;
   const izq = realesF.equilibrioIzq;
@@ -87,18 +104,27 @@ function InputEquilibrio({ realesF, onCambio, error }) {
   );
 }
 
+/** Formulario de la batería física con validación y normalización a 0-100.
+ * @param {Object} props
+ * @param {Object} props.analisis - análisis actual (realesF, leger, parq).
+ * @param {Function} props.updateAnalisis - actualiza campos del análisis.
+ * @param {Function} props.onContinuar - avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @returns {JSX.Element} tarjeta del paso. */
 export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const [errores,       setErrores]       = useState({});
   const [advertencias,  setAdvertencias]  = useState([]);
   // Léger solo si el PAR-Q+ no lo contraindica (R-SEG-01).
   const legerAutorizado = evaluarParq((analisis.parq ?? {}).respuestas ?? {}) === 'apto';
-  // Resistencia aeróbica: el nivel/palier vive en `realesF.resistencia`
-  // (variable de la batería) y se espeja en `leger.palier` para el flujo
-  // de evaluación (compatibilidad con registros anteriores).
+  // El nivel Léger vive en `realesF.resistencia` y se espeja en `leger.palier` por compatibilidad con registros anteriores.
   const palier = analisis.leger?.palier ?? analisis.realesF?.resistencia ?? '';
 
+  /** Guarda un valor; en capturas bilaterales recalcula la suma y limpia errores asociados.
+   * @param {string} id - id del campo.
+   * @param {string} valor - valor ingresado. */
   function handleChange(id, valor) {
-    // Capturas bilaterales: se guardan los parciales y el derivado (suma).
+    // Capturas bilaterales: se almacenan los parciales y el derivado (suma).
+    // La suma queda vacía si algún parcial es inválido.
     if (id === 'equilibrioDer' || id === 'equilibrioIzq') {
       const parciales = { equilibrioDer: analisis.realesF.equilibrioDer, equilibrioIzq: analisis.realesF.equilibrioIzq, [id]: valor };
       const num = k => {
@@ -118,7 +144,6 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       const q = num('fuerzaIzq');
       updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor, fuerza: (d !== null && q !== null) ? String(Math.round((d + q) * 10) / 10) : '' } });
     } else if (id === 'resistencia') {
-      // Resistencia aeróbica: espejar en `leger.palier` para el flujo.
       updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor }, leger: { palier: valor } });
     } else {
       updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor } });
@@ -126,17 +151,20 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
     if (errores[id] || errores.equilibrio || errores.fuerza || errores.leger || errores.resistencia) {
       setErrores(e => { const c = { ...e }; delete c[id]; delete c.equilibrio; delete c.fuerza; delete c.leger; delete c.resistencia; return c; });
     }
-    // Limpiar advertencia del campo al modificarlo
+    // Retira la advertencia del campo modificado.
     setAdvertencias(prev => prev.filter(a => !a.startsWith(VARS_FISICAS.find(v => v.id === id)?.nombre)));
   }
 
+  /** Guarda el nivel Léger en ambos almacenamientos (leger.palier y realesF.resistencia).
+   * @param {string} valor - nivel ingresado. */
   function handleLeger(valor) {
     if (errores.leger || errores.resistencia) setErrores(e => { const c = { ...e }; delete c.leger; delete c.resistencia; return c; });
     updateAnalisis({ leger: { palier: valor }, realesF: { ...analisis.realesF, resistencia: valor } });
   }
 
+  /** Valida todos los campos, normaliza a porcentajes y avanza. */
   function handleContinuar() {
-    // Parciales bilaterales (el derivado lo valida el formulario).
+    // Valida los parciales bilaterales; la suma derivada se valida en el formulario.
     const mapaExtra = {};
     for (const k of ['equilibrioDer', 'equilibrioIzq']) {
       const raw = analisis.realesF[k];
@@ -153,13 +181,11 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       }
     }
     const { ok, errores: lista, advertencias: warns } = validarFormularioVariables(
-      // Resistencia aeróbica (Léger) se valida aparte: obligatoria solo si está autorizada.
+      // El Léger se valida aparte (obligatorio solo si está autorizado).
       VARS_FISICAS.filter(v => v.id !== 'resistencia'),
       analisis.realesF,
     );
 
-    // Resistencia aeróbica (Léger): obligatoria solo si está autorizada.
-    // Se registra el nivel máximo alcanzado (entero 1-21).
     const palierNum = Number(palier);
     const palierOk = !legerAutorizado || (palier !== '' && esNivelLegerValido(palierNum));
     if (!palierOk) mapaExtra.leger = `Resistencia aeróbica (Léger): registra el nivel máximo alcanzado (número entero de 1 a ${LEGER_PALIER_MAX}).`;
@@ -177,9 +203,8 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
 
     setAdvertencias(warns);
 
-    // Normalizar y guardar porcentajes (clamp maneja valores fuera de rango).
-    // Resistencia aeróbica: si no está autorizada queda sin dato (0 en el
-    // cálculo heredado; en el flujo definitivo queda sin dato y no penaliza).
+    // Normaliza a 0-100 (el clamp acota valores fuera de rango). Sin autorización, la resistencia
+    // vale 0 en el cálculo heredado y queda sin dato (sin penalización) en el flujo definitivo.
     const fisicas = {};
     VARS_FISICAS.forEach(v => {
       if (v.id === 'resistencia' && !legerAutorizado) {
@@ -192,7 +217,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       );
     });
 
-    // Espejar el nivel en ambos almacenamientos antes de continuar.
+    // Espeja el nivel Léger en ambos almacenamientos.
     updateAnalisis({ realesF: { ...analisis.realesF, resistencia: legerAutorizado ? palier : '' }, fisicas });
 
     if (warns.length > 0) {

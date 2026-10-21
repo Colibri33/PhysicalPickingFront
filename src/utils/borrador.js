@@ -1,7 +1,13 @@
-/* borrador.js — guarda el análisis en curso en localStorage para que un
-   refresco (F5) no pierda el trabajo. Contiene datos de salud (PAR-Q+),
-   por eso: clave por usuario, caducidad de 7 días, se borra al cerrar
-   sesión o al iniciar un análisis nuevo, y todo va en try/catch. */
+/**
+ * @module utils/borrador
+ * @description Persiste el análisis en curso y el modo invitado en el almacenamiento del navegador para sobrevivir a un refresco.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la política de persistencia local del borrador.
+ *  - D (Inversión de dependencias): el estado base proviene de estadoAnalisisInicial (logic/modelo); el almacenamiento se accede solo mediante estas funciones.
+ * Notas: contiene datos de salud (PAR-Q+); por ello usa clave por usuario, caduca a los 7 días, se borra al cerrar sesión o iniciar un análisis nuevo y toda operación va en try/catch.
+ */
+
 import { estadoAnalisisInicial } from '../logic/modelo.js';
 
 const PREFIJO = 'pp_borrador_v1:';
@@ -11,6 +17,10 @@ const PASO_MAX_VALIDO = 13;
 
 const clave = id => PREFIJO + (id ?? 'invitado');
 
+/** Lee y sanea el borrador del usuario; lo elimina si caducó o es inválido.
+ * @param {string|null} usuarioId - id del usuario (null para invitado).
+ * @param {number} [ahora] - marca de tiempo actual en ms.
+ * @returns {{analisis: Object, paso: number, pasoMax: number, analisisGuardado: boolean}|null} borrador vigente o null. */
 export function leerBorrador(usuarioId, ahora = Date.now()) {
   try {
     const raw = localStorage.getItem(clave(usuarioId));
@@ -31,21 +41,32 @@ export function leerBorrador(usuarioId, ahora = Date.now()) {
   }
 }
 
+/** Guarda el borrador del análisis en localStorage.
+ * @param {string|null} usuarioId - id del usuario (null para invitado).
+ * @param {{analisis: Object, paso: number, pasoMax: number, analisisGuardado: boolean}} datos - estado a persistir.
+ * @param {number} [ahora] - marca de tiempo actual en ms.
+ * @returns {void} */
 export function guardarBorrador(usuarioId, { analisis, paso, pasoMax, analisisGuardado }, ahora = Date.now()) {
   try {
     localStorage.setItem(clave(usuarioId), JSON.stringify({ v: 1, ts: ahora, analisis, paso, pasoMax, analisisGuardado: !!analisisGuardado }));
   } catch { /* almacenamiento lleno o bloqueado: se ignora */ }
 }
 
+/** Elimina el borrador del usuario.
+ * @param {string|null} usuarioId - id del usuario (null para invitado).
+ * @returns {void} */
 export function borrarBorrador(usuarioId) {
   try { localStorage.removeItem(clave(usuarioId)); } catch { /* noop */ }
 }
 
-/* El modo invitado vive en sessionStorage: sobrevive al refresco pero no
-   a cerrar la pestaña. */
+/** Indica si el modo invitado está activo; usa sessionStorage, por lo que sobrevive al refresco pero no al cierre de la pestaña.
+ * @returns {boolean} true si está activo. */
 export function leerModoInvitado() {
   try { return sessionStorage.getItem(SESION_INVITADO) === '1'; } catch { return false; }
 }
+/** Activa o desactiva el modo invitado en sessionStorage.
+ * @param {boolean} activo - nuevo estado.
+ * @returns {void} */
 export function guardarModoInvitado(activo) {
   try {
     if (activo) sessionStorage.setItem(SESION_INVITADO, '1');

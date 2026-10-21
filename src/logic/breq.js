@@ -1,7 +1,13 @@
-/* logic/breq.js — BREQ-3 (Wilson, Rodgers, Loitz y Scime 2006;
-   version espanola: Gonzalez-Cutre, Sicilia y Fernandez 2010).
-   23 items, escala 0-4. Promedios por subescala + RAI.
-   Los pesos del RAI son los estandar de la literatura; verificar si uso formal. */
+/**
+ * @module logic/breq
+ * @description Ítems, subescalas y puntuación del BREQ-3 (regulación conductual del ejercicio), con índice RAI.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la definición o el cálculo del BREQ-3.
+ *  - O (Abierto/Cerrado): subescalas y pesos RAI son datos; se ajustan sin modificar el cálculo.
+ * Notas: Wilson, Rodgers, Loitz y Scime (2006); versión española de González-Cutre, Sicilia y Fernández (2010).
+ * 23 ítems, escala 0-4; promedios por subescala. Los pesos del RAI son los estándar de la literatura; verificar en uso formal.
+ */
 
 export const ITEMS_BREQ = [
   { id: '1',  texto: 'Porque los demás me dicen que debo hacerlo' },
@@ -56,14 +62,22 @@ export const PESOS_RAI = {
   intrinseca:    3,
 };
 
+/** Crea el estado inicial vacío del cuestionario.
+ * @returns {{respuestas: Object}} estado sin respuestas. */
 export function estadoBreqInicial() {
   return { respuestas: {} };
 }
 
+/** Redondea a dos decimales.
+ * @param {number} n - valor a redondear.
+ * @returns {number} valor redondeado. */
 function redondear2(n) {
   return Math.round(n * 100) / 100;
 }
 
+/** Determina los ítems sin una respuesta válida (entero 0-4).
+ * @param {Object<string, number>} [respuestas] - respuestas indexadas por id de ítem.
+ * @returns {Array<Object>} ítems pendientes. */
 export function faltantesBreq(respuestas = {}) {
   return ITEMS_BREQ.filter(it => {
     const v = respuestas[it.id];
@@ -71,6 +85,9 @@ export function faltantesBreq(respuestas = {}) {
   });
 }
 
+/** Calcula el promedio por subescala y el índice de autodeterminación relativa (RAI).
+ * @param {Object<string, number>} [respuestas] - respuestas indexadas por id de ítem.
+ * @returns {{subescalas: Object<string, number>, rai: number}|null} resultado, o null si hay ítems sin responder. */
 export function calcularBreq(respuestas = {}) {
   if (faltantesBreq(respuestas).length > 0) return null;
   const subescalas = {};

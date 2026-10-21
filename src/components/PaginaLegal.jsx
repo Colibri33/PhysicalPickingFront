@@ -1,16 +1,20 @@
-/* ─── PaginaLegal.jsx ───
-   Vista independiente para Terminos y Condiciones / Politica de
-   Tratamiento de Datos. Se abre desde la pantalla de consentimiento
-   (enlaces clicables) o desde el login/registro.
-
-   IMPORTANTE: donde el proyecto no tiene aun una definicion juridica
-   especifica (razon social, NIT, domicilio, canal de contacto formal,
-   tiempos de conservacion exactos), se deja marcado explicitamente
-   con [PENDIENTE DE REVISION LEGAL] en vez de inventar informacion.
-*/
+/**
+ * @module components/PaginaLegal
+ * @description Vista independiente de Términos y Condiciones y de la Política de Tratamiento de Datos, accesible desde el consentimiento, el inicio de sesión o el registro.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contenido legal mostrado.
+ *  - O (Abierto/Cerrado): se agrega una sección nueva con el componente Seccion sin alterar la estructura.
+ * Notas: los datos sin definición jurídica (razón social, NIT, domicilio, contacto formal, tiempos de conservación) se marcan con [PENDIENTE DE REVISION LEGAL] en lugar de inventarse.
+ */
 import Icono from './Icono';
 const FECHA_ACTUALIZACION = '2026-08';
 
+/** Sección titulada del documento legal.
+ * @param {Object} props
+ * @param {string} props.titulo - encabezado de la sección.
+ * @param {React.ReactNode} props.children - contenido.
+ * @returns {JSX.Element} sección. */
 function Seccion({ titulo, children }) {
   return (
     <section className="legal-seccion">
@@ -20,10 +24,16 @@ function Seccion({ titulo, children }) {
   );
 }
 
+/** Marca visible de información pendiente de revisión legal.
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - descripción del dato pendiente.
+ * @returns {JSX.Element} marca resaltada. */
 function Pendiente({ children }) {
   return <span className="legal-pendiente">[PENDIENTE DE REVISION LEGAL: {children}]</span>;
 }
 
+/** Contenido de los Términos y Condiciones.
+ * @returns {JSX.Element} secciones del documento. */
 function TerminosCondiciones() {
   return (
     <>
@@ -85,6 +95,8 @@ function TerminosCondiciones() {
   );
 }
 
+/** Contenido de la Política de Tratamiento de Datos Personales.
+ * @returns {JSX.Element} secciones del documento. */
 function PoliticaPrivacidad() {
   return (
     <>
@@ -203,6 +215,11 @@ function PoliticaPrivacidad() {
   );
 }
 
+/** Página legal según el tipo solicitado.
+ * @param {Object} props
+ * @param {string} props.tipo - 'privacidad' para la política; cualquier otro valor muestra los términos.
+ * @param {Function} props.onVolver - regresa a la pantalla anterior.
+ * @returns {JSX.Element} vista legal. */
 export default function PaginaLegal({ tipo, onVolver }) {
   const titulo = tipo === 'privacidad' ? 'Politica de Tratamiento de Datos Personales' : 'Terminos y Condiciones';
   return (

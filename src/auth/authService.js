@@ -1,18 +1,13 @@
-/* ═══════════════════════════════════════════════════════════════
-   PhysicalPicking · auth/authService.js  (v7 — backend real)
-   Autenticación con Supabase Auth (contraseñas con hash bcrypt,
-   gestionadas por Supabase — nunca en texto plano) + API propia
-   para consentimiento Habeas Data, resultados cifrados y derechos
-   ARCO.
-
-   Se conserva la misma interfaz pública que usaba la versión de
-   prototipo (registrar, login, logout, obtenerSesionActual,
-   guardarRegistroHistorial, leerHistorial, limpiarHistorialInvitado)
-   para no tener que reescribir todos los componentes — pero ahora
-   son funciones ASÍNCRONAS (devuelven promesas), porque hablan con
-   una red real. Los componentes que las llaman deben usar
-   await / then (ver PantallaAuth.jsx, App.jsx, AnalizadorWizard.jsx).
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module auth/authService
+ * @description Servicio de autenticación (Supabase Auth), consentimiento Habeas Data, historial de resultados y derechos ARCO.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el acceso a identidad, consentimiento e historial del usuario.
+ *  - D (Inversión de dependencias): depende del cliente `supabase` y de `API_URL` (supabaseClient), de migrarRegistroLegado y de errorRedAmigable, no de implementaciones de red propias.
+ * Notas: las contraseñas las gestiona Supabase con hash bcrypt, nunca en texto plano. Las funciones son asíncronas y los componentes
+ * que las invocan deben usar await o then. Usuario invitado (usuarioId === null): el historial vive solo en localStorage y nunca toca el backend.
+ */
 
 import { supabase, API_URL } from '../supabaseClient';
 import { migrarRegistroLegado } from '../logic/registroLegado';
@@ -20,13 +15,14 @@ import { errorRedAmigable } from '../utils/red';
 
 const STORAGE_HISTORIAL_INVITADO = 'physicalpicking_historial_invitado';
 
-/* Tiempo máximo de espera para el backend propio. En el celular el
-   backend debe tener URL pública: si apunta a localhost, el fetch
-   falla de inmediato y este mensaje lo explica en vez de
-   mostrar el críptico "Failed to fetch". */
+/* Tiempo máximo de espera del backend. En un celular el backend requiere URL pública: con localhost el fetch falla de inmediato y errorRedAmigable lo explica. */
 const API_TIMEOUT_MS = 12000;
 
-/* ─── helper: llamadas autenticadas al backend propio ─── */
+/** Realiza una llamada autenticada al backend propio con tiempo máximo de espera.
+ * @param {string} path - ruta del backend.
+ * @param {RequestInit} [options] - opciones de fetch; se combinan con las cabeceras de autenticación.
+ * @returns {Promise<Object>} cuerpo JSON de la respuesta.
+ * @throws {Error} con mensaje legible si falla la red o el servidor responde con error. */
 async function apiFetch(path, options = {}) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -55,14 +51,11 @@ async function apiFetch(path, options = {}) {
   return body;
 }
 
-/* ─── API pública ─── */
-
-/**
- * registrar — crea una cuenta nueva en Supabase Auth.
- * El consentimiento de Habeas Data se registra por separado con
- * `registrarConsentimiento`, normalmente justo después de esto,
- * antes de dejar entrar al usuario al wizard.
- */
+/** Crea una cuenta en Supabase Auth. El consentimiento Habeas Data se registra por separado con registrarConsentimiento, antes de entrar al wizard.
+ * @param {string} nombre - nombre de la persona.
+ * @param {string} email - correo electrónico.
+ * @param {string} password - contraseña (mínimo 6 caracteres).
+ * @returns {Promise<{ok: boolean, usuario?: Object, error?: string}>} resultado del registro. */
 export async function registrar(nombre, email, password) {
   if (!nombre.trim() || !email.trim() || !password.trim()) {
     return { ok: false, error: 'Todos los campos son obligatorios.' };
@@ -86,9 +79,10 @@ export async function registrar(nombre, email, password) {
   return { ok: true, usuario: mapearUsuario(data.user, nombre) };
 }
 
-/**
- * login — autentica con email + password contra Supabase Auth.
- */
+/** Autentica con correo y contraseña contra Supabase Auth.
+ * @param {string} email - correo electrónico.
+ * @param {string} password - contraseña.
+ * @returns {Promise<{ok: boolean, usuario?: Object, error?: string}>} resultado del inicio de sesión. */
 export async function login(email, password) {
   if (!email.trim() || !password.trim()) {
     return { ok: false, error: 'Ingresa email y contrasena.' };
@@ -109,25 +103,16 @@ export async function login(email, password) {
   return { ok: true, usuario: mapearUsuario(data.user, nombre) };
 }
 
-/**
- * logout — cierra la sesión activa.
- */
+/** Cierra la sesión activa.
+ * @returns {Promise<void>} */
 export async function logout() {
   await supabase.auth.signOut();
 }
 
-/**
- * solicitarRecuperacionContrasena — inicia el flujo oficial de
- * Supabase Auth para restablecer contraseña (no se implementa
- * criptografia propia). Supabase envia un correo con un enlace que
- * redirige de vuelta a PhysicalPicking (ver VITE_SITE_URL) a la
- * pantalla de "nueva contraseña".
- *
- * Por diseño, siempre devuelve el mismo mensaje de exito exista o no
- * el correo en el sistema, para no revelar si un email esta
- * registrado (evita enumeracion de usuarios) — Supabase ya se
- * comporta asi por defecto: no distingue el error en la respuesta.
- */
+/** Inicia el flujo oficial de Supabase para restablecer la contraseña.
+ * Devuelve siempre el mismo mensaje de éxito exista o no el correo, para evitar la enumeración de usuarios.
+ * @param {string} email - correo de la cuenta.
+ * @returns {Promise<{ok: boolean, mensaje?: string, error?: string}>} resultado de la solicitud. */
 export async function solicitarRecuperacionContrasena(email) {
   const correo = (email || '').trim().toLowerCase();
   if (!correo) return { ok: false, error: 'Ingresa tu correo electronico.' };
@@ -139,19 +124,17 @@ export async function solicitarRecuperacionContrasena(email) {
   if (error && (error instanceof TypeError || error.name === 'AbortError')) {
     return { ok: false, error: errorRedAmigable(error) };
   }
-  // No exponemos el error real de Supabase (podria filtrar si el
-  // correo existe); solo distinguimos errores de servicio.
+  // Seguridad: no se expone el error real de Supabase, pues podría revelar si el correo existe; solo se distinguen fallos de servicio.
   if (error && error.status && error.status >= 500) {
     return { ok: false, error: 'No se pudo enviar el correo de recuperacion. Intenta de nuevo en unos minutos.' };
   }
   return { ok: true, mensaje: 'Si el correo esta registrado, recibiras un enlace para restablecer tu contraseña.' };
 }
 
-/**
- * actualizarContrasena — establece una nueva contraseña, usada tras
- * abrir el enlace de recuperacion (Supabase ya deja al usuario en
- * una sesion de recuperacion valida en ese momento).
- */
+/** Establece una nueva contraseña desde la sesión de recuperación que Supabase abre con el enlace del correo.
+ * @param {string} nuevaContrasena - contraseña nueva (mínimo 6 caracteres).
+ * @param {string} confirmarContrasena - confirmación; debe coincidir.
+ * @returns {Promise<{ok: boolean, error?: string}>} resultado de la actualización. */
 export async function actualizarContrasena(nuevaContrasena, confirmarContrasena) {
   if (!nuevaContrasena || nuevaContrasena.length < 6) {
     return { ok: false, error: 'La contrasena debe tener al menos 6 caracteres.' };
@@ -170,11 +153,8 @@ export async function actualizarContrasena(nuevaContrasena, confirmarContrasena)
   return { ok: true };
 }
 
-/**
- * obtenerSesionActual — recupera el usuario de la sesión guardada
- * (Supabase persiste el refresh token de forma segura en el propio
- * navegador y lo renueva automáticamente).
- */
+/** Recupera el usuario de la sesión persistida (Supabase renueva el token automáticamente).
+ * @returns {Promise<{id: string, nombre: string, email: string}|null>} usuario o null si no hay sesión. */
 export async function obtenerSesionActual() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null;
@@ -182,13 +162,9 @@ export async function obtenerSesionActual() {
   return mapearUsuario(session.user, nombre);
 }
 
-/**
- * registrarConsentimiento — guarda la autorización de tratamiento
- * de datos personales del propio participante adulto (obligatorio
- * antes de poder guardar resultados). PhysicalPicking es exclusivo
- * para adultos de 18 a 30 años: no existe autorización de terceros
- * (padre/madre/acudiente).
- */
+/** Registra la autorización de tratamiento de datos del propio participante adulto, requisito para guardar resultados.
+ * La aplicación es exclusiva para adultos de 18 a 30 años; no existe autorización de terceros.
+ * @returns {Promise<{ok: boolean, error?: string}>} resultado del registro. */
 export async function registrarConsentimiento() {
   try {
     await apiFetch('/consentimiento', {
@@ -204,6 +180,8 @@ export async function registrarConsentimiento() {
   }
 }
 
+/** Consulta si el usuario tiene un consentimiento vigente.
+ * @returns {Promise<boolean>} true si existe; false también ante cualquier error. */
 export async function tieneConsentimientoVigente() {
   try {
     const { consentimiento } = await apiFetch('/consentimiento/vigente');
@@ -213,16 +191,13 @@ export async function tieneConsentimientoVigente() {
   }
 }
 
-/**
- * actualizarRegistroHistorial — corrige los datos de identificacion
- * de un registro ya guardado (nombre, edad, genero, perfil,
- * deporte). El `payload` completo se reenvia porque el backend
- * vuelve a cifrar todo el registro; los resultados de las pruebas
- * (fisicas/antropometricas/consolidado/ranking) NO se recalculan aqui
- * porque esos campos de identificacion no participan en el motor de
- * calculo (confirmado en logic/modelo.js) — no hay riesgo de que el
- * historial quede con datos que no correspondan al calculo.
- */
+/** Corrige los datos de identificación de un registro guardado (nombre, edad, género, perfil, deporte).
+ * Se reenvía el payload completo porque el backend vuelve a cifrar todo el registro. No se recalculan resultados,
+ * pues esos campos no participan en el motor de cálculo (ver logic/modelo.js).
+ * @param {string|null} usuarioId - id del usuario; null para invitado.
+ * @param {string} id - id del registro.
+ * @param {Object} registroActualizado - registro con los datos corregidos.
+ * @returns {Promise<{ok: boolean, resultado?: Object, error?: string}>} resultado de la actualización. */
 export async function actualizarRegistroHistorial(usuarioId, id, registroActualizado) {
   if (usuarioId === null) {
     try {
@@ -251,13 +226,11 @@ export async function actualizarRegistroHistorial(usuarioId, id, registroActuali
   }
 }
 
-/**
- * descargarInformePdf — pide al backend el PDF profesional del
- * informe (autenticado: por id de registro ya guardado; invitado:
- * enviando el payload directo, ya que nunca se guarda cifrado en
- * Supabase). Devuelve el Blob para que el componente dispare la
- * descarga en el navegador.
- */
+/** Obtiene el PDF del informe: por id si el registro está guardado, o enviando el payload directo en modo invitado (que nunca se guarda cifrado).
+ * @param {string|null} usuarioId - id del usuario; null para invitado.
+ * @param {Object} registro - registro del historial.
+ * @returns {Promise<Blob>} PDF para que el componente dispare la descarga.
+ * @throws {Error} si el backend no puede generar el PDF. */
 export async function descargarInformePdf(usuarioId, registro) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -283,19 +256,17 @@ export async function descargarInformePdf(usuarioId, registro) {
   return res.blob();
 }
 
-/**
- * guardarRegistroHistorial — agrega un registro al historial del
- * usuario. Si usuarioId es null (invitado), lo guarda solo en este
- * navegador, tal como en el prototipo original — el modo invitado
- * nunca toca el backend ni la base de datos.
- */
+/** Agrega un registro al historial; en modo invitado lo guarda solo en este navegador.
+ * @param {string|null} usuarioId - id del usuario; null para invitado.
+ * @param {Object} registro - registro a guardar.
+ * @returns {Promise<{ok: boolean, resultado?: Object, error?: string}>} resultado del guardado. */
 export async function guardarRegistroHistorial(usuarioId, registro) {
   if (usuarioId === null) {
     try {
       const prev = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]');
       prev.unshift(registro);
       localStorage.setItem(STORAGE_HISTORIAL_INVITADO, JSON.stringify(prev));
-    } catch { /* sin acceso a storage — ignorar */ }
+    } catch { /* almacenamiento no disponible: se ignora */ }
     return { ok: true };
   }
 
@@ -313,9 +284,9 @@ export async function guardarRegistroHistorial(usuarioId, registro) {
   }
 }
 
-/**
- * leerHistorial — devuelve el historial según modo.
- */
+/** Lee el historial del usuario y migra los registros legados al formato vigente.
+ * @param {string|null} usuarioId - id del usuario; null para invitado.
+ * @returns {Promise<Array<Object>>} historial; vacío ante cualquier error. */
 export async function leerHistorial(usuarioId) {
   if (usuarioId === null) {
     try {
@@ -333,39 +304,39 @@ export async function leerHistorial(usuarioId) {
   }
 }
 
-/**
- * limpiarHistorialInvitado — borra el historial temporal del modo invitado.
- */
+/** Borra el historial temporal del modo invitado.
+ * @returns {void} */
 export function limpiarHistorialInvitado() {
   localStorage.removeItem(STORAGE_HISTORIAL_INVITADO);
 }
 
-/**
- * exportarMisDatos — derecho de ACCESO (ARCO): obtiene todo lo
- * que tenemos del usuario. El front lo presenta como PDF legible.
- */
+/** Ejerce el derecho de acceso (ARCO): obtiene todos los datos del usuario, que el frontend presenta como PDF.
+ * @returns {Promise<Object>} datos exportados por el backend. */
 export async function exportarMisDatos() {
   return apiFetch('/arco/exportar');
 }
 
-/**
- * eliminarCuenta — derecho de SUPRESIÓN (ARCO): borra la cuenta y
- * todos los datos asociados, sin posibilidad de recuperación.
- */
+/** Ejerce el derecho de supresión (ARCO): borra la cuenta y sus datos asociados de forma irreversible y cierra la sesión.
+ * @returns {Promise<void>} */
 export async function eliminarCuenta() {
   await apiFetch('/arco/cuenta', { method: 'DELETE' });
   await logout();
 }
 
-/* ─── helpers internos ─── */
-
+/** Proyecta el usuario de Supabase al modelo interno.
+ * @param {Object} usuarioSupabase - usuario devuelto por Supabase.
+ * @param {string} nombre - nombre a mostrar.
+ * @returns {{id: string, nombre: string, email: string}} usuario interno. */
 function mapearUsuario(usuarioSupabase, nombre) {
   return { id: usuarioSupabase.id, nombre, email: usuarioSupabase.email };
 }
 
+/** Traduce errores de Supabase a mensajes en español.
+ * @param {Error} error - error devuelto por Supabase.
+ * @returns {string} mensaje para la persona usuaria. */
 function traducirErrorSupabase(error) {
   const msg = error.message || '';
-  // Supabase a veces devuelve el fallo de red como error normal.
+  // Supabase a veces devuelve el fallo de red como un error ordinario.
   if (/failed to fetch|networkerror|network request failed|load failed/i.test(msg)) {
     return errorRedAmigable(error);
   }

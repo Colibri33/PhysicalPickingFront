@@ -1,4 +1,11 @@
-/* Pruebas del DecisionEngine de referencia v1 (node --test). */
+/**
+ * @module test/motor.test
+ * @description Pruebas del DecisionEngine de referencia v1 (node --test).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contrato del DecisionEngine de referencia.
+ */
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 

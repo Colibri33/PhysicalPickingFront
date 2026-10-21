@@ -1,43 +1,32 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/normalizacion/afisal.js
-   Baremos AFISAL-INEFC (Rodríguez et al., 1998) para las 4 capacidades
-   de la batería confirmada. Grupos 18-24 y 25-34 × masculino/femenino
-   (población del proyecto: 18-30 años).
+/**
+ * @module evaluacion/normalizacion/afisal
+ * @description Baremos AFISAL-INEFC (Rodríguez et al., 1998) para las cuatro capacidades de la batería confirmada.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la tabulación de los baremos AFISAL.
+ *  - O (Abierto/Cerrado): se añaden baremos como nuevos elementos de BAREMOS_AFISAL sin modificar el motor de normalización.
+ *  - D (Inversión de dependencias): solo declara datos conformes al contrato de baremos (baremos.js); no depende de su implementación.
+ * Notas: grupos 18-24 y 25-34 por sexo. Fuentes: afisal.pdf (Apunts Educación Física y Deportes 54:54-65; tablas 8, 9, 11 y 12) y
+ * "Baremos según afisal por variable.docx". Cortes 'inferior_inclusivo': en mayor_mejor son los límites inferiores de Bajo, Medio,
+ * Alto y Muy alto; en menor_mejor, [inf. Alto, inf. Medio, inf. Bajo, X+1 de "Muy bajo >X"].
+ * Correcciones a la Tabla 9 (erratas de origen): en hombres "Muy bajo <10/<12" se interpreta como ">10/>12"; en hombres 25-34 el
+ * solape Medio 5-8 / Alto 2-7 se resuelve asignando 7-8 a Medio y 2-4 a Alto.
+ * Protocolo bilateral: dinamometría y equilibrio se baremizan sobre la SUMA de ambos lados (mejor intento por mano; intentos por pierna).
+ */
 
-   Fuentes:
-   - Batería y tablas 8, 9, 11, 12: afisal.pdf (Rodríguez et al.,
-     Apunts Educación Física y Deportes 54:54-65).
-   - Transcripción de trabajo: "Baremos según afisal por variable.docx"
-     (texto para 18-24/25-34 + imágenes de las tablas 8, 9, 11 y 12).
-
-   Derivación de cortes (tipo 'cortes_ordenados', 'inferior_inclusivo'):
-   - mayor_mejor (prensión, flexibilidad, salto): cortes = límites
-     inferiores de Bajo, Medio, Alto y Muy alto (">X" → X+1).
-   - menor_mejor (equilibrio, nº intentos): cortes ascendentes =
-     [límite_inf_Alto, límite_inf_Medio, límite_inf_Bajo, X+1 de "Muy
-     bajo >X"]. Verificado valor por valor contra los intervalos.
-
-   Correcciones documentadas a la Tabla 9 (equilibrio, erratas de origen):
-   - Hombres "Muy bajo <10/<12" → ">10/>12" (a menos intentos mejor;
-     las filas de mujeres usan ">" y los intervalos contiguos lo exigen).
-   - Hombres 25-34: solape Medio 5-8 / Alto 2-7. La regla de límites
-     asigna 7-8 a Medio y 2-4 a Alto; se deja constancia aquí.
-
-   Protocolo de captura (bilateral):
-   - Dinamometria: mejor intento de cada mano; el resultado es la SUMA
-     de ambas manos. El baremo (Tabla 8) se aplica sobre esa suma.
-   - Equilibrio: 2 intentos, uno por pierna; se cuenta cada vez que se
-     baja el pie y el resultado es la SUMA de ambas piernas. El baremo
-     se aplica sobre ese total.
-   ═══════════════════════════════════════════════════════════════ */
-
+/** Construye la fuente trazable de un baremo AFISAL.
+ * @param {string} tabla - tabla y variable de origen.
+ * @returns {{referencia: string, origen: string}} fuente del baremo. */
 const FUENTE_BAREMO = (tabla) => ({
   referencia: `AFISAL-INEFC: ${tabla} (Rodriguez et al., 1998). Transcripcion: Baremos segun afisal por variable.docx.`,
   origen: 'baremo',
 });
 
+/** Genera los cuatro grupos sexo-edad de un baremo.
+ * @param {{m: number[], f: number[]}} from18 - cortes del grupo 18-24.
+ * @param {{m: number[], f: number[]}} from25 - cortes del grupo 25-34.
+ * @returns {Object[]} grupos con sexo, rango de edad y cortes. */
 function grupos2(from18, from25) {
-  // from18/from25: { m: [4 cortes], f: [4 cortes] }
   return [
     { sexo: 'masculino', edadMin: 18, edadMax: 24, cortes: from18.m },
     { sexo: 'masculino', edadMin: 25, edadMax: 34, cortes: from25.m },
@@ -46,6 +35,7 @@ function grupos2(from18, from25) {
   ];
 }
 
+/** Baremos AFISAL de dinamometría, salto vertical, flexibilidad y equilibrio monopodal. */
 export const BAREMOS_AFISAL = [
   {
     id: 'afisal_dinamometria',

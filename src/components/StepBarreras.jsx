@@ -1,8 +1,24 @@
-/* StepBarreras.jsx — BBAQ-21 (paso 4). Selector de 4 niveles, 21 afirmaciones. */
+/**
+ * @module components/StepBarreras
+ * @description Paso 4: cuestionario BBAQ-21 (21 afirmaciones, selector de 4 niveles).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura y validación de respuestas de barreras.
+ *  - D (Inversión de dependencias): puntuación y validación en logic/barreras.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { ITEMS_BARRERAS, DIMENSIONES_BARRERAS, OPCIONES_BARRERAS, faltantesBarreras, calcularBarreras } from '../logic/barreras';
 
+/**
+ * Paso del cuestionario BBAQ-21.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @param {Function} props.updateAnalisis - Actualiza parcialmente el análisis.
+ * @param {Function} props.onContinuar - Avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @returns {JSX.Element}
+ */
 export default function StepBarreras({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const barreras = analisis.barreras ?? { respuestas: {} };
   const respuestas = barreras.respuestas ?? {};
@@ -10,17 +26,23 @@ export default function StepBarreras({ analisis, updateAnalisis, onContinuar, mo
   const resultado = calcularBarreras(respuestas);
   const [marcados, setMarcados] = useState([]);
 
+  /** Marca las preguntas sin responder.
+   * @param {Array} f - Identificadores faltantes. */
   function marcarFaltantes(f) {
     const ids = f.map(x => (typeof x === 'string' ? x : x.id));
     setMarcados([]);
     setTimeout(() => setMarcados(ids), 40);
   }
 
+  /** Registra una respuesta.
+   * @param {string} id - Pregunta.
+   * @param {number} valor - Opción elegida. */
   function handleRespuesta(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     updateAnalisis({ barreras: { respuestas: { ...respuestas, [id]: valor } } });
   }
 
+  /** Valida y avanza al siguiente paso. */
   function handleContinuar() {
     const f = faltantesBarreras(respuestas);
     if (f.length > 0) {

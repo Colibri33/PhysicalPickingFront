@@ -1,10 +1,12 @@
-/* ─── PlanAdaptacion.jsx ───
-   Presenta la salida de evaluacion/reglas/planAdaptacion.js cuando
-   ninguna familia es recomendación firme (R-DEC-03):
-   - Estado 3 · Adaptación desde cero, con orientación general ACSM.
-   - Datos insuficientes, con las capacidades que faltan.
-   Y la alerta R-SEG-04 por antecedente de lesión. No calcula nada.
-*/
+/**
+ * @module components/PlanAdaptacion
+ * @description Presenta el plan de adaptación (Estado 3 o datos insuficientes) y la alerta por antecedente de lesión.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): presentación de la salida de evaluacion/reglas/planAdaptacion.js; no calcula.
+ *  - I (Segregación de interfaces): cada componente recibe solo el plan o las alertas.
+ * Notas: se muestra cuando ninguna familia es recomendación firme (R-DEC-03); alerta R-SEG-04.
+ */
 const ETIQUETAS_CAPACIDAD = {
   fuerza: 'Fuerza prensil',
   fuerza_explosiva: 'Fuerza explosiva',
@@ -13,6 +15,10 @@ const ETIQUETAS_CAPACIDAD = {
   equilibrio: 'Equilibrio',
 };
 
+/** Alerta R-SEG-04 por antecedente de lesión.
+ * @param {Object} props
+ * @param {Array} [props.alertas] - Alertas de seguridad.
+ * @returns {JSX.Element|null} null si no hay antecedente. */
 export function AlertaAntecedentes({ alertas = [] }) {
   const lesion = alertas.find(a => a.codigo === 'ANTECEDENTE_LESION');
   if (!lesion) return null;
@@ -27,6 +33,10 @@ export function AlertaAntecedentes({ alertas = [] }) {
   );
 }
 
+/** Tarjeta del plan de adaptación.
+ * @param {Object} props
+ * @param {Object} props.plan - Plan generado por el motor.
+ * @returns {JSX.Element|null} null si el plan no aplica. */
 export default function PlanAdaptacion({ plan }) {
   if (!plan?.aplica) return null;
 

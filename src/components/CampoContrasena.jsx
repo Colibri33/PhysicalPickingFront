@@ -1,12 +1,21 @@
-/* CampoContrasena.jsx — input de contraseña con opción mostrar/ocultar (ojito).
-   Se usa en login, registro y restablecimiento para que la persona
-   verifique lo que digitó. No usa emojis: iconos SVG en línea. */
-
+/**
+ * @module components/CampoContrasena
+ * @description Campo de contraseña con botón para mostrar u ocultar el valor.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): entrada de contraseña con visibilidad conmutable.
+ *  - O (Abierto/Cerrado): reenvía props adicionales al input y admite clase personalizada.
+ *  - I (Segregación de interfaces): sin props propias obligatorias.
+ * Notas: se reutiliza en login, registro y restablecimiento; iconos SVG en línea.
+ */
 import { useState } from 'react';
 
+/** Icono de ojo abierto o tachado.
+ * @param {Object} props
+ * @param {boolean} props.abierto - true si la contraseña es visible.
+ * @returns {JSX.Element} */
 function IconoOjo({ abierto }) {
   if (abierto) {
-    // Ojo abierto
     return (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -15,7 +24,6 @@ function IconoOjo({ abierto }) {
       </svg>
     );
   }
-  // Ojo tachado (oculto)
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -27,6 +35,10 @@ function IconoOjo({ abierto }) {
   );
 }
 
+/** Input de contraseña con alternancia de visibilidad.
+ * @param {Object} props
+ * @param {string} [props.classNameInput] - Clase CSS del input.
+ * @returns {JSX.Element} */
 export default function CampoContrasena({ classNameInput = 'auth-input', ...props }) {
   const [visible, setVisible] = useState(false);
 

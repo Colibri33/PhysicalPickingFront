@@ -1,6 +1,12 @@
-/* Pruebas del flujo de evaluacion (node --test). Los baremos y el
-   motor usados aqui son FALSOS, solo para verificar contratos: no son
-   valores del proyecto. */
+/**
+ * @module test/evaluacion.test
+ * @description Pruebas del flujo de evaluación de extremo a extremo (node --test).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contrato del flujo de evaluación.
+ * Notas: los baremos y el motor usados son FALSOS y solo verifican contratos; no son valores del proyecto.
+ */
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 

@@ -1,3 +1,11 @@
+/**
+ * @module test/ia.test
+ * @description Pruebas del resumen que se envía a la IA.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contenido y la privacidad de construirResumenIA.
+ */
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generarAnalisisDemo } from '../src/utils/rellenoDemo.js';

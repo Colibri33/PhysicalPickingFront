@@ -1,20 +1,36 @@
-/* ─── StepParticipante.jsx ───
-   PhysicalPicking es exclusivamente para participantes adultos de
-   18 a 30 anos (poblacion objetivo para la bateria EUROFIT que se
-   incorporara en la siguiente fase). Todos los campos son
-   obligatorios y se validan antes de avanzar. */
+/**
+ * @module components/StepParticipante
+ * @description Paso 1: datos del participante, con validación obligatoria antes de avanzar.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura y validación de datos básicos.
+ * Notas: población objetivo de 18 a 30 años (batería EUROFIT prevista); todos los campos son obligatorios.
+ */
 import Icono from './Icono';
 const EDAD_MIN = 18;
 const EDAD_MAX = 30;
 export { EDAD_MIN, EDAD_MAX };
 
+/**
+ * Paso de datos del participante.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @param {Function} props.updateAnalisis - Actualiza parcialmente el análisis.
+ * @param {Function} props.onContinuar - Avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @returns {JSX.Element}
+ */
 export default function StepParticipante({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const p = analisis.participante;
 
+  /** Actualiza un campo del participante.
+   * @param {string} campo - Nombre del campo.
+   * @param {*} valor - Nuevo valor. */
   function handleChange(campo, valor) {
     updateAnalisis({ participante: { ...p, [campo]: valor } });
   }
 
+  /** Valida y avanza al siguiente paso. */
   function handleContinuar() {
     const nombre = (p.nombre || '').trim();
     if (!nombre)              return mostrarToast('Ingresa el nombre del participante.', 'error');

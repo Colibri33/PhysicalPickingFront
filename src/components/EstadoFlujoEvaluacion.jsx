@@ -1,9 +1,12 @@
-/* ─── EstadoFlujoEvaluacion.jsx ───
-   Muestra el estado del flujo de evaluacion de src/evaluacion:
-   alertas de seguridad (siempre antes de la recomendacion), estado de
-   cada modulo y lo que queda pendiente de integrar. No calcula nada:
-   solo presenta la salida de ejecutarFlujoEvaluacion().
-*/
+/**
+ * @module components/EstadoFlujoEvaluacion
+ * @description Presenta el estado del flujo de evaluación: alertas de seguridad, estado por módulo y pendientes.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): solo presenta la salida de ejecutarFlujoEvaluacion().
+ *  - D (Inversión de dependencias): depende de la API pública de src/evaluacion.
+ * Notas: las alertas de seguridad se muestran siempre antes de la recomendación.
+ */
 import { useMemo } from 'react';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 
@@ -16,6 +19,10 @@ const ETIQUETA_ESTADO = {
   completo: 'Completo',
 };
 
+/** Panel de estado del flujo de evaluación.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @returns {JSX.Element} */
 export default function EstadoFlujoEvaluacion({ analisis }) {
   const { informe } = useMemo(
     () => ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis)),

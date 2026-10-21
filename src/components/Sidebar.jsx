@@ -1,4 +1,11 @@
-/* Sidebar.jsx v11 — 13 pasos + historial */
+/**
+ * @module components/Sidebar
+ * @description Navegación lateral por los pasos de la evaluación y el historial.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): menú de pasos y datos de sesión.
+ *  - O (Abierto/Cerrado): se amplía editando GRUPOS_SIDEBAR sin cambiar el componente.
+ */
 import Icono from './Icono';
 export const PASO_HISTORIAL = 14;
 
@@ -39,6 +46,17 @@ const GRUPOS_SIDEBAR = [
   },
 ];
 
+/** Barra lateral de navegación.
+ * @param {Object} props
+ * @param {number} props.paso - Paso actual.
+ * @param {number} props.pasoMax - Paso máximo alcanzado.
+ * @param {boolean} props.open - Visible en móvil.
+ * @param {Function} props.onClose - Cierra la barra.
+ * @param {Function} props.onNavegar - Navega a un paso.
+ * @param {Object} props.usuarioActual - Usuario autenticado.
+ * @param {boolean} props.modoInvitado - Sesión de invitado.
+ * @param {Function} props.onLogout - Cierra sesión.
+ * @returns {JSX.Element} */
 export default function Sidebar({ paso, pasoMax, open, onClose, onNavegar, usuarioActual, modoInvitado, onLogout }) {
   return (
     <nav className={`sidebar${open ? ' open' : ''}`}>

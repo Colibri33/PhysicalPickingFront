@@ -1,5 +1,11 @@
-/* Icono.jsx — iconos SVG propios (trazo, heredan el color del texto).
-   Sustituyen a los emojis y símbolos de texto en toda la interfaz. */
+/**
+ * @module components/Icono
+ * @description Catálogo de iconos SVG de trazo que heredan el color del texto y sustituyen emojis en la interfaz.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el catálogo de iconos y su renderizado.
+ *  - O (Abierto/Cerrado): se añaden iconos agregando entradas a RUTAS sin modificar el componente.
+ */
 const RUTAS = {
   derecha: <><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>,
   izquierda: <><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></>,
@@ -16,7 +22,7 @@ const RUTAS = {
   destellos: <><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" /><path d="M19 3v4" /><path d="M21 5h-4" /><path d="M5 17v4" /><path d="M7 19H3" /></>,
   robot: <><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></>,
   objetivo: <><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></>,
-  /* capacidades */
+  // Capacidades físicas
   fuerza: <><path d="M6.5 6.5v11" /><path d="M17.5 6.5v11" /><path d="M3.5 9v6" /><path d="M20.5 9v6" /><path d="M6.5 12h11" /></>,
   salto: <><path d="M12 15V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></>,
   resistencia: <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />,
@@ -24,6 +30,11 @@ const RUTAS = {
   equilibrio: <><path d="M12 3v18" /><path d="M7 21h10" /><path d="M3 7h18" /><path d="m5 7-3 7h6z" /><path d="m19 7-3 7h6z" /></>,
 };
 
+/** Renderiza el icono identificado por su nombre; si no existe, un SVG vacío.
+ * @param {Object} props
+ * @param {string} props.n - clave del icono en RUTAS.
+ * @param {string} [props.className] - clases CSS adicionales.
+ * @returns {JSX.Element} elemento SVG decorativo (aria-hidden). */
 export default function Icono({ n, className = '' }) {
   return (
     <svg className={`ico ${className}`.trim()} viewBox="0 0 24 24" width="1em" height="1em" fill="none"

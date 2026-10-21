@@ -1,3 +1,11 @@
+/**
+ * @module test/borrador.test
+ * @description Pruebas de coherencia del análisis demo frente a los validadores de cada módulo.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contrato entre rellenoDemo y los validadores de completitud.
+ */
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generarAnalisisDemo } from '../src/utils/rellenoDemo.js';

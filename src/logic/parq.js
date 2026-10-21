@@ -1,10 +1,15 @@
-/* logic/parq.js — PAR-Q+ (version 2023 segun mejor referencia disponible).
-   Arbol de visibilidad condicional + poda + resultado.
-   Datos: { respuestas: {id:'si'|'no'}, detalles: {id: texto}, resultado: 'apto'|'consultar' }
-   Solo las preguntas visibles aparecen en `respuestas`.
-   Textos y ORDEN de subpreguntas: PAR-Q+ en español (parq+.pdf; traducción de
-   M. Rubio con J. y L. Schwartz), igual al Google Form aplicado. Los ids (c3a, c4b...)
-   siguen la numeracion oficial: no reordenar, los registros guardados dependen de ella. */
+/**
+ * @module logic/parq
+ * @description Definición del PAR-Q+ y lógica de visibilidad condicional, poda de respuestas y resultado de aptitud.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la estructura o las reglas del PAR-Q+.
+ *  - O (Abierto/Cerrado): el árbol de preguntas es un dato; se agregan nodos sin modificar el recorrido.
+ * Notas: versión 2023 según la mejor referencia disponible. Textos y orden de subpreguntas del PAR-Q+ en español
+ * (parq+.pdf; traducción de M. Rubio con J. y L. Schwartz), idénticos al Google Form aplicado. Los ids (c3a, c4b...)
+ * siguen la numeración oficial: no reordenar, pues los registros guardados dependen de ellos.
+ * Datos: { respuestas: {id: 'si'|'no'}, detalles: {id: texto}, resultado: 'apto'|'consultar' }; solo las preguntas visibles figuran en `respuestas`.
+ */
 
 export const PREGUNTAS_GENERALES = [
   { id: 'g1', texto: '¿Alguna vez su médico le ha dicho que tiene una afección cardíaca O presión arterial alta?' },
@@ -70,18 +75,30 @@ export const CONDICIONES = [
   ]},
 ];
 
+/** Crea el estado inicial vacío del PAR-Q+.
+ * @returns {{respuestas: Object, detalles: Object}} estado sin respuestas. */
 export function estadoParqInicial() {
   return { respuestas: {}, detalles: {} };
 }
 
+/** Indica si la sección de condiciones se despliega (alguna pregunta general respondida "si").
+ * @param {Object<string, string>} [respuestas] - respuestas por id.
+ * @returns {boolean} true si la sección está abierta. */
 export function seccionCondicionesAbierta(respuestas = {}) {
   return PREGUNTAS_GENERALES.some(p => respuestas[p.id] === 'si');
 }
 
+/** Devuelve las preguntas generales, siempre visibles, con nivel 0.
+ * @returns {Array<Object>} preguntas generales. */
 export function preguntasGeneralesVisibles() {
   return PREGUNTAS_GENERALES.map(p => ({ ...p, nivel: 0 }));
 }
 
+/** Aplana el árbol de condiciones incluyendo las hijas cuya madre abre con su respuesta.
+ * @param {Array<Object>} nodos - nodos del nivel actual.
+ * @param {Object<string, string>} respuestas - respuestas por id.
+ * @param {number} [nivel] - profundidad actual.
+ * @returns {Array<Object>} nodos visibles en orden, con su nivel. */
 function aplanarArbol(nodos, respuestas, nivel = 0) {
   const out = [];
   for (const nodo of nodos) {
@@ -94,15 +111,25 @@ function aplanarArbol(nodos, respuestas, nivel = 0) {
   return out;
 }
 
+/** Obtiene las preguntas de condiciones actualmente visibles.
+ * @param {Object<string, string>} [respuestas] - respuestas por id.
+ * @returns {Array<Object>} condiciones visibles (vacío si la sección está cerrada). */
 export function condicionesVisibles(respuestas = {}) {
   if (!seccionCondicionesAbierta(respuestas)) return [];
   return aplanarArbol(CONDICIONES, respuestas, 0);
 }
 
+/** Obtiene todas las preguntas visibles (generales y condiciones).
+ * @param {Object<string, string>} [respuestas] - respuestas por id.
+ * @returns {Array<Object>} preguntas visibles. */
 export function todasVisibles(respuestas = {}) {
   return [...preguntasGeneralesVisibles(), ...condicionesVisibles(respuestas)];
 }
 
+/** Descarta respuestas y detalles de preguntas ya no visibles; limita el detalle a 300 caracteres.
+ * @param {Object<string, string>} [respuestas] - respuestas por id.
+ * @param {Object<string, string>} [detalles] - detalles de texto por id.
+ * @returns {{respuestas: Object, detalles: Object}} datos depurados. */
 export function podarRespuestas(respuestas = {}, detalles = {}) {
   const visibles = new Set(todasVisibles(respuestas).map(p => p.id));
   const r2 = {};
@@ -116,10 +143,16 @@ export function podarRespuestas(respuestas = {}, detalles = {}) {
   return { respuestas: r2, detalles: d2 };
 }
 
+/** Lista las preguntas visibles sin respuesta "si"/"no".
+ * @param {Object<string, string>} [respuestas] - respuestas por id.
+ * @returns {Array<Object>} preguntas pendientes. */
 export function pendientes(respuestas = {}) {
   return todasVisibles(respuestas).filter(p => respuestas[p.id] !== 'si' && respuestas[p.id] !== 'no');
 }
 
+/** Evalúa la aptitud: "consultar" si alguna subpregunta visible fue respondida "si".
+ * @param {Object<string, string>} [respuestas] - respuestas por id.
+ * @returns {'apto'|'consultar'} resultado. */
 export function evaluarParq(respuestas = {}) {
   const visibles = todasVisibles(respuestas);
   const algunaHijaSi = visibles.some(p => p.nivel > 0 && respuestas[p.id] === 'si');

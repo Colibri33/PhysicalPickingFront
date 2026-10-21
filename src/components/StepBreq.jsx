@@ -1,14 +1,31 @@
-/* StepBreq.jsx — BREQ-3 (paso 3). Escala 0-4, 23 afirmaciones obligatorias. */
+/**
+ * @module components/StepBreq
+ * @description Paso del cuestionario BREQ-3 de motivación hacia el ejercicio (escala 0-4, 23 afirmaciones obligatorias).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura respuestas y valida completitud; el puntaje se delega a logic/breq.
+ *  - D (Inversión de dependencias): ítems, faltantes y cálculo provienen de logic/breq; el estado se recibe por props.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { ITEMS_BREQ, NOMBRES_SUBESCALAS, faltantesBreq, calcularBreq } from '../logic/breq';
 
 const OPCIONES = [0, 1, 2, 3, 4];
 
+/** Convierte la lista de faltantes a ids, admitiendo cadenas u objetos con id.
+ * @param {Array<string|{id: string}>} f - faltantes.
+ * @returns {string[]} ids. */
 function normalizarFaltantes(f) {
   return f.map(x => (typeof x === 'string' ? x : x.id));
 }
 
+/** Formulario del cuestionario BREQ-3 con resumen por subescala.
+ * @param {Object} props
+ * @param {Object} props.analisis - análisis actual (breq).
+ * @param {Function} props.updateAnalisis - actualiza campos del análisis.
+ * @param {Function} props.onContinuar - avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @returns {JSX.Element} tarjeta del paso. */
 export default function StepBreq({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const breq = analisis.breq ?? { respuestas: {} };
   const respuestas = breq.respuestas ?? {};
@@ -16,17 +33,24 @@ export default function StepBreq({ analisis, updateAnalisis, onContinuar, mostra
   const resultado = calcularBreq(respuestas);
   const [marcados, setMarcados] = useState([]);
 
+  /** Resalta las preguntas sin responder.
+   * @param {Array<string|{id: string}>} f - faltantes. */
   function marcarFaltantes(f) {
     const ids = normalizarFaltantes(f);
+    // Reinicio previo y asignación diferida para reiniciar la animación de resaltado.
     setMarcados([]);
     setTimeout(() => setMarcados(ids), 40);
   }
 
+  /** Registra una respuesta y retira el resaltado de esa pregunta.
+   * @param {string} id - id del ítem.
+   * @param {number} valor - respuesta 0-4. */
   function handleRespuesta(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     updateAnalisis({ breq: { respuestas: { ...respuestas, [id]: valor } } });
   }
 
+  /** Exige todas las respuestas antes de avanzar. */
   function handleContinuar() {
     const f = faltantesBreq(respuestas);
     if (f.length > 0) {

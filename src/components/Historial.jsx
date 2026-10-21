@@ -1,4 +1,11 @@
-/* Historial.jsx v6 — edicion de registros + descarga PDF */
+/**
+ * @module components/Historial
+ * @description Lista de registros guardados con detalle, edición de datos del participante y descarga de PDF.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): gestión visual del historial de evaluaciones.
+ *  - D (Inversión de dependencias): persistencia y PDF mediante servicios importados; reutiliza ResultadosConsolidado y RecomendacionDeportes.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { VARS_FISICAS, estadoAnalisisInicial } from '../logic/modelo';
@@ -15,8 +22,14 @@ import { generarPdfMisDatos } from '../utils/informeMisDatosPdf';
 import { AlertaAntecedentes } from './PlanAdaptacion';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad';
 
+/** Pone en mayúscula la primera letra.
+ * @param {string} s - Texto.
+ * @returns {string} texto capitalizado o cadena vacía. */
 function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 
+/** Descarga un Blob como archivo.
+ * @param {Blob} blob - Contenido.
+ * @param {string} nombreArchivo - Nombre sugerido. */
 function descargarBlob(blob, nombreArchivo) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -26,8 +39,9 @@ function descargarBlob(blob, nombreArchivo) {
   URL.revokeObjectURL(url);
 }
 
-/* Reconstruye el estado `analisis` del asistente a partir de un registro
-   guardado, para reutilizar las mismas pantallas del informe final. */
+/** Reconstruye el estado `analisis` desde un registro guardado para reutilizar las pantallas del informe.
+ * @param {Object} r - Registro guardado.
+ * @returns {Object} estado de análisis. */
 function analisisDesdeRegistro(r) {
   const base = estadoAnalisisInicial();
   const claves = ['participante', 'parq', 'complementarias', 'breq', 'barreras', 'ipaq', 'psqi', 'leger', 'realesF', 'fisicas', 'antropometricas', 'cuestionarios'];
@@ -36,6 +50,12 @@ function analisisDesdeRegistro(r) {
   return a;
 }
 
+/** Vista completa de un registro (informe o recomendación).
+ * @param {Object} props
+ * @param {Object} props.registro - Registro guardado.
+ * @param {Function} props.onVolver - Regresa a la lista.
+ * @param {Function} props.onEditarPdf - Abre edición y PDF.
+ * @returns {JSX.Element} */
 function DetalleAnalisis({ registro, onVolver, onEditarPdf }) {
   const [vista, setVista] = useState('informe');
   const analisis = analisisDesdeRegistro(registro);
@@ -57,6 +77,14 @@ function DetalleAnalisis({ registro, onVolver, onEditarPdf }) {
   );
 }
 
+/** Formulario de edición de los datos del participante de un registro.
+ * @param {Object} props
+ * @param {Object} props.registro - Registro a editar.
+ * @param {Function} props.onCancelar - Cancela la edición.
+ * @param {Function} props.onGuardado - Recibe el registro actualizado.
+ * @param {string} props.usuarioId - Identificador del usuario.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @returns {JSX.Element} */
 function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostrarToast }) {
   const [form, setForm] = useState({ ...registro.participante });
   const [guardando, setGuardando] = useState(false);
@@ -79,9 +107,7 @@ function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostra
     if (!form.perfil) return mostrarToast('Selecciona el tipo de perfil.', 'error');
     if (!(form.deporte || '').trim()) return mostrarToast('Ingresa la actividad o deporte.', 'error');
 
-    // Nombre/edad/genero/perfil/deporte NO participan en el motor de
-    // calculo (logic/modelo.js) — no hace falta recalcular fisicas,
-    // antropometricas, consolidado ni ranking al editar solo estos campos.
+    // Estos campos no participan en el motor de cálculo (logic/modelo.js): no se recalcula nada.
     const registroActualizado = { ...registro, participante: { ...form, nombre, edad: edadNum } };
 
     setGuardando(true);
@@ -142,6 +168,14 @@ function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostra
   );
 }
 
+/** Modal con resumen del registro, edición y descarga de PDF.
+ * @param {Object} props
+ * @param {Object|null} props.registro - Registro seleccionado.
+ * @param {Function} props.onClose - Cierra el modal.
+ * @param {string} props.usuarioId - Identificador del usuario.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @param {Function} props.onActualizado - Notifica un registro actualizado.
+ * @returns {JSX.Element|null} */
 function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActualizado }) {
   const [editando, setEditando] = useState(false);
   const [descargando, setDescargando] = useState(false);
@@ -195,17 +229,14 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               </button>
             </div>
 
-            {/* R-SEG-04: alerta por antecedente de lesión. En registros
-                anteriores a la regla se deriva de los antecedentes guardados. */}
+            {/* R-SEG-04: en registros anteriores a la regla la alerta se deriva de los antecedentes guardados. */}
             <AlertaAntecedentes alertas={[
               (r.evaluacion?.informe?.seguridad?.alertas ?? []).find(a => a.codigo === 'ANTECEDENTE_LESION')
                 ?? alertaAntecedenteLesion(r.complementarias?.resultado?.antecedentes),
             ].filter(Boolean)} />
 
             {(() => {
-              // Con el flujo nuevo la recomendación sale del DecisionEngine
-              // (familia firme, Estado 3 o datos faltantes); el texto del
-              // modelo heredado solo se usa en registros sin ese bloque.
+              // La recomendación proviene del DecisionEngine; el texto heredado solo aplica a registros sin ese bloque.
               const rk = r.evaluacion?.etapas?.ranking;
               const plan = r.evaluacion?.etapas?.planAdaptacion;
               const texto = rk?.familias && 'recomendada' in rk
@@ -265,9 +296,19 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
   );
 }
 
+/** Pantalla de historial de evaluaciones.
+ * @param {Object} props
+ * @param {Array} props.historial - Registros guardados.
+ * @param {Function} props.onLimpiar - Borra el historial.
+ * @param {Function} props.onNuevo - Inicia una evaluación nueva.
+ * @param {Object} props.usuarioActual - Usuario autenticado, o null en modo invitado.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @param {Function} props.onLogout - Cierra sesión.
+ * @param {Function} props.onHistorialActualizado - Notifica un registro modificado.
+ * @returns {JSX.Element} */
 export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual, mostrarToast, onLogout, onHistorialActualizado }) {
-  const [detalle, setDetalle] = useState(null);   // modal (editar / PDF)
-  const [verId, setVerId] = useState(null);         // analisis completo
+  const [detalle, setDetalle] = useState(null);   // Modal de edición y PDF.
+  const [verId, setVerId] = useState(null);         // Análisis completo.
 
   async function handleExportar() {
     try {

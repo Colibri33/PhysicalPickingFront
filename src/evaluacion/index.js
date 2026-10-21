@@ -1,20 +1,15 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/index.js — ORQUESTADOR DEL FLUJO DE EVALUACION
-
-     1. Datos ingresados
-     2. Validacion de respuestas            (por modulo)
-     3. Evaluacion de cada prueba/cuestionario
-     4. Normalizacion a niveles/valores requeridos
-     5. Construccion del perfil funcional
-     6. Reglas de preparacion/seguridad
-     7. DecisionEngine                       (puerto; motor inyectable)
-     8. Ranking de las 13 familias deportivas
-     9. Informe final
-
-   Funcion pura: misma entrada + mismos recursos → misma salida.
-   No usa React, DOM ni red. Sin baremos ni motor inyectados, todo lo
-   que depende de ellos queda marcado como pendiente.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/index
+ * @description Orquestador del flujo de evaluación: datos, validación, evaluación, normalización, perfil, reglas, motor, ranking e informe.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el orden y el encadenamiento de las etapas.
+ *  - O (Abierto/Cerrado): módulos, baremos y motor se incorporan por registro o inyección sin modificar el orquestador.
+ *  - D (Inversión de dependencias): baremos y DecisionEngine se inyectan mediante `opciones`; el flujo depende del puerto, no del motor.
+ * Notas: etapas: 1 datos ingresados; 2 validación; 3 evaluación; 4 normalización; 5 perfil funcional; 6 reglas de preparación y seguridad;
+ * 7 DecisionEngine; 8 ranking de las 13 familias; 9 informe. Función pura: misma entrada y recursos producen la misma salida; no usa React, DOM ni red.
+ * Sin baremos o motor inyectados, lo que depende de ellos queda como pendiente.
+ */
 
 import { clonar } from './trazabilidad.js';
 import { MODULOS } from './modulos/registro.js';
@@ -30,15 +25,17 @@ import { construirRanking } from './decision/ranking.js';
 import { construirPlanAdaptacion } from './reglas/planAdaptacion.js';
 import { construirInforme } from './informe/construirInforme.js';
 
-// Motor de referencia v1 por defecto (auditable, sustituible con
-// registrarDecisionEngine() o pasando { decisionEngine } explícito,
-// incluido null para forzar 'pendiente_integracion').
+// Motor de referencia por defecto; se sustituye con registrarDecisionEngine() o { decisionEngine } (null fuerza 'pendiente_integracion').
 if (!obtenerDecisionEngine()) {
   registrarDecisionEngine(new DecisionEngineReferencia());
 }
 
+/** Versión del flujo de evaluación. */
 export const VERSION_FLUJO = '0.1.0';
 
+/** Deriva el contexto (sexo y edad) de los datos del participante.
+ * @param {{genero?: string, edad?: number|string}} participante - datos del participante.
+ * @returns {{sexo: string|null, edad: number|null}} contexto. */
 export function contextoDesdeParticipante(participante) {
   const edad = Number(participante?.edad);
   return {
@@ -47,19 +44,20 @@ export function contextoDesdeParticipante(participante) {
   };
 }
 
-/**
- * @param {{participante, realesF, antropometricas, cuestionarios}} datosIngresados
- * @param {{ baremos?: Map|Array, decisionEngine?: {evaluar:Function}|null, ahora?: string }} opciones
- * Por defecto se aplican los BAREMOS_AFISAL (si se quiere el flujo sin
- * baremos, pasar `baremos: []` explícitamente).
- */
+/** Ejecuta el flujo completo de evaluación.
+ * @param {{participante: Object, realesF: Object, antropometricas: Object, cuestionarios: Object}} datosIngresados - datos de entrada.
+ * @param {Object} [opciones] - recursos inyectables.
+ * @param {Map|Object[]} [opciones.baremos] - registro o lista de baremos; por defecto AFISAL y Léger (`[]` ejecuta sin baremos).
+ * @param {{evaluar: Function}|null} [opciones.decisionEngine] - motor de decisión.
+ * @param {string} [opciones.ahora] - marca de tiempo ISO fija.
+ * @returns {Object} resultado con versión, contexto, etapas e informe. */
 export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
-  // 1. Datos ingresados (copia inmutable)
+  // 1. Datos ingresados (copia para no mutar la entrada)
   const datos = clonar(datosIngresados ?? {});
   const contexto = contextoDesdeParticipante(datos.participante);
   const baremos = opciones.baremos instanceof Map ? opciones.baremos : crearRegistroBaremos(opciones.baremos ?? [...BAREMOS_AFISAL, ...BAREMOS_LEGER]);
 
-  // 2-4. Validacion → evaluacion → normalizacion por modulo
+  // 2-4. Validación, evaluación y normalización por módulo
   const resultados = {};
   for (const modulo of MODULOS) {
     resultados[modulo.id] = ejecutarModulo(modulo, datos, contexto, { baremos });
@@ -68,7 +66,7 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
   // 5. Perfil funcional (solo datos normalizados)
   const perfil = construirPerfilFuncional(resultados, contexto);
 
-  // 6. Reglas de preparacion/seguridad
+  // 6. Reglas de preparación y seguridad
   const reglas = aplicarReglasPreparacionSeguridad(perfil);
 
   // 7. DecisionEngine
@@ -79,7 +77,7 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
   // 8. Ranking
   const ranking = construirRanking(decision);
 
-  // 8b. Estado de preparacion cuando ninguna familia es firme (R-DEC-03)
+  // 8b. Estado de preparación cuando ninguna familia es firme (R-DEC-03)
   const planAdaptacion = construirPlanAdaptacion({ ranking, capacidades: entradaMotor.capacidades });
 
   // 9. Informe

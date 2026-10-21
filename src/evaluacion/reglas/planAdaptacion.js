@@ -1,28 +1,18 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/reglas/planAdaptacion.js
-   Etapa 8b: estado de preparacion cuando NINGUNA familia es firme
-   (R-DEC-03, decision propia 2026-10). Dos casos:
+/**
+ * @module evaluacion/reglas/planAdaptacion
+ * @description Regla R-DEC-03 (etapa 8b): construye el plan de adaptación o la solicitud de datos cuando ninguna familia deportiva es firme.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la regla R-DEC-03 y sus pautas generales.
+ *  - O (Abierto/Cerrado): nuevas pautas se añaden en PAUTAS_POR_COMPONENTE sin modificar la función.
+ *  - D (Inversión de dependencias): recibe el ranking y las capacidades como parámetros; no invoca al motor.
+ * Notas: decisión propia 2026-10. Estado 3 (adaptación desde cero): todas las familias tienen al menos una brecha severa; no se recomienda
+ * deporte. Datos insuficientes: alguna familia queda sin recomendar solo por falta de datos; se solicitan en lugar de asignar el Estado 3.
+ * Las pautas parafrasean ACSM's Guidelines for Exercise Testing and Prescription (11.ª ed., 2021), cap. 5 (Tablas 5.1, 5.5 y 5.6 y
+ * "Progression of Aerobic Exercise"); no se inventan cargas ni semanas. Pendiente: los Estados 1 y 2 (base física + IPAQ + PSQI) sin regla definida.
+ */
 
-   1. Estado 3 · Adaptación desde cero: todas las familias tienen al
-      menos una brecha severa (nivel Muy bajo/Bajo donde la familia
-      exige Alta/Muy alta). La base física actual no alcanza la demanda
-      definitoria de ninguna familia → no se recomienda deporte y se
-      entrega una orientación general de acondicionamiento.
-   2. Datos insuficientes: alguna familia solo queda sin recomendar
-      por falta de datos (no por brecha severa) → se piden esos datos
-      en vez de asignar el Estado 3.
-
-   La orientación NO inventa cargas ni semanas: parafrasea las
-   recomendaciones generales del ACSM para adultos que inician
-   (ACSM's Guidelines for Exercise Testing and Prescription, 11.ª ed.,
-   2021, cap. 5: Tablas 5.1, 5.5 y 5.6 y apartado "Progression of
-   Aerobic Exercise"). Las prioridades salen de las capacidades del
-   propio perfil en nivel Muy bajo o Bajo.
-
-   Pendiente (no se inventa): Estados 1 y 2 (base física + IPAQ +
-   PSQI) siguen sin regla definida.
-   ═══════════════════════════════════════════════════════════════ */
-
+/** Fuente bibliográfica de las pautas generales. */
 export const FUENTE_ACSM = Object.freeze({
   referencia: 'American College of Sports Medicine (2021). ACSM\'s Guidelines for Exercise Testing and Prescription (11.ª ed.). Wolters Kluwer. Capítulo 5.',
   origen: 'literatura',
@@ -30,6 +20,7 @@ export const FUENTE_ACSM = Object.freeze({
 
 const REF_PROGRESION = 'ACSM (2021), cap. 5, Progression of Aerobic Exercise';
 
+/** Pautas generales de inicio, progresión y monitoreo. */
 export const PAUTAS_GENERALES = Object.freeze([
   {
     id: 'inicio', titulo: 'Cómo empezar', referencia: REF_PROGRESION,
@@ -45,6 +36,7 @@ export const PAUTAS_GENERALES = Object.freeze([
   },
 ]);
 
+/** Pautas por componente de condición física, asociadas a las capacidades que cubren. */
 export const PAUTAS_POR_COMPONENTE = Object.freeze({
   aerobico: {
     capacidades: ['vo2max'], titulo: 'Resistencia aeróbica', referencia: 'ACSM (2021), Tabla 5.1',
@@ -67,14 +59,18 @@ export const PAUTAS_POR_COMPONENTE = Object.freeze({
 const ORDEN_CAPACIDADES = ['fuerza', 'fuerza_explosiva', 'vo2max', 'flexibilidad', 'equilibrio'];
 const NIVELES_PRIORIDAD = ['Muy bajo', 'Bajo'];
 
+/** Obtiene el componente de condición física de una capacidad.
+ * @param {string} capacidad - id de la capacidad.
+ * @returns {string|null} id del componente, o null. */
 function componenteDe(capacidad) {
   return Object.entries(PAUTAS_POR_COMPONENTE).find(([, p]) => p.capacidades.includes(capacidad))?.[0] ?? null;
 }
 
-/**
- * @param {{ ranking, capacidades: {[cap]: nivel|null} }} p
- *   ranking: salida de construirRanking(); capacidades: niveles que recibió el motor.
- */
+/** Construye el plan de adaptación (Estado 3) o la solicitud de datos faltantes.
+ * @param {Object} p - parámetros.
+ * @param {Object} p.ranking - salida de construirRanking().
+ * @param {Object<string, string|null>} p.capacidades - niveles recibidos por el motor.
+ * @returns {Object} plan con `aplica` y, según el caso, prioridades y pautas, o los datos faltantes. */
 export function construirPlanAdaptacion({ ranking, capacidades }) {
   if (!ranking?.sinFamiliaCompatible) {
     return {

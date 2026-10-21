@@ -1,22 +1,20 @@
-/* evaluacion/entrada.js
-   Etapa 1: datos ingresados. Adapta el estado del asistente (UI) al
-   objeto de entrada del flujo. Es el UNICO punto acoplado a la forma
-   del estado de React; el resto del flujo no conoce la UI.
-   Sincroniza los cuestionarios de captura superior (complementarias,
-   ipaq/psqi, como ya hacen parq/breq/barreras en el historial) hacia
-   `cuestionarios.*` para que los módulos del flujo los evalúen, y el
-   nivel de resistencia aeróbica (Léger) hacia `leger`. La batería
-   captura el nivel en `realesF.resistencia` (espejado en `leger.palier`
-   desde StepFisicas); se acepta cualquiera de los dos (admiten medios
-   niveles como 3.5). Valores >21 en `realesF.resistencia` son la antigua
-   resistencia en metros (retirada) y se ignoran para el flujo. */
+/**
+ * @module evaluacion/entrada
+ * @description Etapa 1: adapta el estado del asistente (UI) al objeto de entrada del flujo de evaluación.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la forma del estado de la UI que alimenta el flujo.
+ *  - D (Inversión de dependencias): aísla el acoplamiento con el estado de React; el resto del flujo no conoce la UI.
+ * Notas: copia los cuestionarios de captura (complementarias, ipaq, psqi, parq, breq, barreras) hacia `cuestionarios.*` y el nivel de Léger hacia
+ * `leger`. El nivel se acepta en `realesF.resistencia` o `leger.palier` (admite medios niveles, p. ej. 3.5); valores > 21 en `realesF.resistencia`
+ * son la antigua resistencia en metros (retirada) y se ignoran.
+ */
 import { esNivelLegerValido } from '../logic/modelo.js';
 import { CONDICIONES } from '../logic/parq.js';
 
-/* Convierte el formato plano de respuestas de StepParq
-   { g1:'si'|'no', ..., c1:'si'|'no', c1a:'si'|'no', ... }
-   al formato anidado booleano que espera MODULO_PARQ del flujo:
-   { p1..p7: boolean, seguimiento: { c1..c10: { aplica: boolean, respuestas: {...} } } } */
+/** Convierte las respuestas planas de StepParq { g1..g7, c1..c10, subpreguntas: 'si'|'no' } al formato anidado booleano de MODULO_PARQ.
+ * @param {Object} [flat] - respuestas planas.
+ * @returns {Object} { p1..p7, seguimiento: { cN: { aplica, respuestas } } }. */
 function mapearParqAFlujo(flat = {}) {
   const respuestas = {};
   for (let i = 1; i <= 7; i++) {
@@ -26,10 +24,9 @@ function mapearParqAFlujo(flat = {}) {
   const seguimiento = {};
   for (const c of CONDICIONES) {
     const v = flat[c.id];
-    // Sin responder: no se inventa "no aplica"; el modulo lo reporta como faltante
-    // cuando hay algun Si en las generales.
+    // Sin responder no se infiere "no aplica": el módulo lo reporta como faltante si hay algún Sí en las generales.
     if (v !== 'si' && v !== 'no') continue;
-    // Solo un "Si" abre las subpreguntas; un "No" significa que la condicion no aplica.
+    // Solo un "Sí" abre las subpreguntas; un "No" indica que la condición no aplica.
     const aplica = v === 'si';
     const resp = {};
     if (aplica) {
@@ -45,10 +42,12 @@ function mapearParqAFlujo(flat = {}) {
   return out;
 }
 
+/** Adapta el estado del asistente al objeto de entrada del flujo.
+ * @param {Object} analisis - estado de análisis de la UI.
+ * @returns {{participante: Object, realesF: Object, antropometricas: Object, cuestionarios: Object, leger: {palier: number}|null}} datos de entrada. */
 export function datosEntradaDesdeAnalisis(analisis) {
   const cuestionarios = { ...(analisis?.cuestionarios ?? {}) };
-  // Los pasos de UI guardan en `analisis.ipaq/psqi`; el flujo lee
-  // `cuestionarios.ipaq/psqi`. Misma forma { i1.. } / { p1.. }, copia directa.
+  // La UI guarda en `analisis.ipaq/psqi`; el flujo lee `cuestionarios.ipaq/psqi` con la misma forma.
   if (analisis?.ipaq?.respuestas && Object.keys(analisis.ipaq.respuestas).length > 0) {
     cuestionarios.ipaq = { ...(cuestionarios.ipaq ?? {}), ...analisis.ipaq.respuestas };
   }

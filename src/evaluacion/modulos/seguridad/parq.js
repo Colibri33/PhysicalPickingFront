@@ -1,28 +1,21 @@
-/* ═══════════════════════════════════════════════════════════════
-   evaluacion/modulos/seguridad/parq.js
-   PAR-Q+ OFICIAL como modulo de SEGURIDAD.
-   - Destino: SEGURIDAD. NUNCA entra al porcentaje de compatibilidad.
-   - Este modulo solo evalua el instrumento (que hay positivo, si el
-     seguimiento es requerido/completo). La decision sobre pruebas
-     maximas (Leger) se toma en reglas/preparacionSeguridad.js.
-   - Las preguntas complementarias de PhysicalPicking (lesiones,
-     limitaciones, experiencia) NO estan aqui: viven en
-     modulos/complementarias/physicalpicking.js.
-
-   Forma de la respuesta:
-   {
-     p1..p7: boolean,                         // 7 preguntas generales
-     seguimiento: {                           // solo si hay algun Si en p1..p7
-       c1..c10: { aplica: boolean, respuestas: { [subpreguntaId]: boolean } }
-     }
-   }
-   El sistema cuenta automaticamente los positivos (no se usa una
-   pregunta de "3 o mas").
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module evaluacion/modulos/seguridad/parq
+ * @description Módulo PAR-Q+ oficial como instrumento de seguridad: detecta positivos y verifica el seguimiento condicional.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la evaluación del instrumento PAR-Q+.
+ *  - L (Sustitución de Liskov): cumple el contrato de módulo de ejecutarModulo.
+ *  - D (Inversión de dependencias): valida mediante el validador declarativo compartido.
+ * Notas: destino SEGURIDAD; nunca entra al porcentaje de compatibilidad. La decisión sobre pruebas máximas (Léger) reside en
+ * reglas/preparacionSeguridad.js. Las preguntas complementarias están en complementarias/physicalpicking.js. Forma de la respuesta:
+ * { p1..p7: boolean, seguimiento?: { c1..c10: { aplica: boolean, respuestas: { [subpregunta]: boolean } } } }; el seguimiento aplica
+ * si hay algún Sí en p1..p7. Los positivos se cuentan automáticamente. Referencias: Warburton et al. (2011); Schwartz et al. (2019).
+ */
 
 import { ORIGEN, TIPO_MODULO, DESTINO, ESTADO_MODULO } from '../../trazabilidad.js';
 import { validarItems } from '../../validacion/validarRespuestas.js';
 
+/** Siete preguntas generales del PAR-Q+. */
 export const PARQ_GENERALES = [
   { id: 'p1', tema: 'condicion_cardiaca_o_presion_arterial_alta' },
   { id: 'p2', tema: 'dolor_en_el_pecho' },
@@ -33,6 +26,7 @@ export const PARQ_GENERALES = [
   { id: 'p7', tema: 'actividad_fisica_solo_bajo_supervision_medica' },
 ].map(i => ({ ...i, tipo: 'si_no', texto: null }));
 
+/** Categorías de seguimiento c1..c10 (subpreguntas oficiales pendientes de transcribir). */
 export const PARQ_CATEGORIAS_SEGUIMIENTO = [
   { id: 'c1', tema: 'artritis_osteoporosis_o_problemas_de_espalda' },
   { id: 'c2', tema: 'cancer' },
@@ -46,6 +40,7 @@ export const PARQ_CATEGORIAS_SEGUIMIENTO = [
   { id: 'c10', tema: 'otra_condicion_medica' },
 ].map(c => ({ ...c, texto: null, subpreguntas: null }));
 
+/** Clasificaciones posibles del resultado del PAR-Q+. */
 export const CLASIFICACION_PARQ = Object.freeze({
   SIN_POSITIVOS: 'sin_positivos',
   GENERALES_INCOMPLETAS: 'generales_incompletas',
@@ -54,6 +49,9 @@ export const CLASIFICACION_PARQ = Object.freeze({
   SEGUIMIENTO_CON_POSITIVOS: 'seguimiento_con_positivos',
 });
 
+/** Valida el bloque de seguimiento por categoría.
+ * @param {Object} [seguimiento] - respuestas de seguimiento.
+ * @returns {{errores: string[], advertencias: string[], faltantes: string[]}} hallazgos. */
 function validarSeguimiento(seguimiento) {
   const errores = [];
   const advertencias = [];
@@ -78,6 +76,7 @@ function validarSeguimiento(seguimiento) {
   return { errores, advertencias, faltantes };
 }
 
+/** Módulo PAR-Q+ conforme al contrato de ejecutarModulo. */
 export const MODULO_PARQ = {
   id: 'parq',
   nombre: 'PAR-Q+ (cuestionario oficial)',
@@ -97,10 +96,16 @@ export const MODULO_PARQ = {
   items: PARQ_GENERALES,
   categoriasSeguimiento: PARQ_CATEGORIAS_SEGUIMIENTO,
 
+  /** Obtiene las respuestas del PAR-Q+.
+   * @param {Object} datos - datos ingresados.
+   * @returns {Object|undefined} respuestas. */
   extraer(datos) {
     return datos?.cuestionarios?.parq;
   },
 
+  /** Valida las generales y, si hay algún positivo, el seguimiento.
+   * @param {Object} respuestas - respuestas extraídas.
+   * @returns {Object} resultado de validación. */
   validar(respuestas) {
     const base = validarItems(PARQ_GENERALES, respuestas);
     const hayPositivo = PARQ_GENERALES.some(i => respuestas?.[i.id] === true);
@@ -116,6 +121,10 @@ export const MODULO_PARQ = {
     return base;
   },
 
+  /** Cuenta positivos y clasifica el resultado.
+   * @param {Object} respuestas - respuestas validadas.
+   * @param {Object} validacion - validación previa.
+   * @returns {{resultadoEvaluacion: Object, estado: string}} resultado de la evaluación. */
   evaluar(respuestas, validacion) {
     const generalesPositivas = PARQ_GENERALES.filter(i => respuestas[i.id] === true).map(i => i.id);
     const generalesFaltantes = PARQ_GENERALES.filter(i => typeof respuestas[i.id] !== 'boolean').map(i => i.id);
@@ -148,10 +157,13 @@ export const MODULO_PARQ = {
     };
   },
 
+  /** Da forma al dato que consume la capa de seguridad del DecisionEngine.
+   * @param {Object} resultado - resultado de evaluar.
+   * @param {Object} _contexto - no usado.
+   * @returns {{nivel: string, datoNormalizado: Object}} clasificación y dato normalizado. */
   normalizar(resultado, _contexto) {
     return {
       nivel: resultado.clasificacion,
-      // Forma que consume la capa de seguridad del DecisionEngine.
       datoNormalizado: {
         clasificacion: resultado.clasificacion,
         respuestasGenerales: Object.fromEntries(PARQ_GENERALES.map(i => [i.id, resultado.generalesPositivas.includes(i.id)

@@ -1,13 +1,14 @@
-/* evaluacion/modulos/cuestionarios/psqi.js
-   PSQI / ICSP-VC: calidad de sueño.
-   Destino: PREPARACION (el DecisionEngine solo puede bajar Estado 1 a 2
-   cuando su punto de corte esté configurado; ese corte vive en la
-   configuración del motor, no aquí).
-   Textos transcritos del Anexo ICSP-VC (Escobar-Córdoba y
-   Eslava-Schmalbach, Rev Neurol 2005). Las preguntas 10a-10e del
-   compañero de habitación no puntúan: se conservan como información
-   adicional. Calificación de los 7 componentes (0-3) y global 0-21
-   según el Anexo. */
+/**
+ * @module evaluacion/modulos/cuestionarios/psqi
+ * @description Módulo PSQI / ICSP-VC de calidad de sueño.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la definición del PSQI.
+ *  - D (Inversión de dependencias): la calificación se delega en logic/psqi.js y el armado en la fábrica de cuestionarios.
+ * Notas: destino PREPARACION; el punto de corte para bajar Estado 1 a 2 se configura en el DecisionEngine, no aquí. Textos del Anexo
+ * ICSP-VC (Escobar-Córdoba y Eslava-Schmalbach, Rev Neurol 2005). Las preguntas 10a-10e del compañero de habitación no puntúan.
+ * Siete componentes (0-3) y puntaje global 0-21 según el Anexo.
+ */
 import { crearModuloCuestionario } from './base.js';
 import { ORIGEN, DESTINO } from '../../trazabilidad.js';
 import { calcularPsqi } from '../../../logic/psqi.js';
@@ -32,6 +33,7 @@ const PROBLEMA = {
   ],
 };
 
+/** Módulo PSQI. */
 export const MODULO_PSQI = crearModuloCuestionario({
   id: 'psqi',
   nombre: 'PSQI / ICSP-VC (Índice de Calidad de Sueño de Pittsburgh, versión colombiana)',
@@ -88,9 +90,15 @@ export const MODULO_PSQI = crearModuloCuestionario({
   pendientes: [
     'Verificar el punto de corte de la validación colombiana (se configura en el DecisionEngine, no aquí).',
   ],
+  /** Calcula los siete componentes y el puntaje global.
+   * @param {Object} respuestas - respuestas validadas.
+   * @returns {Object} resultado de calcularPsqi. */
   calificar(respuestas) {
     return calcularPsqi(respuestas);
   },
+  /** Normaliza puntaje global, componentes y categoría.
+   * @param {Object|null} resultado - resultado de calcularPsqi.
+   * @returns {{datoNormalizado: Object|null, nivel: string|null}} dato normalizado y categoría. */
   normalizar(resultado) {
     if (!resultado) return { datoNormalizado: null, nivel: null };
     return {

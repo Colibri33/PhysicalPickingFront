@@ -1,17 +1,18 @@
-/* ─── MapaCorporalBrechas.jsx · "Tu perfil de rendimiento" ───
-   Panel interactivo: silueta de deportista (vista frontal/posterior,
-   zoom por zona), las 5 capacidades, radar de niveles y detalle de la
-   capacidad elegida frente a la familia seleccionada.
-   No calcula nada propio: los datos vienen de
-   evaluacion/informe/detalleCapacidades.js (valores medidos, niveles
-   del baremo, referencia del mismo baremo y estado según la regla del
-   motor). Identidad PhysicalPicking: morado, azul y cian.
-*/
+/**
+ * @module components/MapaCorporalBrechas
+ * @description Panel interactivo "Tu perfil de rendimiento": silueta, capacidades, radar de niveles y detalle frente a la familia elegida.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): visualización del perfil; no calcula nada propio.
+ *  - D (Inversión de dependencias): los datos provienen de evaluacion/informe/detalleCapacidades.js.
+ *  - I (Segregación de interfaces): subcomponentes con props mínimas.
+ * Notas: niveles y estados según el baremo y la regla del motor; el visor 3D se carga de forma diferida.
+ */
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { NIVELES } from '../evaluacion/niveles';
 import { detalleCapacidades, mayorOportunidad } from '../evaluacion/informe/detalleCapacidades';
 
-/* Visor 3D: carga diferida para que three.js no pese en el resto de la app. */
+// Carga diferida para que three.js no pese en el resto de la aplicación.
 const Cuerpo3D = lazy(() => import('./Cuerpo3D'));
 
 const ESTADOS = {
@@ -23,7 +24,6 @@ const ESTADOS = {
 const COLOR_NIVEL = { 'Muy bajo': '#FF5D6C', Bajo: '#F59E0B', Medio: '#8B7CF6', Alto: '#22D3EE', 'Muy alto': '#16C784' };
 const colorDe = (d) => (d.estado ? ESTADOS[d.estado].color : (COLOR_NIVEL[d.nivel] ?? '#A9A4C4'));
 
-/* ── Iconos (trazos propios, 24×24) ── */
 const TRAZOS = {
   fuerza: <path d="M7 11.5V6.8a1.4 1.4 0 0 1 2.8 0V11M9.8 10.5V5.3a1.4 1.4 0 0 1 2.8 0v5.2M12.6 10.5V6.2a1.4 1.4 0 0 1 2.8 0v6M15.4 11.6V9a1.4 1.4 0 0 1 2.8 0v4.6c0 4-2.7 6.9-6.3 6.9-3 0-4.9-1.8-5.9-4.1L4.9 13a1.35 1.35 0 0 1 2.3-1.4L8 12.8" />,
   fuerza_explosiva: <><circle cx="14.5" cy="4" r="2" /><path d="M7.5 21l2.8-5.5 3 2 .9 3.8M10.3 15.5l1.4-6.2 3.6 3.2 3.4-1.2M11.7 9.3 8 10.4l-2.2 3" /></>,
@@ -44,6 +44,12 @@ const TRAZOS = {
   clic: <><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11l3.8.7a2 2 0 0 1 1.6 2.3l-.9 4.6a2.5 2.5 0 0 1-2.5 2H11a3 3 0 0 1-2.4-1.2L5.4 15a1.5 1.5 0 0 1 2.3-2L9 14.5" /><path d="M5 5.5 3.5 4M8 2.5V1M14 4l1.2-1.2" /></>,
   pdf: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M8.5 13.5h7M8.5 17h5" /></>,
 };
+/** Icono SVG de capacidad (viewBox 24×24).
+ * @param {Object} props
+ * @param {string} props.nombre - Clave del trazo.
+ * @param {number} [props.size] - Tamaño en px.
+ * @param {string} [props.className] - Clases adicionales.
+ * @returns {JSX.Element} */
 function Icono({ nombre, size = 20, className = '' }) {
   return (
     <svg className={`rend-ico ${className}`} width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -53,7 +59,7 @@ function Icono({ nombre, size = 20, className = '' }) {
   );
 }
 
-/* ── Geometría de la silueta (viewBox 460 × 600, eje en x = 230) ── */
+// Geometría de la silueta: viewBox 460 × 600, eje en x = 230.
 const W = 460;
 const H = 600;
 const ZONAS = {
@@ -84,11 +90,14 @@ const LINEAS_NOMBRE = {
   flexibilidad: ['Flexibilidad'], equilibrio: ['Equilibrio'],
 };
 
+/** Dibuja la silueta del cuerpo para la vista indicada.
+ * @param {Object} props
+ * @param {string} props.vista - 'frontal' o 'posterior'.
+ * @returns {JSX.Element} */
 function Silueta({ vista }) {
   const def = 'rgba(44,27,107,.22)';
   return (
     <g className="rend-silueta">
-      {/* base común */}
       <ellipse cx="230" cy="50" rx="23" ry="29" fill="url(#rendPiel)" />
       <path d="M219 74 L241 74 L244 98 L216 98 Z" fill="url(#rendPiel)" />
       <path d="M186 104 C204 96 256 96 274 104 C288 110 292 124 288 140 L276 196 C272 216 268 234 266 254 L194 254 C192 234 188 216 184 196 L172 140 C168 124 172 110 186 104 Z" fill="url(#rendPiel)" />
@@ -108,7 +117,6 @@ function Silueta({ vista }) {
       <ellipse cx="266" cy="532" rx="18" ry="8" fill="url(#rendPiel)" />
       <path d="M192 250 L268 250 C276 268 280 286 281 306 L236 312 L230 294 L224 312 L179 306 C180 286 184 268 192 250 Z" fill="url(#rendShort)" />
 
-      {/* musculatura */}
       <g fill="url(#rendMusculo)" stroke={def} strokeWidth="1">
         <ellipse cx="184" cy="124" rx="16" ry="20" transform="rotate(25 184 124)" />
         <ellipse cx="276" cy="124" rx="16" ry="20" transform="rotate(-25 276 124)" />
@@ -158,12 +166,20 @@ function Silueta({ vista }) {
           <path d="M230 262 L230 296 M200 290 C212 302 224 302 230 296 C236 302 248 302 260 290" />
         </g>
       )}
-      {/* brillo de volumen */}
       <ellipse cx="206" cy="150" rx="70" ry="120" fill="url(#rendBrillo)" pointerEvents="none" />
     </g>
   );
 }
 
+/** Lienzo SVG del cuerpo con zonas seleccionables, zoom y etiquetas.
+ * @param {Object} props
+ * @param {string} props.vista - Vista activa.
+ * @param {Array} props.detalles - Detalle por capacidad.
+ * @param {string} props.sel - Capacidad seleccionada.
+ * @param {Function} props.onSel - Selecciona una capacidad.
+ * @param {number} props.zoom - Factor de zoom.
+ * @param {boolean} props.compacto - Oculta textos laterales.
+ * @returns {JSX.Element} */
 function Cuerpo({ vista, detalles, sel, onSel, zoom, compacto }) {
   const zonas = ZONAS[vista];
   const foco = zoom > 1 && sel ? { x: zonas[sel].anc[0], y: zonas[sel].anc[1] } : { x: W / 2, y: H / 2 };
@@ -203,7 +219,6 @@ function Cuerpo({ vista, detalles, sel, onSel, zoom, compacto }) {
       </defs>
 
       <g className="rend-zoom" style={{ transform: `translate(${tx}px, ${ty}px) scale(${zoom})` }}>
-        {/* piso giratorio */}
         <g className="rend-piso" aria-hidden="true">
           <ellipse cx="230" cy="540" rx="128" ry="20" />
           <ellipse cx="230" cy="540" rx="96" ry="13" />
@@ -227,9 +242,8 @@ function Cuerpo({ vista, detalles, sel, onSel, zoom, compacto }) {
         </g>
       </g>
 
-      {/* etiquetas con línea guía */}
       {detalles.map(d => {
-        // Con zoom solo se etiqueta la zona elegida (las demás quedan fuera de foco).
+        // Con zoom solo se etiqueta la zona elegida.
         if (zoom > 1 && d.id !== sel) return null;
         const c = CALLOUT[d.id];
         const izq = c.lado === 'izq';
@@ -272,7 +286,14 @@ function Cuerpo({ vista, detalles, sel, onSel, zoom, compacto }) {
   );
 }
 
-/* ── Radar de niveles (ordinal: solo posición, sin porcentajes) ── */
+/** Radar de niveles; escala ordinal, solo posición y sin porcentajes.
+ * @param {Object} props
+ * @param {Array} props.detalles - Detalle por capacidad.
+ * @param {string} props.sel - Capacidad seleccionada.
+ * @param {Function} props.onSel - Selecciona una capacidad.
+ * @param {boolean} props.conFamilia - Indica si hay familia de referencia.
+ * @param {string} props.familiaNombre - Nombre de la familia.
+ * @returns {JSX.Element} */
 function Radar({ detalles, sel, onSel, conFamilia, familiaNombre }) {
   const cx = 180; const cy = 142; const R = 84;
   const ang = (i) => ((-90 + i * 72) * Math.PI) / 180;
@@ -318,7 +339,11 @@ function Radar({ detalles, sel, onSel, conFamilia, familiaNombre }) {
   );
 }
 
-/* ── Escala de 5 niveles con tu posición y la exigida ── */
+/** Escala de cinco niveles con la posición del evaluado y la exigida.
+ * @param {Object} props
+ * @param {Object} props.d - Detalle de la capacidad.
+ * @param {boolean} props.conFamilia - Indica si hay familia de referencia.
+ * @returns {JSX.Element} */
 function EscalaNiveles({ d, conFamilia }) {
   return (
     <div className="rend-escala" aria-hidden="true">
@@ -334,6 +359,12 @@ function EscalaNiveles({ d, conFamilia }) {
   );
 }
 
+/** Panel con el detalle de la capacidad seleccionada.
+ * @param {Object} props
+ * @param {Object} props.d - Detalle de la capacidad.
+ * @param {boolean} props.conFamilia - Indica si hay familia de referencia.
+ * @param {string} props.familiaNombre - Nombre de la familia.
+ * @returns {JSX.Element} */
 function Detalle({ d, conFamilia, familiaNombre }) {
   const color = colorDe(d);
   let significado;
@@ -400,12 +431,23 @@ function Detalle({ d, conFamilia, familiaNombre }) {
   );
 }
 
+/** Formatea una fecha ISO para mostrar.
+ * @param {string} iso - Fecha ISO.
+ * @returns {string} fecha legible o "—" si es inválida. */
 function fechaLegible(iso) {
   const f = iso ? new Date(iso) : null;
   if (!f || Number.isNaN(f.getTime())) return '—';
   return f.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/** Panel del perfil de rendimiento con silueta, radar y detalle.
+ * @param {Object} props
+ * @param {Object} props.flujo - Salida de ejecutarFlujoEvaluacion().
+ * @param {string} [props.familiaId] - Familia seleccionada.
+ * @param {Function} [props.onFamiliaChange] - Si existe, la selección es controlada.
+ * @param {Function} [props.onDescargarPdf] - Descarga el informe.
+ * @param {string} [props.sexo] - Sexo para la silueta.
+ * @returns {JSX.Element} */
 export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaChange, onDescargarPdf, sexo = 'masculino' }) {
   const [familiaInterna, setFamiliaInterna] = useState(familiaId);
   const seleccionFamilia = onFamiliaChange ? familiaId : familiaInterna;
@@ -423,7 +465,7 @@ export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaCh
   const [fallo3d, setFallo3d] = useState(false);
   const d = detalles.find(x => x.id === sel) ?? detalles[0];
 
-  // En pantallas angostas se recorta el lienzo a la silueta (sin textos laterales).
+  // En pantallas angostas el lienzo se recorta a la silueta.
   const areaRef = useRef(null);
   const [compacto, setCompacto] = useState(false);
   useEffect(() => {
@@ -446,7 +488,6 @@ export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaCh
 
   return (
     <section className="rend" aria-label="Tu perfil de rendimiento">
-      {/* Encabezado */}
       <header className="rend-head">
         <div className="rend-head-txt">
           <p className="rend-kicker">Evaluación física</p>
@@ -488,7 +529,6 @@ export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaCh
       </header>
 
       <div className="rend-grid">
-        {/* Columna 1: cuerpo */}
         <div className="rend-card rend-cuerpo">
           <div className="rend-barra">
           <div className="rend-vistas" role="tablist" aria-label="Vista del cuerpo">
@@ -525,7 +565,6 @@ export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaCh
           </div>
         </div>
 
-        {/* Columna 2: lista + radar */}
         <div className="rend-col">
           <div className="rend-card">
             <h4 className="rend-card-tit">Las 5 capacidades</h4>
@@ -552,13 +591,11 @@ export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaCh
           </div>
         </div>
 
-        {/* Columna 3: detalle */}
         <div className="rend-card rend-detalle">
           {d && <Detalle d={d} conFamilia={conFamilia} familiaNombre={familia?.nombre ?? ''} />}
         </div>
       </div>
 
-      {/* Franja inferior */}
       <footer className="rend-pie">
         {oportunidad && (
           <button type="button" className="rend-oportunidad" onClick={() => setSel(oportunidad.id)}>

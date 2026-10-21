@@ -1,7 +1,13 @@
-/* logic/barreras.js — BBAQ-21 (Barriers to Being Active Quiz, 21 items).
-   7 dimensiones x 3 items, puntaje 0-9 por dimension.
-   Barrera significativa: >= 5 puntos.
-   Asignacion item→dimension y umbral segun cuestionario CDC de 21 items; confirmar con fuente academica. */
+/**
+ * @module logic/barreras
+ * @description Banco de ítems y puntuación del cuestionario BBAQ-21 (barreras para la actividad física).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la definición o el cálculo del BBAQ-21.
+ *  - O (Abierto/Cerrado): las dimensiones y el umbral son datos; se ajustan sin alterar la lógica de cálculo.
+ * Notas: 7 dimensiones x 3 ítems, puntaje 0-9 por dimensión; barrera significativa con puntaje >= 5.
+ * La asignación ítem-dimensión y el umbral provienen del cuestionario CDC de 21 ítems; confirmar con fuente académica.
+ */
 
 export const ITEMS_BARRERAS = [
   { id: '1',  texto: 'Mi día es tan ocupado ahora que no creo que pueda apartar tiempo para realizar actividad física en mi horario normal.' },
@@ -46,10 +52,15 @@ export const OPCIONES_BARRERAS = [
   { etiqueta: 'Muy poco probable', valor: 0 },
 ];
 
+/** Crea el estado inicial vacío del cuestionario.
+ * @returns {{respuestas: Object}} estado sin respuestas. */
 export function estadoBarrerasInicial() {
   return { respuestas: {} };
 }
 
+/** Determina los ítems sin una respuesta válida (entero 0-3).
+ * @param {Object<string, number>} [respuestas] - respuestas indexadas por id de ítem.
+ * @returns {Array<Object>} ítems pendientes de responder. */
 export function faltantesBarreras(respuestas = {}) {
   return ITEMS_BARRERAS.filter(it => {
     const v = respuestas[it.id];
@@ -57,6 +68,9 @@ export function faltantesBarreras(respuestas = {}) {
   });
 }
 
+/** Calcula el puntaje por dimensión y las barreras significativas.
+ * @param {Object<string, number>} [respuestas] - respuestas indexadas por id de ítem.
+ * @returns {{dimensiones: Object<string, number>, significativas: string[]}|null} resultado, o null si el cuestionario está incompleto. */
 export function calcularBarreras(respuestas = {}) {
   if (faltantesBarreras(respuestas).length > 0) return null;
   const dimensiones = {};

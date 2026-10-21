@@ -1,3 +1,11 @@
+/**
+ * @module test/red.test
+ * @description Pruebas de errorRedAmigable.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la traducción de errores de red a mensajes legibles.
+ */
+
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { errorRedAmigable } from '../src/utils/red.js';

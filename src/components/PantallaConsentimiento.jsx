@@ -1,20 +1,29 @@
-/* ═══════════════════════════════════════════════════════════════
-   PantallaConsentimiento.jsx
-   Se muestra una sola vez por usuario, antes de poder guardar
-   ningun resultado de test. Registra la autorizacion de tratamiento
-   de datos personales del propio participante adulto (18-30 años).
-   PhysicalPicking no maneja autorizacion de terceros (acudientes):
-   toda la poblacion objetivo es mayor de edad por definicion.
-   ═══════════════════════════════════════════════════════════════ */
+/**
+ * @module components/PantallaConsentimiento
+ * @description Pantalla de autorización de tratamiento de datos personales, requerida una vez por usuario antes de guardar resultados.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura y registra el consentimiento; la navegación y las notificaciones se delegan.
+ *  - D (Inversión de dependencias): el registro, el aviso y la navegación se inyectan mediante props (callbacks) y servicio de autenticación.
+ * Notas: la población objetivo es adulta (18-30 años); no se gestiona autorización de terceros.
+ */
 
 import { useState } from 'react';
 import { registrarConsentimiento } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
 
+/** Solicita la aceptación de Términos y Política de Datos y registra el consentimiento.
+ * @param {Object} props
+ * @param {Function} props.onAceptado - se invoca tras registrar el consentimiento.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @param {Function} props.onVerTerminos - abre los Términos y Condiciones.
+ * @param {Function} props.onVerPrivacidad - abre la Política de Tratamiento de Datos.
+ * @returns {JSX.Element} pantalla de consentimiento. */
 export default function PantallaConsentimiento({ onAceptado, mostrarToast, onVerTerminos, onVerPrivacidad }) {
   const [acepto, setAcepto] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
+  /** Valida la casilla de aceptación y registra el consentimiento en el servicio. */
   async function handleContinuar() {
     if (!acepto) {
       mostrarToast('Debes aceptar los Terminos y la Politica de Tratamiento de Datos para continuar.', 'error');

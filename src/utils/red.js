@@ -1,8 +1,15 @@
-/* red.js — helpers puros para fallos de red (sin dependencias
-   de navegador: se pueden probar con node --test). */
+/**
+ * @module utils/red
+ * @description Traduce fallos de red a mensajes comprensibles para la persona usuaria.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la redacción de mensajes de error de red.
+ * Notas: funciones puras, sin dependencias del navegador; se prueban con node --test.
+ */
 
-/* Traduce fallos de red a un mensaje que la persona sí entiende,
-   en vez del críptico "Failed to fetch". */
+/** Convierte un error de red en un mensaje legible (sustituye al críptico "Failed to fetch").
+ * @param {Error|null|undefined} e - error capturado.
+ * @returns {string} mensaje para mostrar. */
 export function errorRedAmigable(e) {
   if (!e) return 'Ocurrió un error de red.';
   if (e.name === 'AbortError') {

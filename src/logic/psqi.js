@@ -1,15 +1,16 @@
-/* logic/psqi.js — PSQI / ICSP-VC (versión colombiana).
-   Índice de Calidad de Sueño de Pittsburgh, validación colombiana
-   (Escobar-Córdoba y Eslava-Schmalbach, Rev Neurol 2005; 40:150-155),
-   a partir del original de Buysse et al. (1989) y la versión española
-   de Royuela-Macías. Texto de los ítems transcrito del Anexo ICSP-VC
-   del artículo de validación; el archivo ps-vc.pdf (versión española
-   del libro Bobes) se usó solo como referencia de redacción.
-   19 preguntas puntuables (1-9) + 10/10a-10e informativas del
-   compañero de habitación (no puntúan). Puntaje global 0-21.
-   Corte Buysse >5 = mal dormidor; categorías colombianas del
-   artículo: <5 sin problema, 5-7 atención médica, 8-14 atención y
-   tratamiento, >14 problema grave. Verificar antes de uso clínico. */
+/**
+ * @module logic/psqi
+ * @description Ítems, validación y puntuación del Índice de Calidad de Sueño de Pittsburgh, versión colombiana (ICSP-VC).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la definición o el cálculo del PSQI.
+ *  - O (Abierto/Cerrado): opciones e ítems son catálogos de datos; las reglas de recodificación están aisladas en funciones pequeñas.
+ * Notas: validación colombiana de Escobar-Córdoba y Eslava-Schmalbach (Rev Neurol 2005; 40:150-155), a partir de Buysse et al. (1989)
+ * y la versión española de Royuela-Macías. Ítems transcritos del Anexo ICSP-VC; ps-vc.pdf (libro Bobes) solo como referencia de redacción.
+ * 19 preguntas puntuables (1-9); 10 y 10a-10e son informativas del compañero de habitación y no puntúan. Puntaje global 0-21.
+ * Corte de Buysse >5 = mal dormidor; categorías colombianas: <5 sin problema, 5-7 atención médica, 8-14 atención y tratamiento, >14 grave.
+ * Verificar antes de uso clínico.
+ */
 
 export const OPCIONES_FRECUENCIA = [
   { valor: 0, etiqueta: 'Ninguna vez en el último mes' },
@@ -67,22 +68,36 @@ export const ITEMS_PSQI_COMPANERO = [
   { id: 'p10e', texto: 'Otros inconvenientes mientras usted duerme; por favor, descríbalos' },
 ];
 
+/** Valida una hora en formato HH:MM de 24 horas.
+ * @param {*} v - valor a evaluar.
+ * @returns {boolean} true si el formato es válido. */
 function esHora(v) {
   return typeof v === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
 }
 
+/** Valida una frecuencia codificada de 0 a 3.
+ * @param {*} v - valor a evaluar.
+ * @returns {boolean} true si es un entero entre 0 y 3. */
 function esFrecuencia(v) {
   return Number.isInteger(v) && v >= 0 && v <= 3;
 }
 
+/** Crea el estado inicial vacío del cuestionario.
+ * @returns {{respuestas: Object}} estado sin respuestas. */
 export function estadoPsqiInicial() {
   return { respuestas: {} };
 }
 
+/** Indica si la persona comparte habitación o cama (p10 > 0), lo que habilita los ítems informativos.
+ * @param {Object} [respuestas] - respuestas por id.
+ * @returns {boolean} true si hay compañero. */
 export function tieneCompanero(respuestas = {}) {
   return typeof respuestas.p10 === 'number' && respuestas.p10 > 0;
 }
 
+/** Determina los ítems obligatorios sin respuesta válida, incluidas las descripciones condicionales.
+ * @param {Object} [respuestas] - respuestas por id.
+ * @returns {string[]} ids pendientes. */
 export function faltantesPsqi(respuestas = {}) {
   const faltan = [];
   if (!esHora(respuestas.p1)) faltan.push('p1');
@@ -115,12 +130,18 @@ export function faltantesPsqi(respuestas = {}) {
   return faltan;
 }
 
+/** Convierte una hora HH:MM en minutos desde la medianoche.
+ * @param {string} hora - hora en formato HH:MM.
+ * @returns {number} minutos transcurridos desde las 00:00. */
 export function minutosDesdeHora(hora) {
   const [h, m] = String(hora).split(':').map(Number);
   return h * 60 + m;
 }
 
-/** Horas en cama entre acostarse y levantarse (cruza medianoche). */
+/** Calcula las horas en cama entre acostarse y levantarse, considerando que puede cruzar la medianoche.
+ * @param {string} p1 - hora de acostarse (HH:MM).
+ * @param {string} p3 - hora de levantarse (HH:MM).
+ * @returns {number} horas en cama. */
 export function horasEnCama(p1, p3) {
   const acostarse = minutosDesdeHora(p1);
   const levantarse = minutosDesdeHora(p3);
@@ -129,6 +150,9 @@ export function horasEnCama(p1, p3) {
   return diff / 60;
 }
 
+/** Recodifica los minutos de latencia del sueño a 0-3.
+ * @param {number} minutos - latencia en minutos.
+ * @returns {number} puntaje 0-3. */
 function recodificarLatencia(minutos) {
   if (minutos <= 15) return 0;
   if (minutos <= 30) return 1;
@@ -136,6 +160,9 @@ function recodificarLatencia(minutos) {
   return 3;
 }
 
+/** Recodifica la suma (latencia recodificada + p5a) a 0-3.
+ * @param {number} suma - suma de ambos puntajes.
+ * @returns {number} puntaje 0-3. */
 function recodificarSumaLatencia(suma) {
   if (suma === 0) return 0;
   if (suma <= 2) return 1;
@@ -143,6 +170,9 @@ function recodificarSumaLatencia(suma) {
   return 3;
 }
 
+/** Recodifica las horas de sueño a 0-3.
+ * @param {number} horas - horas dormidas por noche.
+ * @returns {number} puntaje 0-3. */
 function recodificarDuracion(horas) {
   if (horas > 7) return 0;
   if (horas >= 6) return 1;
@@ -150,6 +180,9 @@ function recodificarDuracion(horas) {
   return 3;
 }
 
+/** Recodifica la eficiencia habitual de sueño (%) a 0-3.
+ * @param {number} pct - eficiencia en porcentaje.
+ * @returns {number} puntaje 0-3. */
 function recodificarEficiencia(pct) {
   if (pct > 85) return 0;
   if (pct >= 75) return 1;
@@ -157,6 +190,9 @@ function recodificarEficiencia(pct) {
   return 3;
 }
 
+/** Recodifica la suma de perturbaciones (p5b-p5j) a 0-3.
+ * @param {number} suma - suma de frecuencias.
+ * @returns {number} puntaje 0-3. */
 function recodificarPerturbaciones(suma) {
   if (suma === 0) return 0;
   if (suma <= 9) return 1;
@@ -164,6 +200,9 @@ function recodificarPerturbaciones(suma) {
   return 3;
 }
 
+/** Recodifica la suma de disfunción diurna (p7 + p8) a 0-3.
+ * @param {number} suma - suma de frecuencias.
+ * @returns {number} puntaje 0-3. */
 function recodificarDisfuncion(suma) {
   if (suma === 0) return 0;
   if (suma <= 2) return 1;
@@ -171,6 +210,9 @@ function recodificarDisfuncion(suma) {
   return 3;
 }
 
+/** Asigna la categoría del artículo de validación colombiano según el puntaje global.
+ * @param {number} global - puntaje global 0-21.
+ * @returns {string} categoría descriptiva. */
 export function categoriaColombiana(global) {
   if (global < 5) return 'Sin problema de sueño';
   if (global <= 7) return 'Merece atención médica';
@@ -178,10 +220,9 @@ export function categoriaColombiana(global) {
   return 'Problema de sueño grave';
 }
 
-/**
- * calcularPsqi — 7 componentes (C1-C7, 0-3) y puntaje global 0-21
- * según el Anexo ICSP-VC. Retorna null si faltan respuestas.
- */
+/** Calcula los 7 componentes (C1-C7, 0-3) y el puntaje global 0-21 según el Anexo ICSP-VC.
+ * @param {Object} [respuestas] - respuestas por id.
+ * @returns {Object|null} componentes, puntajeGlobal, horasEnCama, eficiencia, categoria y malDormidorBuysse; null si faltan respuestas. */
 export function calcularPsqi(respuestas = {}) {
   if (faltantesPsqi(respuestas).length > 0) return null;
 

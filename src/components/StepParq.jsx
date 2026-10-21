@@ -1,8 +1,22 @@
-/* StepParq.jsx — PAR-Q+ (paso 2). Selector Si/No con arbol condicional y poda. */
+/**
+ * @module components/StepParq
+ * @description Paso del cuestionario PAR-Q+ de aptitud para la actividad física, con preguntas condicionales y poda de respuestas obsoletas.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura respuestas y valida completitud; visibilidad, poda y evaluación se delegan a logic/parq.
+ *  - D (Inversión de dependencias): el árbol de preguntas y su evaluación provienen de logic/parq; el estado se recibe por props.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { todasVisibles, pendientes, evaluarParq, podarRespuestas, seccionCondicionesAbierta } from '../logic/parq';
 
+/** Formulario del PAR-Q+ con secciones general y de seguimiento.
+ * @param {Object} props
+ * @param {Object} props.analisis - análisis actual (parq).
+ * @param {Function} props.updateAnalisis - actualiza campos del análisis.
+ * @param {Function} props.onContinuar - avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @returns {JSX.Element} tarjeta del paso. */
 export default function StepParq({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const parq = analisis.parq ?? { respuestas: {}, detalles: {} };
   const respuestas = parq.respuestas ?? {};
@@ -13,12 +27,18 @@ export default function StepParq({ analisis, updateAnalisis, onContinuar, mostra
   const resultado = completo ? evaluarParq(respuestas) : null;
   const [marcados, setMarcados] = useState([]);
 
+  /** Resalta las preguntas sin responder.
+   * @param {Array<string|{id: string}>} f - pendientes. */
   function marcarFaltantes(f) {
     const ids = f.map(p => (typeof p === 'string' ? p : p.id));
+    // Reinicio previo y asignación diferida para reiniciar la animación de resaltado.
     setMarcados([]);
     setTimeout(() => setMarcados(ids), 40);
   }
 
+  /** Registra una respuesta y poda las dependientes que dejaron de ser visibles.
+   * @param {string} id - id de la pregunta.
+   * @param {string} valor - 'si' o 'no'. */
   function handleRespuesta(id, valor) {
     setMarcados(prev => prev.filter(m => m !== id));
     const combinadas = { ...respuestas, [id]: valor };
@@ -26,10 +46,14 @@ export default function StepParq({ analisis, updateAnalisis, onContinuar, mostra
     updateAnalisis({ parq: { respuestas: podadas.respuestas, detalles: podadas.detalles } });
   }
 
+  /** Guarda el detalle textual de una respuesta afirmativa (máximo 300 caracteres).
+   * @param {string} id - id de la pregunta.
+   * @param {string} valor - texto ingresado. */
   function handleDetalle(id, valor) {
     updateAnalisis({ parq: { respuestas, detalles: { ...detalles, [id]: valor.slice(0, 300) } } });
   }
 
+  /** Exige responder todas las preguntas visibles antes de avanzar. */
   function handleContinuar() {
     const p = pendientes(respuestas);
     if (p.length > 0) {
@@ -41,6 +65,9 @@ export default function StepParq({ analisis, updateAnalisis, onContinuar, mostra
     onContinuar();
   }
 
+  /** Renderiza una pregunta con selector Sí/No y detalle opcional.
+   * @param {Object} preg - definición de la pregunta (id, texto, nivel, detalle).
+   * @returns {JSX.Element} bloque de pregunta. */
   function renderPregunta(preg) {
     const valor = respuestas[preg.id];
     return (

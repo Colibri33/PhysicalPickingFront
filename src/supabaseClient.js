@@ -1,19 +1,25 @@
-/* 
-   supabaseClient.js
-   Cliente de Supabase para el navegador. Usa la ANON KEY (pública
-   por diseño, protegida por Row Level Security en Postgres)NUNCA
-   la service role key, que solo vive en el backend.
-*/
+/**
+ * @module supabaseClient
+ * @description Cliente de Supabase para el navegador y URL del backend propio.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la configuración de conexión a Supabase y al backend.
+ *  - D (Inversión de dependencias): la configuración llega por variables de entorno (VITE_*), no está fijada en el código.
+ * Notas: usa la ANON KEY (pública por diseño, protegida por Row Level Security en Postgres); NUNCA la service role key, que solo reside en el backend.
+ */
 
 import { createClient } from '@supabase/supabase-js';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-/* Tiempo máximo de espera para Auth (redes móviles lentas).
-   Sin esto, un login con red pobre se queda colgado sin aviso. */
+/* Evita que un inicio de sesión con red lenta quede colgado sin aviso. */
 const SUPABASE_TIMEOUT_MS = 25000;
 
+/** fetch con tiempo máximo de espera, que respeta además la señal de cancelación externa.
+ * @param {RequestInfo} input - recurso solicitado.
+ * @param {RequestInit} [init] - opciones de la petición.
+ * @returns {Promise<Response>} respuesta HTTP. */
 function fetchConTimeout(input, init = {}) {
   const controlador = new AbortController();
   const id = setTimeout(() => controlador.abort(), SUPABASE_TIMEOUT_MS);
@@ -36,6 +42,5 @@ export const supabase = createClient(url, anonKey, {
   global: { fetch: fetchConTimeout },
 });
 
-// URL del backend propio (Render), para las rutas que cifran/leen
-// datos sensibles y para los derechos ARCO.
+/* Backend propio (Render): rutas que cifran o leen datos sensibles y derechos ARCO. */
 export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';

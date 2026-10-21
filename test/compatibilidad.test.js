@@ -1,5 +1,12 @@
-/* Pruebas de la regla de compatibilidad + Mitchell (node --test).
-   Sin números sobre niveles: todo es cumple/no cumple ordinal. */
+/**
+ * @module test/compatibilidad.test
+ * @description Pruebas de la regla de compatibilidad y del criterio de Mitchell (node --test).
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es la regla de compatibilidad entre perfil y familias deportivas.
+ * Notas: sin números sobre niveles: todo es cumple o no cumple en escala ordinal.
+ */
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 

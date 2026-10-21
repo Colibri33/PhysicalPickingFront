@@ -1,15 +1,32 @@
-/* ─── StepAntropometricas.jsx (antes StepCorporales.jsx) ───
-   IMC (peso/talla) e ICC (cintura/cadera, WHO 2008) calculados en vivo. */
+/**
+ * @module components/StepAntropometricas
+ * @description Paso de captura de variables antropométricas opcionales, con IMC e ICC calculados en vivo.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): captura y valida coherencia física de datos antropométricos; los cálculos se delegan.
+ *  - D (Inversión de dependencias): IMC, ICC, clasificación y rangos provienen de logic/modelo; el estado se recibe por props.
+ * Notas: clasificación del ICC según OMS 2008 (riesgo sustancialmente aumentado: ≥0,90 hombres, ≥0,85 mujeres).
+ */
 import { calcularIMC, calcularICC, clasificarICC, RANGOS_ANTROPOMETRICOS } from '../logic/modelo';
 import Icono from './Icono';
 
+/** Formulario del paso de variables antropométricas.
+ * @param {Object} props
+ * @param {Object} props.analisis - análisis actual (antropometricas, participante).
+ * @param {Function} props.updateAnalisis - actualiza campos del análisis.
+ * @param {Function} props.onContinuar - avanza al siguiente paso.
+ * @param {Function} props.mostrarToast - muestra una notificación (mensaje, tipo).
+ * @returns {JSX.Element} tarjeta del paso. */
 export default function StepAntropometricas({ analisis, updateAnalisis, onContinuar, mostrarToast }) {
   const a = analisis.antropometricas;
 
+  /** Actualiza un campo y recalcula IMC o ICC cuando cambian sus insumos.
+   * @param {string} campo - clave del campo antropométrico.
+   * @param {string} valor - valor ingresado. */
   function setField(campo, valor) {
     const nuevo = { ...a, [campo]: valor };
 
-    // Recalcular IMC en tiempo real si hay peso y talla
+    // IMC derivado de peso y talla.
     if (campo === 'peso' || campo === 'talla') {
       const peso  = campo === 'peso'  ? parseFloat(valor) : parseFloat(a.peso);
       const talla = campo === 'talla' ? parseFloat(valor) : parseFloat(a.talla);
@@ -17,7 +34,7 @@ export default function StepAntropometricas({ analisis, updateAnalisis, onContin
       nuevo.imc = imcVal;
     }
 
-    // Recalcular ICC en tiempo real si hay cintura y cadera
+    // ICC derivado de cintura y cadera.
     if (campo === 'cintura' || campo === 'cadera') {
       const cintura = campo === 'cintura' ? parseFloat(valor) : parseFloat(a.cintura);
       const cadera  = campo === 'cadera'  ? parseFloat(valor) : parseFloat(a.cadera);
@@ -33,9 +50,9 @@ export default function StepAntropometricas({ analisis, updateAnalisis, onContin
   const { valor: iccVal } = calcularICC(a.cintura, a.cadera);
   const iccCat = clasificarICC(iccVal, analisis.participante?.genero);
 
+  /** Valida el rango de los campos completados y avanza. */
   function handleContinuar() {
-    // Los campos antropometricos son opcionales, pero si se completan
-    // deben ser fisicamente coherentes (no bloquea por vacio, si por absurdo).
+    // Los campos son opcionales: se bloquea por valores incoherentes, no por vacíos.
     for (const [campo, r] of Object.entries(RANGOS_ANTROPOMETRICOS)) {
       const raw = a[campo];
       if (raw === '' || raw === null || raw === undefined) continue;
@@ -66,7 +83,6 @@ export default function StepAntropometricas({ analisis, updateAnalisis, onContin
             onChange={e => setField('talla', e.target.value)} placeholder="ej. 175" />
         </label>
 
-        {/* IMC calculado */}
         {imcVal !== null && (
           <div className="imc-display" style={{ gridColumn: '1/-1' }}>
             <span className="imc-val">{imcVal}</span>
@@ -88,7 +104,6 @@ export default function StepAntropometricas({ analisis, updateAnalisis, onContin
           <span className="field-hint">Parte más ancha de los glúteos, cinta paralela al suelo.</span>
         </label>
 
-        {/* ICC calculado (WHO 2008: ≥0,90 hombres, ≥0,85 mujeres = riesgo sustancialmente aumentado) */}
         {iccVal !== null && (
           <div className="imc-display" style={{ gridColumn: '1/-1' }}>
             <span className="imc-val">{iccVal}</span>

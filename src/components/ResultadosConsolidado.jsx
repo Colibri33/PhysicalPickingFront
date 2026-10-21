@@ -1,13 +1,12 @@
-/* ResultadosConsolidado.jsx v7
-   Informe final:
-   0. Estado del flujo de evaluacion (src/evaluacion): seguridad y pendientes
-   1. Tabla desglosada base/ajAntrop/total (descriptivo heredado)
-   2. Radar chart variables fisicas
-   3. Compatibilidad por familia del DecisionEngine (matriz + Mitchell)
-   4. Mapa corporal de brechas frente a la familia elegida
-   5. Interpretacion: recomendación firme, o Estado 3 / datos faltantes
-      cuando ninguna familia es firme (R-DEC-03)
-*/
+/**
+ * @module components/ResultadosConsolidado
+ * @description Informe final: estado del flujo, tabla desglosada, radar, compatibilidad por familia, mapa de brechas e interpretación.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): composición del informe final.
+ *  - D (Inversión de dependencias): delega el cálculo en src/evaluacion y la presentación en subcomponentes.
+ * Notas: sin familia firme se presenta Estado 3 o datos faltantes (R-DEC-03).
+ */
 import { useMemo, useState } from 'react';
 import Icono from './Icono';
 import ParticipantStrip from './ParticipantStrip';
@@ -25,6 +24,9 @@ import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacio
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
 import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
 
+/** Formatea una diferencia con signo y un decimal.
+ * @param {number} d - Diferencia.
+ * @returns {string} valor con signo. */
 function signo(d) { const r = Math.round(d * 10)/10; return r > 0 ? `+${r}` : `${r}`; }
 
 const ETIQUETAS_CAPACIDAD = {
@@ -35,6 +37,10 @@ const ETIQUETAS_CAPACIDAD = {
   equilibrio: 'Equilibrio',
 };
 
+/** Motivo de demanda según la clasificación de Mitchell.
+ * @param {string} familiaId - Identificador de la familia.
+ * @param {string} capacidad - Capacidad evaluada.
+ * @returns {string|null} motivo, o null si no aplica. */
 function motivoMitchell(familiaId, capacidad) {
   const fam = MATRIZ_DEMANDA.find(f => f.id === familiaId);
   const m = /^(I+)([ABC])$/.exec(fam?.mitchell ?? '');
@@ -44,6 +50,15 @@ function motivoMitchell(familiaId, capacidad) {
   return null;
 }
 
+/** Informe final de orientación de perfil.
+ * @param {Object} props
+ * @param {Object} props.analisis - Estado global del análisis.
+ * @param {Function} [props.onGuardar] - Guarda el análisis.
+ * @param {Function} [props.onNuevo] - Inicia una evaluación nueva.
+ * @param {Function} [props.onContinuar] - Avanza al siguiente paso.
+ * @param {boolean} [props.analisisGuardado] - Indica si ya se guardó.
+ * @param {boolean} [props.guardando] - Guardado en curso.
+ * @returns {JSX.Element} */
 export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, onContinuar, analisisGuardado, guardando }) {
   const consolidado        = calcularConsolidado(analisis.fisicas, analisis.antropometricas);
   const flujo = useMemo(
@@ -53,7 +68,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
   const resumenIA = useMemo(() => construirResumenIA(analisis, flujo), [analisis, flujo]);
   const ranking = flujo.etapas.ranking.familias;
   const lider = ranking?.[0] ?? null;
-  // Solo una familia firme puede presentarse como recomendación (R-DEC-03).
+  // Solo una familia firme se presenta como recomendación (R-DEC-03).
   const top = flujo.etapas.ranking.recomendada ?? null;
   const liderProvisional = top && lider && lider.firme === false;
   const plan = flujo.etapas.planAdaptacion;
@@ -77,7 +92,6 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
 
       <EstadoFlujoEvaluacion analisis={analisis} />
 
-      {/* ── Tarjetas de resumen ── */}
       <div className="summary-strip">
         <div className="sum-card">
           <div className="sum-lbl">Promedio general</div>
@@ -96,7 +110,6 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         </div>
       </div>
 
-      {/* ── Tabla desglosada ── */}
       <h3 className="section-subtitle mt-lg">Desglose por variable fisica</h3>
       <div className="consol-table-wrap">
         <div className="consol-header">
@@ -123,7 +136,6 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         })}
       </div>
 
-      {/* ── Radar ── */}
       <h3 className="section-subtitle mt-lg">Perfil fisico radial</h3>
       <div className="radar-wrap">
         <RadarChart datos={datosRadar} variables={VARS_FISICAS} />
@@ -137,7 +149,6 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         </div>
       </div>
 
-      {/* ── Compatibilidad por familia (DecisionEngine) ── */}
       <h3 className="section-subtitle mt-lg">Compatibilidad por familia deportiva</h3>
       <div className="ranking-disclaimer">
         <span className="ranking-disclaimer-icon"><Icono n="info" /></span>
@@ -181,12 +192,10 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         </div>
       )}
 
-      {/* ── Mapa corporal de brechas ── */}
       {ranking && (
         <MapaCorporalBrechas flujo={flujo} familiaId={familiaSel} onFamiliaChange={setFamiliaSel} sexo={analisis.participante?.genero} />
       )}
 
-      {/* ── Interpretación desde brechas del motor ── */}
       <h3 className="section-subtitle mt-lg">Interpretacion de la compatibilidad</h3>
       <AlertaAntecedentes alertas={flujo.informe.seguridad.alertas} />
       <div className="interp-block">
@@ -258,7 +267,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
 
       <AsistenteIA resumen={resumenIA} />
 
-      {/* ── Acciones (omitidas en la vista de solo lectura del historial) ── */}
+      {/* Acciones omitidas en la vista de solo lectura del historial. */}
       {(onGuardar || onNuevo || onContinuar) && (
       <div className="action-row mt-lg">
         {onGuardar && (

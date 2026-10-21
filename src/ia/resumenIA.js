@@ -1,11 +1,22 @@
-/* resumenIA.js — arma el resumen que se envía a la IA. Privacidad: NO
-   incluye el nombre ni textos libres (descripciones, zonas, etc.); solo
-   edad, sexo, perfil, resultados y niveles ya calculados por el motor. */
+/**
+ * @module ia/resumenIA
+ * @description Construye el resumen de resultados que se envía a la IA.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): única razón de cambio es el contenido del resumen enviado a la IA.
+ *  - D (Inversión de dependencias): consume los cálculos de logic/ (ipaq, psqi, breq, barreras) y el flujo ya evaluado, sin recalcular reglas.
+ * Notas: privacidad; no incluye nombre ni textos libres (descripciones, zonas, etc.), solo edad, sexo, perfil, resultados y niveles ya calculados.
+ */
+
 import { calcularIpaq } from '../logic/ipaq.js';
 import { calcularPsqi } from '../logic/psqi.js';
 import { calcularBreq } from '../logic/breq.js';
 import { calcularBarreras } from '../logic/barreras.js';
 
+/** Arma el resumen anonimizado de participante, capacidades, hábitos, seguridad y recomendación.
+ * @param {Object} analisis - estado del análisis capturado.
+ * @param {Object} flujo - resultado del flujo de evaluación.
+ * @returns {Object} resumen listo para enviar a la IA. */
 export function construirResumenIA(analisis, flujo) {
   const p = analisis.participante ?? {};
   const a = analisis.antropometricas ?? {};

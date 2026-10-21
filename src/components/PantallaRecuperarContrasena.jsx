@@ -1,19 +1,25 @@
-/* ═══════════════════════════════════════════════════════════════
-   PantallaRecuperarContrasena.jsx
-   Flujo de recuperacion de contraseña usando el mecanismo oficial
-   de Supabase Auth (sin criptografia propia).
-
-   modo = 'solicitar'   → pide el correo y dispara el email de Supabase
-   modo = 'restablecer' → (llegado desde el enlace del correo) pide
-                          la nueva contraseña y su confirmacion
-   ═══════════════════════════════════════════════════════════════ */
-
+/**
+ * @module components/PantallaRecuperarContrasena
+ * @description Flujo de recuperación de contraseña: solicitud por correo y restablecimiento.
+ *
+ * Principios SOLID aplicados:
+ *  - S (Responsabilidad única): formularios de recuperación de contraseña.
+ *  - D (Inversión de dependencias): delega en authService (Supabase Auth); sin criptografía propia.
+ * Notas: modo 'solicitar' envía el correo; modo 'restablecer' (desde el enlace del correo) pide la nueva contraseña y su confirmación.
+ */
 import { useState } from 'react';
 import Icono from './Icono';
 import { solicitarRecuperacionContrasena, actualizarContrasena } from '../auth/authService';
 import FondoAnimado from './FondoAnimado';
 import CampoContrasena from './CampoContrasena';
 
+/** Pantalla de recuperación de contraseña.
+ * @param {Object} props
+ * @param {string} props.modo - 'solicitar' o 'restablecer'.
+ * @param {Function} props.onVolver - Regresa al acceso.
+ * @param {Function} props.onListo - Notifica el restablecimiento completado.
+ * @param {Function} props.mostrarToast - Muestra notificaciones.
+ * @returns {JSX.Element} */
 export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, mostrarToast }) {
   const [email, setEmail] = useState('');
   const [nueva, setNueva] = useState('');
@@ -21,6 +27,8 @@ export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, m
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
+  /** Solicita el correo de recuperación.
+   * @param {Event} e - Evento de envío. */
   async function handleSolicitar(e) {
     e.preventDefault();
     setEnviando(true);
@@ -34,6 +42,8 @@ export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, m
     mostrarToast(res.mensaje, 'success');
   }
 
+  /** Establece la nueva contraseña.
+   * @param {Event} e - Evento de envío. */
   async function handleRestablecer(e) {
     e.preventDefault();
     setEnviando(true);
