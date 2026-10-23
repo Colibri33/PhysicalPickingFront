@@ -101,7 +101,8 @@ export default function PantallaRecuperarContrasena({ modo, onVolver, onListo, m
             <form onSubmit={handleSolicitar}>
               <label className="field-label">
                 Correo electrónico
-                <input className="field-input" type="email" value={email}
+                <input className="field-input" type="email" name="email" id="email"
+                  autoComplete="email" inputMode="email" value={email}
                   onChange={e => setEmail(e.target.value)} required />
               </label>
               <button className="btn btn-primary" type="submit" disabled={enviando}>
