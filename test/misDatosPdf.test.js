@@ -13,6 +13,9 @@ import {
   resumirRegistro,
   generarPdfMisDatos,
 } from '../src/utils/informeMisDatosPdf.js';
+import { generarAnalisisDemo } from '../src/utils/rellenoDemo.js';
+import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../src/evaluacion/index.js';
+import { NIVELES } from '../src/evaluacion/niveles.js';
 
 const DATOS_EJEMPLO = {
   generadoEn: '2026-10-15T12:00:00.000Z',
@@ -61,6 +64,22 @@ describe('informeMisDatosPdf', () => {
     const r = resumirRegistro({});
     assert.equal(r.nombre, '—');
     assert.deepEqual(r.familias, []);
+  });
+
+  it('un registro actual se resume con el nivel de cada capacidad y sin puntajes heredados', () => {
+    const analisis = generarAnalisisDemo(() => 0.6, 'masculino');
+    const evaluacion = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
+    const r = resumirRegistro({ fecha: '01/02/2026', participante: analisis.participante, evaluacion });
+    assert.equal(r.variables.length, 5);
+    assert.ok(r.variables.every(v => 'nivel' in v && !('total' in v)));
+    assert.ok(r.variables.some(v => NIVELES.includes(v.nivel)));
+  });
+
+  it('un registro actual se exporta a PDF sin los campos heredados', () => {
+    const analisis = generarAnalisisDemo(() => 0.6, 'femenino');
+    const evaluacion = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
+    const blob = generarPdfMisDatos({ ...DATOS_EJEMPLO, resultados: [{ fecha: '01/02/2026', participante: analisis.participante, evaluacion }] });
+    assert.ok(blob.size > 1000);
   });
 
   it('genera un Blob PDF no vacío', () => {

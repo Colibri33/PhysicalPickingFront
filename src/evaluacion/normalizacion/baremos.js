@@ -9,6 +9,9 @@
  * Notas: contrato de un baremo: { id, capacidad, version, fuente: {referencia, origen}, tipo: 'cortes_ordenados' | 'funcion' }.
  * 'cortes_ordenados' añade direccion ('mayor_mejor'|'menor_mejor'), limite ('inferior_inclusivo'|'superior_inclusivo') y
  * grupos [{ sexo, edadMin, edadMax, cortes }] con N-1 cortes para N niveles; 'funcion' añade clasificar(valor, contexto) → nivel.
+ * `redondeo: 'entero'` (opcional, R-BAR-03): las tablas AFISAL se publican en enteros, así que el valor medido se redondea al entero más
+ * cercano (mitades hacia arriba) antes de clasificar; así no quedan huecos entre bandas ni el "Muy alto >111" se pierde con 111,5.
+ * El valor usado queda en baremoAplicado.valorClasificado.
  * Sin baremo registrado, la capacidad queda con nivel = null y la advertencia "baremo pendiente".
  */
 
@@ -39,6 +42,7 @@ export function validarDefinicionBaremo(b) {
   if (b.tipo === 'cortes_ordenados') {
     if (!['mayor_mejor', 'menor_mejor'].includes(b.direccion)) e.push('direccion invalida.');
     if (!['inferior_inclusivo', 'superior_inclusivo'].includes(b.limite)) e.push('limite invalido.');
+    if (b.redondeo !== undefined && b.redondeo !== 'entero') e.push('redondeo invalido (solo "entero").');
     if (!Array.isArray(b.grupos) || b.grupos.length === 0) e.push('Faltan grupos.');
     (b.grupos ?? []).forEach((g, i) => {
       if (!Array.isArray(g.cortes) || g.cortes.length !== NIVELES.length - 1) e.push(`grupos[${i}]: se esperan ${NIVELES.length - 1} cortes.`);
@@ -97,6 +101,7 @@ export function aplicarBaremo(registro, baremoId, valor, contexto) {
 
   let nivel = null;
   let grupo = null;
+  const valorClasificado = baremo.redondeo === 'entero' ? (Math.round(valor) || 0) : valor; // `|| 0` evita -0
   if (baremo.tipo === 'cortes_ordenados') {
     grupo = buscarGrupo(baremo, contexto);
     if (!grupo) {
@@ -104,7 +109,7 @@ export function aplicarBaremo(registro, baremoId, valor, contexto) {
       salida.datosFaltantes.push('grupo_baremo');
       return salida;
     }
-    nivel = nivelPorCortes(valor, grupo.cortes, baremo.direccion, baremo.limite);
+    nivel = nivelPorCortes(valorClasificado, grupo.cortes, baremo.direccion, baremo.limite);
   } else {
     nivel = baremo.clasificar(valor, contexto);
   }
@@ -116,6 +121,7 @@ export function aplicarBaremo(registro, baremoId, valor, contexto) {
   salida.nivel = nivel;
   salida.baremoAplicado = {
     id: baremo.id, version: baremo.version ?? null, fuente: baremo.fuente,
+    valorClasificado,
     grupo: grupo ? { sexo: grupo.sexo ?? null, edadMin: grupo.edadMin ?? null, edadMax: grupo.edadMax ?? null } : null,
   };
   return salida;

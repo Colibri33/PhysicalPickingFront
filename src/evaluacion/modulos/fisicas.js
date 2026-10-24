@@ -1,58 +1,29 @@
 /**
  * @module evaluacion/modulos/fisicas
- * @description Genera los módulos de las cinco capacidades de la batería confirmada: valor crudo, evaluación y nivel ordinal por baremo inyectado.
+ * @description Genera los módulos de las cinco capacidades de la batería: valor crudo, evaluación y nivel ordinal por baremo inyectado.
  *
  * Principios SOLID aplicados:
- *  - S (Responsabilidad única): única razón de cambio es el mapeo capacidad-prueba y su evaluación.
- *  - O (Abierto/Cerrado): una capacidad nueva se declara en CAPACIDADES; los hooks leerDato, validarDato y evaluarDato personalizan sin tocar la fábrica.
+ *  - S (Responsabilidad única): única razón de cambio es cómo se lee, valida y evalúa cada prueba.
+ *  - O (Abierto/Cerrado): una capacidad nueva se declara en capacidades.js; si su prueba necesita lógica propia se agrega en COMPORTAMIENTO.
  *  - L (Sustitución de Liskov): cada módulo generado cumple el contrato de ejecutarModulo.
- *  - D (Inversión de dependencias): los baremos llegan por `recursos.baremos`; no se incluyen aquí.
- * Notas: sin baremo para una capacidad, nivel = null y estado 'pendiente_baremo'. Reutiliza VARS_FISICAS (logic/modelo.js) para leer valor y unidad.
+ *  - D (Inversión de dependencias): el catálogo viene de capacidades.js y los baremos llegan por `recursos.baremos`; no se incluyen aquí.
+ * Notas: sin baremo para una capacidad, nivel = null y estado 'pendiente_baremo'. Solo la resistencia aeróbica tiene lógica propia
+ * (lectura del nivel de Léger y estimación del VO2máx); el resto sigue el camino común.
  */
 
-import { VARS_FISICAS, esNivelLegerValido } from '../../logic/modelo.js';
+import { CAPACIDADES_FISICAS, esNivelLegerValido } from '../capacidades.js';
 import { ORIGEN, TIPO_MODULO, DESTINO, ESTADO_MODULO } from '../trazabilidad.js';
 import { aplicarBaremo } from '../normalizacion/baremos.js';
-import { vo2MaxDesdeNivel, nivelEnteroDeRegistro, BAREMO_LEGER_VO2MAX } from '../normalizacion/leger.js';
+import { vo2MaxDesdeNivel, nivelEnteroDeRegistro, velocidadNivel } from '../normalizacion/leger.js';
 
-const AFISAL = 'AFISAL-INEFC (Rodriguez et al., 1998; Espana; n=238; grupos 18-24 y 25-34)';
-
-/** Capacidades del DecisionEngine (ids idénticos a su escala.json).
- * variableOrigen es el id de la variable capturada en VARS_FISICAS; null si la captura no existe. */
-export const CAPACIDADES = [
-  {
-    id: 'fuerza', nombre: 'Fuerza', prueba: 'dinamometria_manual', variableOrigen: 'fuerza',
-    baremoId: 'afisal_dinamometria', referenciaBaremo: AFISAL,
-    pendientes: [],
-  },
-  {
-    id: 'fuerza_explosiva', nombre: 'Fuerza explosiva', prueba: 'salto_vertical', variableOrigen: 'fuerzaExp',
-    baremoId: 'afisal_salto_vertical', referenciaBaremo: AFISAL,
-    pendientes: [],
-  },
-  {
-    id: 'flexibilidad', nombre: 'Flexibilidad', prueba: 'sit_and_reach', variableOrigen: 'flexibilidad',
-    baremoId: 'afisal_sit_and_reach', referenciaBaremo: AFISAL,
-    pendientes: [],
-  },
-  {
-    id: 'equilibrio', nombre: 'Equilibrio', prueba: 'equilibrio_monopodal_sin_vision', variableOrigen: 'equilibrio',
-    baremoId: 'afisal_equilibrio_monopodal', referenciaBaremo: AFISAL,
-    pendientes: [
-      'Tabla 9 AFISAL con erratas de origen corregidas (ver normalizacion/afisal.js); verificar contra publicacion.',
-    ],
-  },
-  {
-    id: 'vo2max', nombre: 'Resistencia aeróbica', prueba: 'leger_course_navette_20m', variableOrigen: 'resistencia',
-    requiereAutorizacion: 'prueba_maxima',
-    baremoId: 'physicalpicking_vo2max', referenciaBaremo: BAREMO_LEGER_VO2MAX.fuente,
-    pendientes: [],
+/** Lógica propia por capacidad, indexada por id. Cada hook es opcional y reemplaza el paso común correspondiente. */
+const COMPORTAMIENTO = {
+  vo2max: {
     /** Lee el nivel máximo alcanzado del test de Léger.
      * @param {Object} datos - datos ingresados.
      * @returns {{palier: number}|undefined} nivel válido, si existe. */
     leerDato(datos) {
-      // Nivel máximo alcanzado (1-21) en realesF.resistencia o leger.palier. Valores > 21 corresponden a la antigua
-      // resistencia en metros (retirada) y se ignoran.
+      // Nivel en realesF.resistencia o leger.palier. Valores > 21 son la antigua resistencia en metros (retirada) y se ignoran.
       const candidatos = [datos?.realesF?.resistencia, datos?.leger?.palier];
       for (const raw of candidatos) {
         if (raw === null || raw === undefined || raw === '') continue;
@@ -62,7 +33,7 @@ export const CAPACIDADES = [
       }
       return undefined;
     },
-    /** Valida que el nivel sea un entero de 1 a 21.
+    /** Valida que el nivel sea un entero dentro del rango del test.
      * @param {Object} respuestas - respuestas extraídas.
      * @returns {Object} resultado de validación. */
     validarDato(respuestas) {
@@ -88,26 +59,22 @@ export const CAPACIDADES = [
           palier: palier ?? null,
           valor: vo2max,
           unidad: 'ml/kg/min',
-          detalle: { nivel: palier ?? null, nivelEntero, velocidad: nivelEntero !== null ? 8.5 + (nivelEntero - 1) * 0.5 : null, vo2max },
+          detalle: { nivel: palier ?? null, nivelEntero, velocidad: velocidadNivel(nivelEntero), vo2max },
         },
         advertencias: [],
       };
     },
   },
-];
+};
 
-/** Busca la definición de captura de una variable física.
- * @param {string|null} variableOrigen - id en VARS_FISICAS.
- * @returns {Object|null} definición o null. */
-function definicionCaptura(variableOrigen) {
-  return VARS_FISICAS.find(v => v.id === variableOrigen) ?? null;
-}
+/** Catálogo de capacidades con su lógica propia, si la tienen. */
+const CAPACIDADES = CAPACIDADES_FISICAS.map(c => ({ ...c, ...COMPORTAMIENTO[c.id] }));
 
 /** Construye el módulo de evaluación de una capacidad.
  * @param {Object} cap - entrada de CAPACIDADES.
  * @returns {Object} módulo conforme al contrato de ejecutarModulo. */
 function crearModuloCapacidad(cap) {
-  const def = definicionCaptura(cap.variableOrigen);
+  const def = { minimo: cap.captura.minimo, maximo: cap.captura.maximo, unidad: cap.unidad };
   return {
     id: `fisica_${cap.id}`,
     capacidad: cap.id,
@@ -120,7 +87,7 @@ function crearModuloCapacidad(cap) {
       prueba: cap.prueba,
       referencia: cap.referenciaBaremo,
       origen: ORIGEN.BAREMO,
-      capturaFrontend: def ? `VARS_FISICAS.${def.id}` : null,
+      capturaFrontend: `capacidades.${cap.id}`,
     },
     pendientes: cap.pendientes,
     requiereAutorizacion: cap.requiereAutorizacion ?? null,
@@ -130,12 +97,11 @@ function crearModuloCapacidad(cap) {
      * @returns {Object|undefined} respuestas de la prueba. */
     extraer(datos) {
       if (typeof cap.leerDato === 'function') return cap.leerDato(datos);
-      if (!cap.variableOrigen) return undefined;
-      const raw = datos?.realesF?.[cap.variableOrigen];
+      const raw = datos?.realesF?.[cap.campo];
       if (raw === '' || raw === null || raw === undefined) return undefined;
       const n = typeof raw === 'number' ? raw : parseFloat(raw);
-      if (!Number.isFinite(n)) return { [cap.variableOrigen]: raw };
-      const out = { [cap.variableOrigen]: n };
+      if (!Number.isFinite(n)) return { [cap.campo]: raw };
+      const out = { [cap.campo]: n };
       // Parciales por pierna: trazabilidad del total bilateral AFISAL.
       if (cap.id === 'equilibrio') {
         for (const k of ['equilibrioDer', 'equilibrioIzq']) {
@@ -161,9 +127,7 @@ function crearModuloCapacidad(cap) {
       if (cap.id === 'vo2max') {
         return { advertencias: ['Resistencia aeróbica (Léger): sin nivel registrado (prueba maxima no realizada o no autorizada).'], datosFaltantes: ['palier_leger'] };
       }
-      return cap.variableOrigen
-        ? { advertencias: [], datosFaltantes: [] }
-        : { advertencias: [`${cap.nombre}: la captura de la prueba aun no existe en el frontend.`], datosFaltantes: ['captura_no_implementada'] };
+      return { advertencias: [], datosFaltantes: [] };
     },
 
     /** Valida el valor; fuera del rango de captura solo advierte.
@@ -171,11 +135,11 @@ function crearModuloCapacidad(cap) {
      * @returns {Object} resultado de validación. */
     validar(respuestas) {
       if (typeof cap.validarDato === 'function') return cap.validarDato(respuestas);
-      const v = respuestas[cap.variableOrigen];
+      const v = respuestas[cap.campo];
       const errores = [];
       const advertencias = [];
       if (typeof v !== 'number' || !Number.isFinite(v)) errores.push(`${cap.nombre}: debe ser un numero valido.`);
-      else if (def && (v < def.minimo || v > def.maximo)) {
+      else if (v < def.minimo || v > def.maximo) {
         // Criterio del formulario: fuera del rango de captura es advertencia, no bloqueo.
         advertencias.push(`${cap.nombre}: ${v} ${def.unidad} fuera del rango de captura (${def.minimo}-${def.maximo}).`);
       }
@@ -188,14 +152,14 @@ function crearModuloCapacidad(cap) {
     evaluar(respuestas) {
       if (typeof cap.evaluarDato === 'function') return cap.evaluarDato(respuestas);
       const advertencias = [];
-      const resultadoEvaluacion = { prueba: cap.prueba, valor: respuestas[cap.variableOrigen], unidad: def?.unidad ?? null };
+      const resultadoEvaluacion = { prueba: cap.prueba, valor: respuestas[cap.campo], unidad: def.unidad };
       if (cap.id === 'fuerza') {
         const der = respuestas.fuerzaDer;
         const izq = respuestas.fuerzaIzq;
         if (Number.isFinite(der) && Number.isFinite(izq)) {
           const suma = Math.round((der + izq) * 10) / 10;
           resultadoEvaluacion.detalle = { manoDerecha: der, manoIzquierda: izq, suma };
-          if (suma !== respuestas[cap.variableOrigen]) {
+          if (suma !== respuestas[cap.campo]) {
             advertencias.push('Fuerza: la suma no coincide con la de ambas manos; se califica el valor registrado.');
           }
         } else {
@@ -207,7 +171,7 @@ function crearModuloCapacidad(cap) {
         const izq = respuestas.equilibrioIzq;
         if (Number.isFinite(der) && Number.isFinite(izq)) {
           resultadoEvaluacion.detalle = { piernaDerecha: der, piernaIzquierda: izq, total: der + izq };
-          if (der + izq !== respuestas[cap.variableOrigen]) {
+          if (der + izq !== respuestas[cap.campo]) {
             advertencias.push('Equilibrio: el total no coincide con la suma de ambas piernas; se califica el total registrado.');
           }
         } else {
@@ -237,8 +201,3 @@ function crearModuloCapacidad(cap) {
 
 /** Módulos de las capacidades de la batería. */
 export const MODULOS_FISICOS = CAPACIDADES.map(crearModuloCapacidad);
-
-/** Variables capturadas que no forman parte de la batería confirmada (se informan como conflicto, no se evalúan). */
-export const VARIABLES_CAPTURADAS_FUERA_DE_BATERIA = VARS_FISICAS
-  .map(v => v.id)
-  .filter(id => !CAPACIDADES.some(c => c.variableOrigen === id));

@@ -193,7 +193,7 @@ export async function tieneConsentimientoVigente() {
 
 /** Corrige los datos de identificación de un registro guardado (nombre, edad, género, perfil, deporte).
  * Se reenvía el payload completo porque el backend vuelve a cifrar todo el registro. No se recalculan resultados,
- * pues esos campos no participan en el motor de cálculo (ver logic/modelo.js).
+ * pues esos campos no participan en el motor de cálculo (ver src/evaluacion).
  * @param {string|null} usuarioId - id del usuario; null para invitado.
  * @param {string} id - id del registro.
  * @param {Object} registroActualizado - registro con los datos corregidos.

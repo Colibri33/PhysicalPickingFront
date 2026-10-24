@@ -15,7 +15,7 @@
 
 import { ORIGEN } from '../trazabilidad.js';
 import { CLASIFICACION_PARQ } from '../modulos/seguridad/parq.js';
-import { CAPACIDADES } from '../modulos/fisicas.js';
+import { CAPACIDADES_FISICAS } from '../capacidades.js';
 
 /** Catálogo de reglas de seguridad aplicadas. */
 export const REGLAS = [
@@ -85,7 +85,7 @@ export function aplicarReglasPreparacionSeguridad(perfil) {
   // R-SEG-03
   const limitadas = perfil.limitaciones?.presente ? (perfil.limitaciones.pruebasAfectadas ?? []) : [];
   const avisosPorPrueba = Object.fromEntries(
-    CAPACIDADES.filter(c => limitadas.includes(c.prueba))
+    CAPACIDADES_FISICAS.filter(c => limitadas.includes(c.prueba))
       .map(c => [c.id, 'Limitacion declarada por el participante para esta prueba.']));
   if (perfil.limitaciones?.presente) {
     alertas.push({ codigo: 'LIMITACION_DECLARADA', regla: 'R-SEG-03', severidad: 'informativa', mensaje: 'El participante declara limitaciones relevantes para las pruebas.', pruebas: limitadas });

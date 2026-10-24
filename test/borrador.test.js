@@ -14,7 +14,7 @@ import { faltantesIpaq } from '../src/logic/ipaq.js';
 import { faltantesPsqi } from '../src/logic/psqi.js';
 import { faltantesBreq } from '../src/logic/breq.js';
 import { faltantesBarreras } from '../src/logic/barreras.js';
-import { esNivelLegerValido } from '../src/logic/modelo.js';
+import { esNivelLegerValido } from '../src/evaluacion/capacidades.js';
 import { ejecutarFlujoEvaluacion } from '../src/evaluacion/index.js';
 import { datosEntradaDesdeAnalisis } from '../src/evaluacion/entrada.js';
 
@@ -29,7 +29,7 @@ test('relleno demo: 200 análisis completos y coherentes', () => {
     assert.ok(esNivelLegerValido(Number(a.leger.palier)));
     const e = Number(a.participante.edad);
     assert.ok(e >= 18 && e <= 30);
-    for (const v of Object.values(a.fisicas)) assert.ok(v >= 0 && v <= 100);
+    assert.ok(!('fisicas' in a));
     assert.ok(a.antropometricas.imc > 17 && a.antropometricas.imc < 30);
     assert.ok(a.antropometricas.icc > 0.6 && a.antropometricas.icc < 1);
     const r = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(a));

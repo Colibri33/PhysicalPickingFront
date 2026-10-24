@@ -8,7 +8,8 @@
  */
 import { useState } from 'react';
 import Icono from './Icono';
-import { VARS_FISICAS } from '../logic/modelo';
+import { VARIABLES_CAPTURA } from '../evaluacion/capacidades';
+import { NIVELES } from '../evaluacion/niveles';
 import { analisisDesdeRegistro } from '../utils/analisisRegistro';
 import ResultadosConsolidado from './ResultadosConsolidado';
 import RecomendacionDeportes from './RecomendacionDeportes';
@@ -23,6 +24,7 @@ import { generarPdfMisDatos } from '../utils/informeMisDatosPdf';
 import { cargarRecursosPdf } from '../utils/recursosPdf';
 import { AlertaAntecedentes } from './PlanAdaptacion';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad';
+import { textoRecomendacion } from '../evaluacion/decision/ranking';
 
 /** Pone en mayúscula la primera letra.
  * @param {string} s - Texto.
@@ -94,11 +96,11 @@ function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostra
     if (edadNum < EDAD_MIN || edadNum > EDAD_MAX)
       return mostrarToast(`La edad debe estar entre ${EDAD_MIN} y ${EDAD_MAX} años.`, 'error');
 
-    if (!form.genero) return mostrarToast('Selecciona el genero.', 'error');
+    if (!form.genero) return mostrarToast('Selecciona el sexo biológico.', 'error');
     if (!form.perfil) return mostrarToast('Selecciona el tipo de perfil.', 'error');
     if (!(form.deporte || '').trim()) return mostrarToast('Ingresa la actividad o deporte.', 'error');
 
-    // Estos campos no participan en el motor de cálculo (logic/modelo.js): no se recalcula nada.
+    // Estos campos no participan en el motor de cálculo (src/evaluacion): no se recalcula nada.
     const registroActualizado = { ...registro, participante: { ...form, nombre, edad: edadNum } };
 
     setGuardando(true);
@@ -126,12 +128,11 @@ function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostra
           onChange={e => set('edad', e.target.value)} />
       </label>
       <label className="field-label">
-        Genero
+        Sexo biológico
         <select className="field-input" value={form.genero || ''} onChange={e => set('genero', e.target.value)}>
           <option value="">Seleccionar…</option>
           <option value="masculino">Masculino</option>
           <option value="femenino">Femenino</option>
-          <option value="otro">Otro</option>
         </select>
       </label>
       <label className="field-label">
@@ -172,6 +173,8 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
   const [descargando, setDescargando] = useState(false);
 
   if (!r) return null;
+  // Niveles del motor actual; los registros anteriores solo traen el consolidado heredado.
+  const nivelesMotor = r.evaluacion?.etapas?.decisionEngine?.entrada?.capacidades ?? null;
   const getTotal = id => { const c = r.consolidado?.[id]; if (!c) return 0; return typeof c === 'object' ? c.total : c; };
 
   async function handleDescargarPdf() {
@@ -204,7 +207,7 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
         ) : (
           <>
             <div className="modal-meta-grid">
-              {[['Edad', `${r.participante.edad} años`], ['Genero', cap(r.participante.genero)], ['Perfil', cap(r.participante.perfil)], ['Actividad', r.participante.deporte || '—'], ['Fecha', r.fecha]]
+              {[['Edad', `${r.participante.edad} años`], ['Sexo', cap(r.participante.genero)], ['Perfil', cap(r.participante.perfil)], ['Actividad', r.participante.deporte || '—'], ['Fecha', r.fecha]]
                 .map(([k, v]) => (
                   <div key={k}>
                     <div className="modal-meta-lbl">{k}</div>
@@ -232,7 +235,7 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               const plan = r.evaluacion?.etapas?.planAdaptacion;
               const texto = rk?.familias && 'recomendada' in rk
                 ? (rk.recomendada
-                  ? `Recomendación firme: ${rk.recomendada.nombre ?? rk.recomendada.id} (${rk.recomendada.porcentaje ?? '—'}% de compatibilidad).`
+                  ? `Recomendación firme: ${textoRecomendacion(rk)}.`
                   : plan?.estado === 3 ? `Estado 3 · ${plan.nombre}: ${plan.motivo}`
                     : plan?.tipo === 'datos_insuficientes' ? plan.motivo : null)
                 : r.interpretacion?.recomendacion;
@@ -263,9 +266,24 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               </>
             )}
 
-            <p className="modal-section-title">Perfil consolidado final</p>
+            <p className="modal-section-title">{nivelesMotor ? 'Nivel por capacidad' : 'Perfil consolidado final'}</p>
             <div className="modal-bars">
-              {VARS_FISICAS.map(v => {
+              {VARIABLES_CAPTURA.map(v => {
+                if (nivelesMotor) {
+                  const nivel = nivelesMotor[v.capacidad] ?? null;
+                  return (
+                    <div key={v.id} className="modal-bar-row">
+                      <div className="modal-bar-meta">
+                        <span>{v.nombre}</span>
+                        <strong style={{ color: v.color }}>{nivel ?? 'Sin dato'}</strong>
+                      </div>
+                      <div className="modal-bar-track">
+                        <div className="modal-bar-fill" style={{ width: `${(NIVELES.indexOf(nivel) + 1) * 20}%`, background: v.color }} />
+                      </div>
+                    </div>
+                  );
+                }
+                // Registros anteriores a la migración: se muestra el puntaje consolidado guardado.
                 const total = getTotal(v.id);
                 return (
                   <div key={v.id} className="modal-bar-row">
@@ -379,9 +397,11 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
         <>
           <div className="hist-list">
             {historial.map((r, i) => {
-              const topMotor = r.evaluacion?.etapas?.ranking?.recomendada ?? r.evaluacion?.etapas?.ranking?.familias?.[0] ?? null;
+              const rk = r.evaluacion?.etapas?.ranking;
+              const topMotor = rk?.recomendada ?? rk?.familias?.[0] ?? null;
               const topHeredado = r.rankingDeportes?.[0] ?? null;
-              const topNombre = topMotor?.nombre ?? topMotor?.id ?? topHeredado?.nombre ?? null;
+              const empate = rk?.recomendada && (rk?.empatadas?.length ?? 0) > 1 ? rk.empatadas.map(f => f.nombre ?? f.id).join(' · ') : null;
+              const topNombre = empate ?? topMotor?.nombre ?? topMotor?.id ?? topHeredado?.nombre ?? null;
               const topPct = topMotor?.porcentaje ?? topHeredado?.afinidad ?? null;
               return (
               <button key={r.id} className="hist-card" onClick={() => { setVerId(r.id); window.scrollTo({ top: 0 }); }} type="button">

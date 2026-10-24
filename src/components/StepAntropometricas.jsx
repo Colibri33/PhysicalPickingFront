@@ -4,10 +4,10 @@
  *
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): captura y valida coherencia física de datos antropométricos; los cálculos se delegan.
- *  - D (Inversión de dependencias): IMC, ICC, clasificación y rangos provienen de logic/modelo; el estado se recibe por props.
+ *  - D (Inversión de dependencias): IMC, ICC, clasificación y rangos provienen de evaluacion/antropometria; el estado se recibe por props.
  * Notas: clasificación del ICC según OMS 2008 (riesgo sustancialmente aumentado: ≥0,90 hombres, ≥0,85 mujeres).
  */
-import { calcularIMC, calcularICC, clasificarICC, RANGOS_ANTROPOMETRICOS } from '../logic/modelo';
+import { calcularIMC, calcularICC, clasificarICC, RANGOS_ANTROPOMETRICOS } from '../evaluacion/antropometria';
 import Icono from './Icono';
 
 /** Formulario del paso de variables antropométricas.

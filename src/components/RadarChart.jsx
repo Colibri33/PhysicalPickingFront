@@ -11,8 +11,9 @@
  * @param {Object} props
  * @param {Object<string, number>} props.datos - porcentaje (0-100) indexado por id de variable.
  * @param {Array<{id: string, nombre: string, color: string}>} props.variables - variables en orden de ejes.
+ * @param {Object<string, string>} [props.textos] - texto por id de variable que reemplaza al porcentaje en la etiqueta del eje.
  * @returns {JSX.Element} gráfico SVG. */
-export default function RadarChart({ datos, variables }) {
+export default function RadarChart({ datos, variables, textos }) {
   const cx = 150, cy = 155, r = 105;
   const n  = variables.length;
   const angulo = i => (Math.PI * 2 * i / n) - Math.PI / 2;
@@ -62,7 +63,7 @@ export default function RadarChart({ datos, variables }) {
       <text key={v.id} x={p.x} y={p.y}
         textAnchor="middle" dominantBaseline="middle"
         fontSize="10" fill="#454c5e" fontFamily="monospace">
-        {datos[v.id] ?? 0}%
+        {textos?.[v.id] ?? `${datos[v.id] ?? 0}%`}
       </text>
     );
   });

@@ -28,7 +28,7 @@ const GRUPOS_SIDEBAR = [
     titulo: 'Analisis',
     pasos: [
       { n: 10, label: 'Perfil fisico' },
-      { n: 11, label: 'Ajustes antropometricos' },
+      { n: 11, label: 'Composicion corporal' },
       { n: 12, label: 'Informe final' },
     ],
   },

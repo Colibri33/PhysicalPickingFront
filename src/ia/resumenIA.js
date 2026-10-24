@@ -45,6 +45,7 @@ export function construirResumenIA(analisis, flujo) {
     },
     recomendacion: {
       firme: rk.recomendada ? { nombre: rk.recomendada.nombre ?? rk.recomendada.id, porcentaje: rk.recomendada.porcentaje } : null,
+      empatadas: (rk.empatadas ?? []).length > 1 ? rk.empatadas.map(f => f.nombre ?? f.id) : null,
       top5: (rk.familias ?? []).slice(0, 5).map(f => ({
         nombre: f.nombre ?? f.id, porcentaje: f.porcentaje, firme: f.firme,
         brechas: (f.brechas ?? []).map(b => ({ capacidad: b.capacidad, demanda: b.demanda, nivel: b.nivel, severa: b.severa })),

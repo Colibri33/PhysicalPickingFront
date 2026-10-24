@@ -9,7 +9,7 @@
  * lesión declarados (tres Sí/No y zona) se leen de la respuesta original para no perder la alerta de adaptación y recuperación.
  */
 
-import { CAPACIDADES } from '../modulos/fisicas.js';
+import { CAPACIDADES_FISICAS } from '../capacidades.js';
 import { antecedentesDeclarados } from '../modulos/complementarias/physicalpicking.js';
 import { ESTADO_MODULO } from '../trazabilidad.js';
 
@@ -28,7 +28,7 @@ const ref = (m) => (m ? { moduloId: m.moduloId, estado: m.estado } : null);
  * @returns {Object} perfil con compatibilidad, preparación, seguridad, antecedentes, limitaciones, experiencia e informativas. */
 export function construirPerfilFuncional(resultados, contexto) {
   const capacidades = {};
-  for (const c of CAPACIDADES) {
+  for (const c of CAPACIDADES_FISICAS) {
     const m = resultados[`fisica_${c.id}`];
     capacidades[c.id] = {
       nivel: m?.nivel ?? null,

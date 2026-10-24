@@ -4,11 +4,11 @@
  *
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): única razón de cambio es la política de persistencia local del borrador.
- *  - D (Inversión de dependencias): el estado base proviene de estadoAnalisisInicial (logic/modelo); el almacenamiento se accede solo mediante estas funciones.
+ *  - D (Inversión de dependencias): el estado base proviene de estadoAnalisisInicial (utils/analisisRegistro); el almacenamiento se accede solo mediante estas funciones.
  * Notas: contiene datos de salud (PAR-Q+); por ello usa clave por usuario, caduca a los 7 días, se borra al cerrar sesión o iniciar un análisis nuevo y toda operación va en try/catch.
  */
 
-import { estadoAnalisisInicial } from '../logic/modelo.js';
+import { estadoAnalisisInicial } from './analisisRegistro.js';
 
 const PREFIJO = 'pp_borrador_v1:';
 const SESION_INVITADO = 'pp_modo_invitado';

@@ -1,6 +1,6 @@
 /**
  * @module components/ResultadosConsolidado
- * @description Informe final: estado del flujo, tabla desglosada, radar, compatibilidad por familia, mapa de brechas e interpretación.
+ * @description Informe final: estado del flujo, nivel por capacidad, radar, compatibilidad por familia, mapa de brechas e interpretación.
  *
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): composición del informe final.
@@ -16,26 +16,11 @@ import MapaCorporalBrechas from './MapaCorporalBrechas';
 import AsistenteIA from './AsistenteIA';
 import { construirResumenIA } from '../ia/resumenIA';
 import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
-import {
-  VARS_FISICAS,
-  calcularConsolidado,
-} from '../logic/modelo';
+import { VARIABLES_CAPTURA, ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades';
+import { detalleCapacidades, mayorOportunidad } from '../evaluacion/informe/detalleCapacidades';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
 import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
-
-/** Formatea una diferencia con signo y un decimal.
- * @param {number} d - Diferencia.
- * @returns {string} valor con signo. */
-function signo(d) { const r = Math.round(d * 10)/10; return r > 0 ? `+${r}` : `${r}`; }
-
-const ETIQUETAS_CAPACIDAD = {
-  fuerza: 'Fuerza',
-  fuerza_explosiva: 'Fuerza explosiva',
-  vo2max: 'Resistencia aeróbica',
-  flexibilidad: 'Flexibilidad',
-  equilibrio: 'Equilibrio',
-};
 
 /** Motivo de demanda según la clasificación de Mitchell.
  * @param {string} familiaId - Identificador de la familia.
@@ -60,7 +45,6 @@ function motivoMitchell(familiaId, capacidad) {
  * @param {boolean} [props.guardando] - Guardado en curso.
  * @returns {JSX.Element} */
 export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, onContinuar, analisisGuardado, guardando }) {
-  const consolidado        = calcularConsolidado(analisis.fisicas, analisis.antropometricas);
   const flujo = useMemo(
     () => ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis)),
     [analisis],
@@ -74,61 +58,72 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
   const plan = flujo.etapas.planAdaptacion;
   const [familiaSel, setFamiliaSel] = useState(() => top?.id ?? '');
 
-  const datosRadar = Object.fromEntries(VARS_FISICAS.map(v => [v.id, consolidado[v.id].total]));
-  const totales    = VARS_FISICAS.map(v => consolidado[v.id].total);
-  const promedio   = Math.round(totales.reduce((a,b) => a+b,0) / totales.length);
-  const varMax     = VARS_FISICAS[totales.indexOf(Math.max(...totales))];
-  const varMin     = VARS_FISICAS[totales.indexOf(Math.min(...totales))];
+  // Familias firmes con igual compatibilidad y criterios de desempate (R-DEC-04).
+  const empatadas = flujo.etapas.ranking.empatadas ?? [];
+  const idsEmpate = new Set(empatadas.length > 1 ? empatadas.map(f => f.id) : []);
+
+  // Nivel por capacidad: cada nivel ocupa un anillo del radar (Muy bajo = 20 %, Muy alto = 100 %).
+  const detalles = detalleCapacidades(flujo);
+  const evaluadas = detalles.filter(d => d.nivelIndex >= 0);
+  const masAlta = [...evaluadas].sort((a, b) => b.nivelIndex - a.nivelIndex)[0] ?? null;
+  const oportunidad = mayorOportunidad(detalles);
+  const datosRadar = {};
+  const textosRadar = {};
+  for (const v of VARIABLES_CAPTURA) {
+    const d = detalles.find(x => x.id === v.capacidad);
+    datosRadar[v.id] = d && d.nivelIndex >= 0 ? (d.nivelIndex + 1) * 20 : 0;
+    textosRadar[v.id] = d?.nivel ?? 'Sin dato';
+  }
 
   return (
     <div className="panel-card">
       <ParticipantStrip participante={analisis.participante} />
       <h2 className="panel-title">Informe de orientacion de perfil</h2>
       <p className="panel-desc">
-        Este informe describe la <strong>tendencia funcional</strong> del evaluado basada en
-        sus capacidades físicas y antropometricas. No clasifica por baremos deportivos
-        ni determina un deporte específico — orienta el perfil general.
+        Este informe ubica cada capacidad física en un <strong>nivel según su baremo</strong> por
+        sexo y edad, y lo compara con lo que exige cada familia deportiva. Es una orientación,
+        no una selección definitiva.
       </p>
 
       <EstadoFlujoEvaluacion analisis={analisis} />
 
       <div className="summary-strip">
         <div className="sum-card">
-          <div className="sum-lbl">Promedio general</div>
-          <div className="sum-val">{promedio}%</div>
-          <div className="sum-sub">variables fisicas</div>
+          <div className="sum-lbl">Capacidades evaluadas</div>
+          <div className="sum-val">{evaluadas.length}/{detalles.length}</div>
+          <div className="sum-sub">con baremo por sexo y edad</div>
         </div>
         <div className="sum-card high">
-          <div className="sum-lbl">Variable mas alta</div>
-          <div className="sum-val">{consolidado[varMax.id].total}%</div>
-          <div className="sum-sub">{varMax.nombre}</div>
+          <div className="sum-lbl">Capacidad mas alta</div>
+          <div className="sum-val">{masAlta?.nivel ?? '—'}</div>
+          <div className="sum-sub">{masAlta?.nombre ?? 'Sin datos'}</div>
         </div>
         <div className="sum-card low">
-          <div className="sum-lbl">Variable mas baja</div>
-          <div className="sum-val">{consolidado[varMin.id].total}%</div>
-          <div className="sum-sub">{varMin.nombre}</div>
+          <div className="sum-lbl">Mayor oportunidad</div>
+          <div className="sum-val">{oportunidad?.nivel ?? '—'}</div>
+          <div className="sum-sub">{oportunidad?.nombre ?? 'Sin datos'}</div>
         </div>
       </div>
 
-      <h3 className="section-subtitle mt-lg">Desglose por variable fisica</h3>
+      <h3 className="section-subtitle mt-lg">Desglose por capacidad</h3>
       <div className="consol-table-wrap">
         <div className="consol-header">
-          <span className="cr-var">Variable</span>
-          <span className="cr-num">Base</span>
-          <span className="cr-delta">Δ Antrop.</span>
-          <span className="cr-total">Total</span>
+          <span className="cr-var">Capacidad</span>
+          <span className="cr-num">Valor</span>
+          <span className="cr-num">Siguiente nivel</span>
+          <span className="cr-total">Nivel</span>
         </div>
-        {VARS_FISICAS.map(v => {
-          const { base, ajAntrop, total } = consolidado[v.id];
+        {detalles.map(d => {
+          const v = VARIABLES_CAPTURA.find(x => x.capacidad === d.id);
           return (
-            <div key={v.id} className="consol-row">
-              <span className="cr-var">{v.nombre}</span>
-              <span className="cr-num">{base}%</span>
-              <span className={`cr-delta ${ajAntrop>0?'delta-pos':ajAntrop<0?'delta-neg':'delta-neu'}`}>{ajAntrop!==0?signo(ajAntrop):'0'}</span>
+            <div key={d.id} className="consol-row">
+              <span className="cr-var">{d.nombre}</span>
+              <span className="cr-num">{d.valorTexto}</span>
+              <span className="cr-num">{d.umbral?.texto ?? '—'}</span>
               <div className="cr-total">
-                <span className="cr-total-num" style={{ color: v.color }}>{total}%</span>
+                <span className="cr-total-num" style={{ color: v.color }}>{d.nivel ?? 'Sin dato'}</span>
                 <div className="cr-mini-track">
-                  <div className="cr-mini-fill" style={{ width: `${total}%`, background: v.color }} />
+                  <div className="cr-mini-fill" style={{ width: `${(d.nivelIndex + 1) * 20}%`, background: v.color }} />
                 </div>
               </div>
             </div>
@@ -138,12 +133,12 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
 
       <h3 className="section-subtitle mt-lg">Perfil fisico radial</h3>
       <div className="radar-wrap">
-        <RadarChart datos={datosRadar} variables={VARS_FISICAS} />
+        <RadarChart datos={datosRadar} variables={VARIABLES_CAPTURA} textos={textosRadar} />
         <div className="radar-key">
-          {VARS_FISICAS.map(v => (
+          {VARIABLES_CAPTURA.map(v => (
             <div key={v.id} className="rk-item">
               <span className="rk-dot" style={{ background: v.color }} />
-              <span>{v.nombre}: <strong>{consolidado[v.id].total}%</strong></span>
+              <span>{v.nombre}: <strong>{textosRadar[v.id]}</strong></span>
             </div>
           ))}
         </div>
@@ -175,7 +170,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
                 onClick={() => setFamiliaSel(familiaSel === f.id ? '' : f.id)}
                 aria-pressed={familiaSel === f.id}
                 title={noFirme ? textoMotivosNoFirme(f).join('; ') : 'Ver en el mapa corporal'}>
-                <span className="rank-pos">#{i + 1}</span>
+                <span className="rank-pos">#{idsEmpate.has(f.id) ? 1 : i + 1}</span>
                 <span className="rank-nombre">
                   {f.nombre ?? f.id}
                   {noFirme && <span className="rank-tag">{severa ? 'brecha severa' : 'faltan datos'}</span>}
@@ -209,6 +204,11 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
               Recomendación firme: {top.nombre ?? top.id}
               {top.porcentaje !== null && top.porcentaje !== undefined ? ` (${top.porcentaje}%, cobertura ${Math.round((top.cobertura ?? 0) * 5)}/5)` : ' (sin datos suficientes)'}.
             </p>
+            {idsEmpate.size > 0 && (
+              <p className="interp-parrafo">
+                Empatan con la misma compatibilidad y los mismos criterios de desempate: {empatadas.map(f => f.nombre ?? f.id).join(', ')}.
+              </p>
+            )}
             {liderProvisional && (
               <div className="interp-recomendacion">
                 <span className="interp-label">Familia con mayor porcentaje no recomendable</span>

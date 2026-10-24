@@ -9,7 +9,7 @@
  * participante) para el nivel mínimo que exige la familia o, sin familia, para el siguiente nivel; la diferencia compara el valor medido con ella.
  */
 import { NIVELES } from '../niveles.js';
-import { CAPACIDADES } from '../modulos/fisicas.js';
+import { CAPACIDADES_FISICAS } from '../capacidades.js';
 import { BAREMOS_AFISAL } from '../normalizacion/afisal.js';
 import { BAREMOS_LEGER, LEGER_PARAMS } from '../normalizacion/leger.js';
 import { buscarGrupo } from '../normalizacion/baremos.js';
@@ -23,27 +23,27 @@ export const ORDEN_CAPACIDADES = ['fuerza', 'fuerza_explosiva', 'vo2max', 'flexi
 /** Descripción fija de cada prueba, tal como la captura la app, y de su baremo. */
 export const INFO_CAPACIDAD = Object.freeze({
   fuerza: {
-    nombre: 'Fuerza prensil', zona: 'Manos y antebrazos', unidad: 'kg',
+    zona: 'Manos y antebrazos', unidad: 'kg',
     mide: 'Dinamometría manual: mejor intento de cada mano; el resultado es la suma de ambas.',
     baremo: 'AFISAL-INEFC (Rodríguez et al., 1998), Tabla 8',
   },
   fuerza_explosiva: {
-    nombre: 'Fuerza explosiva', zona: 'Piernas (salto)', unidad: 'cm',
+    zona: 'Piernas (salto)', unidad: 'cm',
     mide: 'Salto vertical: altura alcanzada en el salto, en centímetros.',
     baremo: 'AFISAL-INEFC (Rodríguez et al., 1998), Tabla 12',
   },
   vo2max: {
-    nombre: 'Resistencia aeróbica', zona: 'Corazón y pulmones', unidad: 'ml/kg/min',
+    zona: 'Corazón y pulmones', unidad: 'ml/kg/min',
     mide: 'Test de Léger (course navette 20 m): con el último nivel alcanzado se estima el VO2máx (ecuación de Léger et al., 1988).',
     baremo: 'Baremo propio de PhysicalPicking por sexo (provisional)',
   },
   flexibilidad: {
-    nombre: 'Flexibilidad', zona: 'Cadera y espalda baja', unidad: 'cm',
+    zona: 'Cadera y espalda baja', unidad: 'cm',
     mide: 'Flexión anterior del tronco (sit-and-reach), en centímetros.',
     baremo: 'AFISAL-INEFC (Rodríguez et al., 1998), Tabla 11',
   },
   equilibrio: {
-    nombre: 'Equilibrio', zona: 'Pie de apoyo', unidad: 'intentos',
+    zona: 'Pie de apoyo', unidad: 'intentos',
     mide: 'Equilibrio monopodal sin visión: número de intentos en 1 minuto, suma de ambas piernas (a menos intentos, mejor).',
     baremo: 'AFISAL-INEFC (Rodríguez et al., 1998), Tabla 9',
   },
@@ -131,7 +131,7 @@ export function detalleCapacidades(flujo, familiaId = null) {
 
   return ORDEN_CAPACIDADES.map((id, i) => {
     const info = INFO_CAPACIDAD[id];
-    const cap = CAPACIDADES.find(c => c.id === id);
+    const cap = CAPACIDADES_FISICAS.find(c => c.id === id);
     const m = modulos[`fisica_${id}`];
     const nivel = niveles[id] ?? null;
     const bruto = m?.resultadoEvaluacion?.valor;
@@ -153,11 +153,13 @@ export function detalleCapacidades(flujo, familiaId = null) {
     const ni = NIVELES.indexOf(nivel);
     const nivelObjetivo = familia ? NIVEL_MINIMO[demanda] : (ni >= 0 && ni < NIVELES.length - 1 ? NIVELES[ni + 1] : null);
     const umbral = umbralParaNivel(baremo, grupo, nivelObjetivo, info.unidad);
-    const dif = diferencia(valor, umbral, baremo?.direccion);
+    // Con redondeo del baremo, la diferencia se calcula sobre el mismo valor que se clasificó.
+    const valorComparado = valor != null && baremo?.redondeo === 'entero' ? Math.round(valor) : valor;
+    const dif = diferencia(valorComparado, umbral, baremo?.direccion);
     const legerNecesario = id === 'vo2max' && umbral ? nivelLegerPara(umbral.valor) : null;
 
     return {
-      id, num: i + 1, ...info,
+      id, num: i + 1, nombre: cap.nombre, ...info,
       nivel, nivelIndex: ni,
       valor, valorTexto: valor == null ? 'Sin dato' : `${fmt(valor)} ${info.unidad}`,
       palier: id === 'vo2max' ? (m?.resultadoEvaluacion?.detalle?.nivel ?? m?.resultadoEvaluacion?.palier ?? null) : null,

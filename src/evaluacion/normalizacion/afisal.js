@@ -11,6 +11,10 @@
  * Alto y Muy alto; en menor_mejor, [inf. Alto, inf. Medio, inf. Bajo, X+1 de "Muy bajo >X"].
  * Correcciones a la Tabla 9 (erratas de origen): en hombres "Muy bajo <10/<12" se interpreta como ">10/>12"; en hombres 25-34 el
  * solape Medio 5-8 / Alto 2-7 se resuelve asignando 7-8 a Medio y 2-4 a Alto.
+ * Tabla 12 (erratum de origen, R-BAR-01, 2026-10): en hombres 25-34 el PDF imprime Medio 49-54 y Alto 54-60; se aplica el mismo criterio
+ * (la banda Medio impresa se conserva y Alto se recorta): 54 cm es Medio y Alto parte en 55 cm.
+ * Redondeo (R-BAR-03, 2026-10): dinamometría, salto y flexibilidad se redondean al entero más cercano antes de clasificar, porque las tablas
+ * se publican en enteros (ver `redondeo` en baremos.js). El equilibrio es un conteo y no lo necesita.
  * Protocolo bilateral: dinamometría y equilibrio se baremizan sobre la SUMA de ambos lados (mejor intento por mano; intentos por pierna).
  */
 
@@ -40,11 +44,12 @@ export const BAREMOS_AFISAL = [
   {
     id: 'afisal_dinamometria',
     capacidad: 'fuerza',
-    version: '1.0-afisal',
+    version: '1.1-afisal',
     fuente: FUENTE_BAREMO('Tabla 8, fuerza maxima de prension (kg)'),
     tipo: 'cortes_ordenados',
     direccion: 'mayor_mejor',
     limite: 'inferior_inclusivo',
+    redondeo: 'entero',
     grupos: grupos2(
       { m: [72, 85, 98, 112], f: [39, 50, 61, 73] },
       { m: [69, 81, 93, 106], f: [32, 44, 56, 69] },
@@ -53,24 +58,26 @@ export const BAREMOS_AFISAL = [
   {
     id: 'afisal_salto_vertical',
     capacidad: 'fuerza_explosiva',
-    version: '1.0-afisal',
+    version: '1.2-afisal',
     fuente: FUENTE_BAREMO('Tabla 12, salto vertical (cm)'),
     tipo: 'cortes_ordenados',
     direccion: 'mayor_mejor',
     limite: 'inferior_inclusivo',
+    redondeo: 'entero',
     grupos: grupos2(
       { m: [46, 53, 60, 68], f: [30, 36, 42, 49] },
-      { m: [44, 49, 54, 61], f: [26, 33, 41, 50] },
+      { m: [44, 49, 55, 61], f: [26, 33, 41, 50] },
     ),
   },
   {
     id: 'afisal_sit_and_reach',
     capacidad: 'flexibilidad',
-    version: '1.0-afisal',
+    version: '1.1-afisal',
     fuente: FUENTE_BAREMO('Tabla 11, flexibilidad anterior del tronco (cm)'),
     tipo: 'cortes_ordenados',
     direccion: 'mayor_mejor',
     limite: 'inferior_inclusivo',
+    redondeo: 'entero',
     grupos: grupos2(
       { m: [23, 32, 40, 50], f: [31, 38, 45, 53] },
       { m: [20, 28, 37, 47], f: [28, 36, 44, 53] },

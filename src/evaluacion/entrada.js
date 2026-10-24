@@ -6,10 +6,10 @@
  *  - S (Responsabilidad única): única razón de cambio es la forma del estado de la UI que alimenta el flujo.
  *  - D (Inversión de dependencias): aísla el acoplamiento con el estado de React; el resto del flujo no conoce la UI.
  * Notas: copia los cuestionarios de captura (complementarias, ipaq, psqi, parq, breq, barreras) hacia `cuestionarios.*` y el nivel de Léger hacia
- * `leger`. El nivel se acepta en `realesF.resistencia` o `leger.palier` (admite medios niveles, p. ej. 3.5); valores > 21 en `realesF.resistencia`
+ * `leger`. El nivel se acepta en `realesF.resistencia` o `leger.palier` (entero de 1 a 21, según esNivelLegerValido); valores > 21 en `realesF.resistencia`
  * son la antigua resistencia en metros (retirada) y se ignoran.
  */
-import { esNivelLegerValido } from '../logic/modelo.js';
+import { esNivelLegerValido } from './capacidades.js';
 import { CONDICIONES } from '../logic/parq.js';
 
 /** Convierte las respuestas planas de StepParq { g1..g7, c1..c10, subpreguntas: 'si'|'no' } al formato anidado booleano de MODULO_PARQ.

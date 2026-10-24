@@ -10,6 +10,8 @@
 
 import { jsPDF } from 'jspdf';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad.js';
+import { textoRecomendacion } from '../evaluacion/decision/ranking.js';
+import { CAPACIDADES_FISICAS, ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades.js';
 
 const MORADO = [91, 63, 224];
 const MORADO_OSC = [44, 27, 107];
@@ -26,21 +28,8 @@ const ANCHO = 210 - MARGEN * 2;
 const LIMITE_Y = 258;      // el robot de la esquina ocupa la franja inferior derecha
 const NIVEL_INDICE = { 'Muy bajo': 1, Bajo: 2, Medio: 3, Alto: 4, 'Muy alto': 5 };
 
-const ETIQUETAS_FISICAS = {
-  fuerza: 'Fuerza prensil',
-  fuerzaExp: 'Fuerza explosiva',
-  resistencia: 'Resistencia aeróbica',
-  flexibilidad: 'Flexibilidad',
-  equilibrio: 'Equilibrio',
-};
-
-const ETIQUETAS_CAPACIDAD = {
-  fuerza: 'Fuerza',
-  fuerza_explosiva: 'Fuerza explosiva',
-  vo2max: 'Resistencia aeróbica',
-  flexibilidad: 'Flexibilidad',
-  equilibrio: 'Equilibrio',
-};
+// Nombre por clave de captura (`campo`), que es la que usan los consolidados de registros anteriores.
+const ETIQUETAS_FISICAS = Object.fromEntries(CAPACIDADES_FISICAS.map(c => [c.campo, c.nombre]));
 
 /** Formatea una fecha ISO en formato local legible.
  * @param {string} iso - fecha en formato ISO 8601.
@@ -96,9 +85,13 @@ export function resumirRegistro(registro = {}) {
     }))
     ?? [];
   const cons = registro.consolidado || {};
-  const variables = Object.entries(cons)
-    .map(([id, c]) => ({ id, nombre: ETIQUETAS_FISICAS[id] ?? id, total: totalConsolidado(c) }))
-    .filter(v => v.total !== null && v.total !== undefined);
+  // Registros actuales: nivel por capacidad del motor. Registros anteriores: puntaje consolidado guardado.
+  const nivelesMotor = registro.evaluacion?.etapas?.decisionEngine?.entrada?.capacidades;
+  const variables = nivelesMotor
+    ? CAPACIDADES_FISICAS.map(c => ({ id: c.id, nombre: c.nombre, nivel: nivelesMotor[c.id] ?? null }))
+    : Object.entries(cons)
+      .map(([id, c]) => ({ id, nombre: ETIQUETAS_FISICAS[id] ?? id, total: totalConsolidado(c) }))
+      .filter(v => v.total !== null && v.total !== undefined);
   const ipaq = registro.ipaq?.resultado;
   const psqi = registro.psqi?.resultado;
   const breq = registro.breq?.resultado;
@@ -128,7 +121,7 @@ export function resumirRegistro(registro = {}) {
     // La recomendación proviene del DecisionEngine; el texto del modelo heredado solo se usa en registros sin ranking del motor.
     recomendacion: registro.evaluacion?.etapas?.ranking?.familias && 'recomendada' in registro.evaluacion.etapas.ranking
       ? texto(registro.evaluacion.etapas.ranking.recomendada
-        ? `${registro.evaluacion.etapas.ranking.recomendada.nombre ?? registro.evaluacion.etapas.ranking.recomendada.id} (${registro.evaluacion.etapas.ranking.recomendada.porcentaje ?? '—'}% de compatibilidad).`
+        ? `${textoRecomendacion(registro.evaluacion.etapas.ranking)}.`
         : '', '')
       : texto(registro.interpretacion?.recomendacion, ''),
     planAdaptacion: registro.evaluacion?.etapas?.planAdaptacion?.aplica ? registro.evaluacion.etapas.planAdaptacion : null,
@@ -404,7 +397,9 @@ function bannerParticipante(L, s, n) {
 function bloquePerfilFisico(L, s, cuerpo) {
   const caps = cuerpo?.capacidades?.length
     ? cuerpo.capacidades.map(c => ({ nombre: c.nombre, etiqueta: c.nivel ?? 'Sin dato', fraccion: (NIVEL_INDICE[c.nivel] ?? 0) / 5, color: hexARgb(c.color) }))
-    : s.variables.map(v => ({ nombre: v.nombre, etiqueta: `${Math.round(Number(v.total) || 0)}%`, fraccion: (Number(v.total) || 0) / 100, color: MORADO }));
+    : s.variables.map(v => ('nivel' in v
+      ? { nombre: v.nombre, etiqueta: v.nivel ?? 'Sin dato', fraccion: (NIVEL_INDICE[v.nivel] ?? 0) / 5, color: MORADO }
+      : { nombre: v.nombre, etiqueta: `${Math.round(Number(v.total) || 0)}%`, fraccion: (Number(v.total) || 0) / 100, color: MORADO }));
   if (caps.length === 0 && !cuerpo?.imagen) return;
 
   const conImagen = Boolean(cuerpo?.imagen);

@@ -20,17 +20,18 @@ const DIAS = [0, 1, 2, 3, 4, 5, 6, 7];
  * @param {Function} props.onChange - Recibe el nuevo valor.
  * @returns {JSX.Element} */
 function TiempoDia({ id, minutos, noSabe, onChange }) {
-  const horas = typeof minutos === 'number' ? Math.floor(minutos / 60) : '';
-  const mins = typeof minutos === 'number' ? minutos % 60 : '';
+  // El 0 se muestra vacío (con placeholder) para que el campo se pueda borrar en celulares.
+  const horas = typeof minutos === 'number' && minutos >= 60 ? Math.floor(minutos / 60) : '';
+  const mins = typeof minutos === 'number' && minutos % 60 !== 0 ? minutos % 60 : '';
   return (
     <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
       <label className="field-label" style={{ minWidth: '7rem' }}>
         Horas
         <input
-          className="field-input" type="number" min={0} max={16} step={1}
+          className="field-input" type="number" inputMode="numeric" placeholder="0" min={0} max={16} step={1}
           value={horas} disabled={noSabe}
           onChange={e => {
-            const h = e.target.value === '' ? 0 : Number(e.target.value);
+            const h = Math.min(16, Math.max(0, Number(e.target.value) || 0));
             const m = typeof minutos === 'number' ? minutos % 60 : 0;
             onChange(id, h * 60 + m);
           }}
@@ -39,10 +40,10 @@ function TiempoDia({ id, minutos, noSabe, onChange }) {
       <label className="field-label" style={{ minWidth: '7rem' }}>
         Minutos
         <input
-          className="field-input" type="number" min={0} max={59} step={1}
+          className="field-input" type="number" inputMode="numeric" placeholder="0" min={0} max={59} step={1}
           value={mins} disabled={noSabe}
           onChange={e => {
-            const m = e.target.value === '' ? 0 : Number(e.target.value);
+            const m = Math.min(59, Math.max(0, Number(e.target.value) || 0));
             const h = typeof minutos === 'number' ? Math.floor(minutos / 60) : 0;
             onChange(id, h * 60 + m);
           }}

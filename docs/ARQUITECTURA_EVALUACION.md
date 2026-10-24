@@ -85,6 +85,8 @@ reproducirla (`test/compatibilidad.test.js` la fija).
   cirugía musculoesquelética o dolor articular recurrente (preguntas
   complementarias) → alerta de adaptación y recuperación previa antes de iniciar
   nuevamente un deporte. Solo alerta.
+- **R-BAR-01 · Erratum Tabla 12 (salto vertical, hombres 25-34).** El PDF imprime Medio 49-54 y Alto 54-60. Se aplica el criterio ya usado en la Tabla 9 (la banda impresa de Medio se conserva y Alto se recorta): 54 cm es Medio y Alto parte en 55 cm. `test/baremos.test.js` fija todos los baremos AFISAL, la clasificación Léger de la muestra y la matriz contra sus fuentes.
+- **R-BAR-02 · Ecuación de Léger y fundamento del baremo.** `VO2máx = 6,0 × V − 27,4` (Léger et al., 1988, adultos); los cortes se desplazan −3,0 y ningún nivel cambia. El método z coincide con el de AFISAL-INEFC. Detalle y limitaciones: `FUNDAMENTO_BAREMO_RESISTENCIA.md`.
 - Orden del ranking: familias firmes primero; dentro de cada grupo, el orden
   descrito arriba.
 
@@ -92,9 +94,17 @@ reproducirla (`test/compatibilidad.test.js` la fija).
 sustituible con `registrarDecisionEngine()` o `decisionEngine: null`). La entrada
 sigue el contrato de `DecisionEngine.evaluar()`: `{ capacidades, sexo, ipaq, psqi, parq, antecedentes, experiencias, leger, informativas }`.
 
-## Cálculo heredado
+## Catálogo de capacidades y registros anteriores
 
-`logic/modelo.js` (consolidado base/ajustes, radar, perfiles Resistencia/Potencia
-y ranking de `DEPORTES`) se conserva solo como desglose descriptivo y para el
-historial guardado. Las pantallas de perfil, informe y recomendación consumen el
-ranking del DecisionEngine (13 familias).
+`evaluacion/capacidades.js` es la única declaración de las cinco capacidades físicas: nombre, unidad, rango de captura, dirección, prueba y baremo.
+La captura (`VARIABLES_CAPTURA`), los módulos de evaluación, el informe y los PDF leen de ahí. `id` es el del motor y `campo` la clave de `realesF`
+(`fuerzaExp`, `resistencia`), que se conserva para no invalidar registros guardados. El backend mantiene una copia de los rangos
+(`DEFINICIONES_FISICAS`); `test/baremos.test.js` verifica que coincidan y que los cinco niveles de cada baremo sean alcanzables.
+
+`evaluacion/antropometria.js` calcula IMC e ICC; se informan, pero no modifican niveles ni recomendación. El estado vacío del análisis y la
+reconstrucción desde un registro están en `utils/analisisRegistro.js`.
+
+**R-MIG-01 · Retiro del cálculo heredado (2026-10).** `logic/modelo.js` (puntajes 0-100, ajustes antropométricos de −8/−6 sin fuente, perfiles
+Resistencia/Potencia, ranking de 15 actividades e interpretación) se eliminó. Los registros nuevos guardan solo `evaluacion`; el perfil físico
+se muestra por nivel. Los registros anteriores se leen tal como se guardaron (Historial y PDF muestran su consolidado y su ranking antiguos) y el
+backend sigue exigiendo el bloque heredado cuando un registro no trae `evaluacion`. Despliegue: primero el backend y después el frontend.

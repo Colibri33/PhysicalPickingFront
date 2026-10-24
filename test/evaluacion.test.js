@@ -16,7 +16,8 @@ import { construirEntradaDecisionEngine } from '../src/evaluacion/decision/decis
 import { FAMILIAS_DEPORTIVAS } from '../src/evaluacion/decision/familias.js';
 import { MODULO_PARQ } from '../src/evaluacion/modulos/seguridad/parq.js';
 import { MODULO_COMPLEMENTARIAS } from '../src/evaluacion/modulos/complementarias/physicalpicking.js';
-import { calcularConsolidado, estadoAnalisisInicial, calcularICC, clasificarICC } from '../src/logic/modelo.js';
+import { estadoAnalisisInicial } from '../src/utils/analisisRegistro.js';
+import { calcularICC, clasificarICC } from '../src/evaluacion/antropometria.js';
 import { migrarRegistroLegado, retirarGrasaMuscular } from '../src/logic/registroLegado.js';
 
 const AHORA = '2026-10-05T00:00:00.000Z';
@@ -229,9 +230,9 @@ test('entrada: complementarias y leger se sincronizan; vo2max se califica con ba
   const r = ejecutarFlujoEvaluacion(entrada, { ahora: AHORA }).etapas.modulos.fisica_vo2max;
   assert.equal(r.resultadoEvaluacion.palier, 8);
   assert.equal(r.estado, 'completo');
-  // Palier 8, nivelEntero 8, V = 12 km/h, VO2 = 6×12 − 24,4 = 47,6. Mujer 22: Muy alto (>46,25).
+  // Palier 8, nivelEntero 8, V = 12 km/h, VO2 = 6×12 − 27,4 = 44,6. Mujer 22: Muy alto (>43,25).
   assert.equal(r.nivel, 'Muy alto');
-  assert.equal(r.resultadoEvaluacion.valor, 47.6);
+  assert.equal(r.resultadoEvaluacion.valor, 44.6);
 });
 
 test('AFISAL por defecto: dinamometria, salto, flexibilidad y equilibrio califican por sexo/edad', () => {
@@ -295,8 +296,8 @@ test('resistencia aeróbica: solo se acepta el nivel máximo alcanzado como ente
   for (const invalido of ['3.7', '3.5', '0', '22', '-1']) {
     assert.equal(vo2(invalido).estado, 'sin_datos', `${invalido} debe quedar sin dato`);
   }
-  assert.equal(vo2('1').resultadoEvaluacion.valor, 6 * 8.5 - 24.4);
-  assert.equal(vo2('21').resultadoEvaluacion.valor, 6 * 18.5 - 24.4);
+  assert.equal(vo2('1').resultadoEvaluacion.valor, 6 * 8.5 - 27.4);
+  assert.equal(vo2('21').resultadoEvaluacion.valor, 6 * 18.5 - 27.4);
 });
 
 test('AFISAL: hombre 28 años con 100 kg y 55 cm → Alto en ambas', () => {
@@ -354,7 +355,7 @@ test('AFISAL: equilibrio 1 intento → Muy alto; 12 intentos (mujer 22) → Muy 
   assert.equal(ejecutarFlujoEvaluacion(datos(12), { ahora: AHORA }).etapas.modulos.fisica_equilibrio.nivel, 'Muy bajo');
 });
 
-test('AFISAL: sexo sin grupo ("otro") → nivel null con advertencia', () => {
+test('AFISAL: registro heredado con sexo "otro" (ya no se captura) → nivel null con advertencia', () => {
   const datos = {
     participante: { ...participante, genero: 'otro' },
     realesF, antropometricas: {}, cuestionarios: {},
@@ -370,13 +371,12 @@ test('todos los modulos requeridos estan registrados', () => {
     assert.ok(ids.includes(id), id);
 });
 
-test('modelo heredado: consolidado con ajuste por grasa visceral', () => {
+test('estado inicial: sin campos retirados y con las claves de captura del catálogo', () => {
   const e = estadoAnalisisInicial();
   assert.ok(!('cognitivas' in e) && !('corporales' in e) && 'antropometricas' in e);
+  assert.ok(!('fisicas' in e), 'los puntajes 0-100 del cálculo heredado ya no existen');
   assert.ok(!('velocidad' in e.realesF) && !('agilidad' in e.realesF) && !('coordinacion' in e.realesF));
-  const c = calcularConsolidado({ resistencia: 50 }, { grasaVisc: '12' });
-  assert.deepEqual(Object.keys(c.resistencia).sort(), ['ajAntrop', 'base', 'total']);
-  assert.equal(c.resistencia.ajAntrop, -8);
+  assert.deepEqual(Object.keys(e.realesF).sort(), ['equilibrio', 'flexibilidad', 'fuerza', 'fuerzaExp', 'resistencia']);
 });
 
 test('registro legado: corporales → antropometricas, cognitivo a _legado, idempotente', () => {
@@ -543,8 +543,8 @@ test('detalleCapacidades: valor medido, referencia del mismo baremo y diferencia
   assert.equal(equipo.equilibrio.nivel, 'Bajo');
   assert.equal(equipo.equilibrio.umbral.texto, '≤ 6 intentos');
   assert.equal(equipo.equilibrio.diferencia.texto, '1 intento de más');
-  // VO2: Léger 4 → 35,6 ml/kg/min (Bajo); Alta exige ≥ 48,6 ≈ nivel 9 del Léger.
-  assert.equal(equipo.vo2max.umbral.texto, '≥ 48,6 ml/kg/min');
+  // VO2: Léger 4 → 32,6 ml/kg/min (Bajo); Alta exige ≥ 45,6 ≈ nivel 9 del Léger.
+  assert.equal(equipo.vo2max.umbral.texto, '≥ 45,6 ml/kg/min');
   assert.equal(equipo.vo2max.legerNecesario, 9);
   // Sin familia: la referencia es el siguiente nivel del baremo.
   const solo = Object.fromEntries(detalleCapacidades(flujo, null).map(d => [d.id, d]));

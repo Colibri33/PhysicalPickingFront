@@ -7,13 +7,7 @@
  *  - I (Segregación de interfaces): cada componente recibe solo el plan o las alertas.
  * Notas: se muestra cuando ninguna familia es recomendación firme (R-DEC-03); alerta R-SEG-04.
  */
-const ETIQUETAS_CAPACIDAD = {
-  fuerza: 'Fuerza prensil',
-  fuerza_explosiva: 'Fuerza explosiva',
-  vo2max: 'Resistencia aeróbica',
-  flexibilidad: 'Flexibilidad',
-  equilibrio: 'Equilibrio',
-};
+import { ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades';
 
 /** Alerta R-SEG-04 por antecedente de lesión.
  * @param {Object} props

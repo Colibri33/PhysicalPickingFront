@@ -5,13 +5,12 @@
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): única razón de cambio es la generación de datos de demostración.
  *  - D (Inversión de dependencias): el generador aleatorio `rng` se inyecta (por defecto Math.random) y los catálogos provienen de logic/*.
- * Notas: no guarda nada ni modifica el motor; devuelve un objeto con la forma de `estadoAnalisisInicial()`. Los valores salen de rangos
+ * Notas: no guarda nada ni modifica el motor; devuelve un objeto con la forma de `estadoAnalisisInicial()` (utils/analisisRegistro). Los valores salen de rangos
  * plausibles por sexo y de un nivel de condición común (f, 0-1): un participante activo puntúa alto en casi todo y uno sedentario, bajo.
  */
 
-import {
-  VARS_FISICAS, estadoAnalisisInicial, calcularIMC, calcularICC, normalizarValor,
-} from '../logic/modelo.js';
+import { estadoAnalisisInicial } from './analisisRegistro.js';
+import { calcularIMC, calcularICC } from '../evaluacion/antropometria.js';
 import { todasVisibles, pendientes } from '../logic/parq.js';
 import { ITEMS_BREQ, SUBESCALAS_BREQ } from '../logic/breq.js';
 import { ITEMS_BARRERAS } from '../logic/barreras.js';
@@ -137,17 +136,11 @@ export function generarAnalisisDemo(rng = Math.random, sexo = null) {
   };
   const leger = { palier: String(palier) };
 
-  /* Misma normalización 0-100 que aplica StepFisicas al continuar. */
-  const fisicas = {};
-  for (const v of VARS_FISICAS) {
-    fisicas[v.id] = normalizarValor(parseFloat(realesF[v.id]), v.minimo, v.maximo, v.direccion);
-  }
-
   return {
     ...estadoAnalisisInicial(),
     participante,
     parq: { respuestas: parqRespuestas, detalles: {} },
     complementarias, breq, barreras, ipaq, psqi,
-    leger, realesF, fisicas, antropometricas,
+    leger, realesF, antropometricas,
   };
 }

@@ -3,18 +3,16 @@
  * @description Paso de la batería física: dinamometría, salto, flexibilidad, equilibrio bilateral y resistencia aeróbica (Léger).
  *
  * Principios SOLID aplicados:
- *  - S (Responsabilidad única): captura, valida y normaliza los valores de la batería; los rangos y la normalización se delegan a logic/modelo.
- *  - O (Abierto/Cerrado): una variable estándar nueva se agrega a VARS_FISICAS y se renderiza con VariableInput sin modificar este paso.
- *  - D (Inversión de dependencias): rangos, validación y autorización PAR-Q+ provienen de logic/modelo y logic/parq.
+ *  - S (Responsabilidad única): captura y valida los valores de la batería; los rangos y las reglas de captura se delegan al catálogo de capacidades.
+ *  - O (Abierto/Cerrado): una variable estándar nueva se agrega al catálogo de capacidades y se renderiza con VariableInput sin modificar este paso.
+ *  - D (Inversión de dependencias): rangos y validación provienen de evaluacion/capacidades y la autorización PAR-Q+ de logic/parq.
  * Notas: el Léger registra el último nivel máximo alcanzado (entero) y solo se exige si el PAR-Q+ lo autoriza; el VO2máx se estima y califica en evaluacion/normalizacion/leger.js.
  */
 import { useState } from 'react';
 import Icono from './Icono';
 import VariableInput from './VariableInput';
-import { VARS_FISICAS, EQUILIBRIO_POR_PIERNA_MAX, FUERZA_POR_MANO_MAX, validarFormularioVariables, normalizarValor, esNivelLegerValido } from '../logic/modelo';
+import { VARIABLES_CAPTURA, EQUILIBRIO_POR_PIERNA_MAX, FUERZA_POR_MANO_MAX, NIVEL_LEGER_MAX, validarFormularioVariables, esNivelLegerValido } from '../evaluacion/capacidades';
 import { evaluarParq } from '../logic/parq';
-
-const LEGER_PALIER_MAX = 21;
 
 /** Entrada de fuerza prensil por mano con suma derivada.
  * @param {Object} props
@@ -26,7 +24,7 @@ function InputFuerza({ realesF, onCambio, error }) {
   const der = realesF.fuerzaDer;
   const izq = realesF.fuerzaIzq;
   const total = realesF.fuerza;
-  const v = VARS_FISICAS.find(x => x.id === 'fuerza');
+  const v = VARIABLES_CAPTURA.find(x => x.id === 'fuerza');
   return (
     <div className={`norm-row${error ? ' norm-row--error' : ''}`}>
       <div className="norm-meta">
@@ -70,7 +68,7 @@ function InputEquilibrio({ realesF, onCambio, error }) {
   const der = realesF.equilibrioDer;
   const izq = realesF.equilibrioIzq;
   const total = realesF.equilibrio;
-  const v = VARS_FISICAS.find(x => x.id === 'equilibrio');
+  const v = VARIABLES_CAPTURA.find(x => x.id === 'equilibrio');
   return (
     <div className={`norm-row${error ? ' norm-row--error' : ''}`}>
       <div className="norm-meta">
@@ -104,7 +102,7 @@ function InputEquilibrio({ realesF, onCambio, error }) {
   );
 }
 
-/** Formulario de la batería física con validación y normalización a 0-100.
+/** Formulario de la batería física con validación de los valores capturados.
  * @param {Object} props
  * @param {Object} props.analisis - análisis actual (realesF, leger, parq).
  * @param {Function} props.updateAnalisis - actualiza campos del análisis.
@@ -152,7 +150,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       setErrores(e => { const c = { ...e }; delete c[id]; delete c.equilibrio; delete c.fuerza; delete c.leger; delete c.resistencia; return c; });
     }
     // Retira la advertencia del campo modificado.
-    setAdvertencias(prev => prev.filter(a => !a.startsWith(VARS_FISICAS.find(v => v.id === id)?.nombre)));
+    setAdvertencias(prev => prev.filter(a => !a.startsWith(VARIABLES_CAPTURA.find(v => v.id === id)?.nombre)));
   }
 
   /** Guarda el nivel Léger en ambos almacenamientos (leger.palier y realesF.resistencia).
@@ -162,7 +160,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
     updateAnalisis({ leger: { palier: valor }, realesF: { ...analisis.realesF, resistencia: valor } });
   }
 
-  /** Valida todos los campos, normaliza a porcentajes y avanza. */
+  /** Valida todos los campos y avanza. */
   function handleContinuar() {
     // Valida los parciales bilaterales; la suma derivada se valida en el formulario.
     const mapaExtra = {};
@@ -182,18 +180,18 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
     }
     const { ok, errores: lista, advertencias: warns } = validarFormularioVariables(
       // El Léger se valida aparte (obligatorio solo si está autorizado).
-      VARS_FISICAS.filter(v => v.id !== 'resistencia'),
+      VARIABLES_CAPTURA.filter(v => v.id !== 'resistencia'),
       analisis.realesF,
     );
 
     const palierNum = Number(palier);
     const palierOk = !legerAutorizado || (palier !== '' && esNivelLegerValido(palierNum));
-    if (!palierOk) mapaExtra.leger = `Resistencia aeróbica (Léger): registra el nivel máximo alcanzado (número entero de 1 a ${LEGER_PALIER_MAX}).`;
+    if (!palierOk) mapaExtra.leger = `Resistencia aeróbica (Léger): registra el nivel máximo alcanzado (número entero de 1 a ${NIVEL_LEGER_MAX}).`;
 
     if (!ok || mapaExtra.equilibrio || mapaExtra.fuerza || mapaExtra.leger) {
       const mapa = { ...mapaExtra };
       lista.forEach(msg => {
-        const v = VARS_FISICAS.find(v => msg.startsWith(v.nombre));
+        const v = VARIABLES_CAPTURA.find(v => msg.startsWith(v.nombre));
         if (v) mapa[v.id] = msg;
       });
       setErrores(mapa);
@@ -203,27 +201,13 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
 
     setAdvertencias(warns);
 
-    // Normaliza a 0-100 (el clamp acota valores fuera de rango). Sin autorización, la resistencia
-    // vale 0 en el cálculo heredado y queda sin dato (sin penalización) en el flujo definitivo.
-    const fisicas = {};
-    VARS_FISICAS.forEach(v => {
-      if (v.id === 'resistencia' && !legerAutorizado) {
-        fisicas[v.id] = 0;
-        return;
-      }
-      fisicas[v.id] = normalizarValor(
-        parseFloat(v.id === 'resistencia' ? palier : analisis.realesF[v.id]),
-        v.minimo, v.maximo, v.direccion
-      );
-    });
-
-    // Espeja el nivel Léger en ambos almacenamientos.
-    updateAnalisis({ realesF: { ...analisis.realesF, resistencia: legerAutorizado ? palier : '' }, fisicas });
+    // Sin autorización del PAR-Q+, la resistencia queda sin dato (no penaliza en el flujo de evaluación).
+    updateAnalisis({ realesF: { ...analisis.realesF, resistencia: legerAutorizado ? palier : '' } });
 
     if (warns.length > 0) {
-      mostrarToast(`${warns.length} valor(es) fuera del rango de referencia — se aplicó clamp.`, 'info');
+      mostrarToast(`${warns.length} valor(es) fuera del rango de captura; se califican tal como los ingresaste.`, 'info');
     } else {
-      mostrarToast('Variables fisicas registradas y normalizadas.', 'success');
+      mostrarToast('Variables fisicas registradas.', 'success');
     }
     onContinuar();
   }
@@ -240,13 +224,13 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       <div className="rango-note">
         <span className="rango-note-icon"><Icono n="info" /></span>
         <span>
-          Los rangos de referencia cubren el espectro de población general activa.
-          Valores fuera del rango se aceptan como advertencia y se normalizan al límite más cercano.
+          Los rangos de captura solo evitan errores de digitación. Un valor fuera del rango se acepta con una advertencia
+          y se califica tal como lo ingresaste.
         </span>
       </div>
 
       <div className="norm-formulario">
-        {VARS_FISICAS.filter(v => v.id !== 'resistencia').map(v => (
+        {VARIABLES_CAPTURA.filter(v => v.id !== 'resistencia').map(v => (
           v.id === 'equilibrio'
             ? <InputEquilibrio key={v.id} realesF={analisis.realesF} onCambio={handleChange} error={errores[v.id]} />
             : v.id === 'fuerza'
@@ -265,11 +249,11 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
         <div className={`norm-row mt-lg${errores.leger ? ' norm-row--error' : ''}`}>
           <div className="norm-meta">
             <span className="norm-name">Resistencia aeróbica (Léger course navette 20 m) — nivel máximo alcanzado</span>
-            <span className="norm-rango">1 – {LEGER_PALIER_MAX} (número entero) · prueba máxima autorizada por PAR-Q+</span>
+            <span className="norm-rango">1 – {NIVEL_LEGER_MAX} (número entero) · prueba máxima autorizada por PAR-Q+</span>
           </div>
           <div className="norm-input-row">
             <input
-              className="norm-input" type="number" min={1} max={LEGER_PALIER_MAX} step={1}
+              className="norm-input" type="number" min={1} max={NIVEL_LEGER_MAX} step={1}
               value={palier} onChange={e => handleLeger(e.target.value)}
               aria-label="Nivel máximo Léger alcanzado"
             />
@@ -287,7 +271,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
 
       {advertencias.length > 0 && (
         <div className="warn-list">
-          <strong>Advertencias (valores fuera de rango de referencia):</strong>
+          <strong>Advertencias (valores fuera del rango de captura):</strong>
           <ul>
             {advertencias.map((a, i) => <li key={i}>{a}</li>)}
           </ul>

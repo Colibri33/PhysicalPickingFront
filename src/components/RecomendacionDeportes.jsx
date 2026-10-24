@@ -14,14 +14,7 @@ import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
 import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
 import MapaCorporalBrechas from './MapaCorporalBrechas';
 import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
-
-const ETIQUETAS_CAPACIDAD = {
-  fuerza: 'Fuerza',
-  fuerza_explosiva: 'Fuerza explosiva',
-  vo2max: 'Resistencia aeróbica',
-  flexibilidad: 'Flexibilidad',
-  equilibrio: 'Equilibrio',
-};
+import { ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades';
 
 /** Motivo de demanda según la clasificación de Mitchell.
  * @param {string} familiaId - Identificador de la familia.
@@ -56,6 +49,10 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
   const liderProvisional = recomendada && lider && lider.firme === false;
   const recomendaciones = ranking.slice(0, 5);
   const top = recomendada;
+  // Familias firmes con la misma compatibilidad y los mismos criterios de desempate: se presentan como conjunto (R-DEC-04).
+  const empatadas = flujo.etapas.ranking.empatadas ?? [];
+  const hayEmpate = empatadas.length > 1;
+  const idsEmpate = new Set(hayEmpate ? empatadas.map(f => f.id) : []);
   const plan = flujo.etapas.planAdaptacion;
   const [familiaSel, setFamiliaSel] = useState(() => recomendada?.id ?? '');
 
@@ -73,12 +70,17 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
 
       {top ? (
         <div className="rec-perfil-banner" style={{ borderColor: 'var(--purple, #5B3FE0)' }}>
-          <span className="rec-perfil-etiqueta">Recomendación firme</span>
-          <span className="rec-perfil-nombre">{top.nombre ?? top.id}</span>
+          <span className="rec-perfil-etiqueta">{hayEmpate ? `Recomendación firme: ${empatadas.length} familias empatadas` : 'Recomendación firme'}</span>
+          <span className="rec-perfil-nombre">{hayEmpate ? empatadas.map(f => f.nombre ?? f.id).join(' · ') : (top.nombre ?? top.id)}</span>
           <span className="rec-perfil-pct">{top.porcentaje ?? '—'}{top.porcentaje !== null && top.porcentaje !== undefined ? '%' : ''}</span>
         </div>
       ) : (
         <PlanAdaptacion plan={plan} />
+      )}
+      {top && hayEmpate && (
+        <p className="panel-desc">
+          Estas familias tienen la misma compatibilidad y los mismos criterios de desempate: el sistema no prioriza una sobre otra.
+        </p>
       )}
       {liderProvisional && (
         <div className="ranking-disclaimer" style={{ marginBottom: '1rem' }}>
@@ -110,8 +112,8 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
               onClick={() => setFamiliaSel(familiaSel === fam.id ? '' : fam.id)}
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setFamiliaSel(familiaSel === fam.id ? '' : fam.id); } }}>
               <div className="rec-card-header">
-                <div className="rec-card-rank" style={{ background: noFirme ? '#b9b3d6' : idx === 0 ? '#5B3FE0' : idx === 1 ? '#22D3EE' : '#8b86a8' }}>
-                  #{idx + 1}
+                <div className="rec-card-rank" style={{ background: noFirme ? '#b9b3d6' : (idx === 0 || idsEmpate.has(fam.id)) ? '#5B3FE0' : idx === 1 ? '#22D3EE' : '#8b86a8' }}>
+                  #{idsEmpate.has(fam.id) ? 1 : idx + 1}
                 </div>
                 <div className="rec-card-meta">
                   <span className="rec-card-nombre">{fam.nombre ?? fam.id}</span>

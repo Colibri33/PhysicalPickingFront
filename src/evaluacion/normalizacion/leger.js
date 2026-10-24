@@ -6,10 +6,13 @@
  *  - S (Responsabilidad única): única razón de cambio es el protocolo y el baremo del test de Léger.
  *  - O (Abierto/Cerrado): el baremo se integra al registro mediante el contrato de baremos, sin modificar el motor.
  *  - D (Inversión de dependencias): depende solo de la escala NIVELES y del contrato de baremos.
- * Notas: muestra propia n=58 (41 hombres, 17 mujeres), 18-29 años. Cortes por z (media + z × DE, por sexo) según AFISAL-INEFC:
- * z < -1,5 muy bajo; -1,5 a -0,5 bajo; -0,5 a 0,5 medio; 0,5 a 1,5 alto; > 1,5 muy alto. AFISAL no incluye este test.
- * Ecuación (Léger et al., 1988, ≥ 18 años): VO2máx = 6,0 × V − 24,4, con V = 8,5 + (nivel − 1) × 0,5 km/h; constante POR VERIFICAR
- * contra el artículo original. Dato de captura: nivel máximo alcanzado (entero 1-21); de la muestra "nivel.ida" solo se usó la parte entera.
+ * Notas: muestra propia n=58 (41 hombres, 17 mujeres), 18-29 años. Cortes por z (media + z × DE muestral, por sexo) con el método de AFISAL-INEFC
+ * (Rodríguez et al., 1998, parte II): z < -1,5 muy bajo; -1,5 ≤ z < -0,5 bajo; -0,5 ≤ z ≤ 0,5 medio; 0,5 < z ≤ 1,5 alto; z > 1,5 muy alto.
+ * AFISAL no publica baremo para el test de Léger (su Tabla 13 corresponde al VO2máx estimado con caminata de 2 km), de ahí el baremo propio.
+ * Ecuación (Léger et al., 1988, adultos, edad fijada en 18): VO2máx = 6,0 × V − 27,4, con V = 8 + 0,5 × nivel = 8,5 + (nivel − 1) × 0,5 km/h
+ * (R-BAR-02, 2026-10: antes −24,4, de origen no verificado). Como el baremo es relativo a la muestra, la constante desplaza el VO2 de cada
+ * nivel y los cortes por igual: la clasificación de cada nivel no cambia (test/baremos.test.js lo comprueba). Dato de captura: nivel máximo
+ * alcanzado (entero 1-21); de la muestra "nivel.ida" solo se usó la parte entera. Fundamento completo: docs/FUNDAMENTO_BAREMO_RESISTENCIA.md.
  * BAREMO PROVISIONAL, sin validación externa: no presentar como estándar oficial ni atribuir a AFISAL-INEFC.
  */
 
@@ -20,7 +23,7 @@ export const LEGER_PARAMS = Object.freeze({
   velocidadPalier1: 8.5, // km/h
   incrementoPorPalier: 0.5, // km/h
   coeficienteVO2: 6.0,
-  constanteVO2: -24.4,
+  constanteVO2: -27.4,
   edadMin: 18,
   edadMax: 30, // población del proyecto
 });
@@ -53,16 +56,17 @@ export function nivelEnteroDeRegistro(valor) {
 }
 
 // Cortes de VO2máx por sexo (hoja Baremos del Excel): 4 cortes para 5 niveles.
-const CORTES_HOMBRES = Object.freeze([34.4109724612741, 41.4963404139207, 48.5817083665672, 55.6670763192137]);
-const CORTES_MUJERES = Object.freeze([28.8355114792635, 34.6392881401467, 40.4430648010298, 46.2468414619129]);
+// Media + z × DE de la muestra con VO2 = 6,0 × V − 27,4 (los cortes del Excel con −24,4 menos 3,0 exactos).
+const CORTES_HOMBRES = Object.freeze([31.4109724612741, 38.4963404139207, 45.5817083665672, 52.6670763192137]);
+const CORTES_MUJERES = Object.freeze([25.8355114792635, 31.6392881401467, 37.4430648010298, 43.2468414619129]);
 
 /** Baremo provisional de VO2máx (Léger) por sexo, 18-30 años. */
 export const BAREMO_LEGER_VO2MAX = Object.freeze({
   id: 'physicalpicking_vo2max',
   capacidad: 'vo2max',
-  version: '1.0-provisional',
+  version: '1.1-provisional',
   fuente: {
-    referencia: 'Baremo_Leger_PhysicalPicking.xlsx — hoja Baremos (muestra propia, método z, estilo AFISAL-INEFC). Protocolo y ecuación: Léger et al. (1988).',
+    referencia: 'Baremo_Leger_PhysicalPicking.xlsx — hoja Baremos (muestra propia, método z, estilo AFISAL-INEFC). Protocolo y ecuación de adultos: Léger et al. (1988).',
     origen: 'baremo',
   },
   tipo: 'cortes_ordenados',

@@ -16,7 +16,7 @@ export default function ParticipantStrip({ participante }) {
   const campos = [
     ['Participante', participante.nombre],
     ['Edad',   `${participante.edad} años`],
-    ['Genero', cap(participante.genero)],
+    ['Sexo', cap(participante.genero)],
     ['Perfil', cap(participante.perfil)],
     ...(participante.deporte ? [['Actividad', participante.deporte]] : []),
   ];

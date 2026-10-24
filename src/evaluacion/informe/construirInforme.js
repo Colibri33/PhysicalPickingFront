@@ -48,6 +48,7 @@ export function construirInforme({ resultados, reglas, decision, ranking, planAd
     recomendacion: ranking.familias ? {
       ranking: ranking.familias,
       recomendada: ranking.recomendada ?? null,
+      empatadas: ranking.empatadas ?? [],
       sinFamiliaCompatible: ranking.sinFamiliaCompatible ?? false,
       estado: decision.salida?.estado ?? null,
       experiencia: decision.salida?.experiencia ?? null,

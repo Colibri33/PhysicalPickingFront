@@ -44,7 +44,7 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
     if (edadNum < EDAD_MIN || edadNum > EDAD_MAX)
       return mostrarToast(`PhysicalPicking evalua unicamente participantes de ${EDAD_MIN} a ${EDAD_MAX} anos. Edad ingresada: ${edadNum}.`, 'error');
 
-    if (!p.genero)  return mostrarToast('Selecciona el genero.', 'error');
+    if (!p.genero)  return mostrarToast('Selecciona el sexo biológico.', 'error');
     if (!p.perfil)  return mostrarToast('Selecciona el tipo de perfil.', 'error');
     if (!(p.deporte || '').trim()) return mostrarToast('Ingresa la actividad o deporte del participante.', 'error');
 
@@ -75,13 +75,12 @@ export default function StepParticipante({ analisis, updateAnalisis, onContinuar
         </label>
 
         <label className="field-label">
-          Genero
+          Sexo biológico
           <select className="field-input" value={p.genero}
             onChange={e => handleChange('genero', e.target.value)}>
             <option value="">Seleccionar…</option>
             <option value="masculino">Masculino</option>
             <option value="femenino">Femenino</option>
-            <option value="otro">Otro</option>
           </select>
         </label>
 

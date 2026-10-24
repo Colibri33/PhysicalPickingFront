@@ -7,7 +7,7 @@
  *  - O (Abierto/Cerrado): un paso nuevo se incorpora agregando una entrada en TITULOS y un caso en renderPaso.
  *  - L (Sustitución de Liskov): los pasos comparten el contrato de props { mostrarToast, analisis, updateAnalisis, onContinuar } y son intercambiables.
  *  - D (Inversión de dependencias): persistencia, historial y cálculos se consumen desde authService, utils y logic, no se implementan aquí.
- * Notas: al guardar se adjunta `evaluacion`, salida trazable del flujo de src/evaluacion; el cálculo heredado (consolidado, perfiles, ranking) conserva su forma.
+ * Notas: al guardar se adjunta `evaluacion`, salida trazable del flujo de src/evaluacion; es lo único que se calcula, sin puntajes ni ranking heredados.
  */
 import { useState, useEffect, useRef } from 'react';
 import Icono from './Icono';
@@ -28,13 +28,7 @@ import ResultadosAntropometricas from './ResultadosAntropometricas';
 import ResultadosConsolidado from './ResultadosConsolidado';
 import RecomendacionDeportes from './RecomendacionDeportes';
 import Historial             from './Historial';
-import {
-  estadoAnalisisInicial,
-  calcularConsolidado,
-  calcularPerfilesDeportivos,
-  calcularRankingDeportes,
-  generarInterpretacion,
-} from '../logic/modelo';
+import { estadoAnalisisInicial } from '../utils/analisisRegistro';
 import { evaluarParq } from '../logic/parq';
 import { calcularBreq } from '../logic/breq';
 import { calcularBarreras } from '../logic/barreras';
@@ -59,7 +53,7 @@ const TITULOS = {
   8:  ['Evaluacion',   'Barreras hacia la actividad física (BBAQ-21)'],
   9:  ['Evaluacion',   'Batería física'],
   10: ['Analisis',     'Perfil fisico'],
-  11: ['Analisis',     'Ajustes antropometricos'],
+  11: ['Analisis',     'Composicion corporal'],
   12: ['Analisis',     'Informe final'],
   13: ['Resultado',    'Recomendacion de deportes'],
   [PASO_HISTORIAL]: ['Registros', 'Historial'],
@@ -152,11 +146,7 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
 
     setGuardando(true);
     try {
-      const consolidado        = calcularConsolidado(analisis.fisicas, analisis.antropometricas);
-      const perfilesDeportivos = calcularPerfilesDeportivos(consolidado, analisis.antropometricas);
-      const rankingDeportes    = calcularRankingDeportes(perfilesDeportivos);
-      const interpretacion     = generarInterpretacion(consolidado, perfilesDeportivos, rankingDeportes);
-      const evaluacion         = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
+      const evaluacion = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
 
       const registro = {
         id: Date.now(),
@@ -171,13 +161,8 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
         psqi:     { ...(analisis.psqi ?? { respuestas: {} }),     resultado: calcularPsqi((analisis.psqi ?? {}).respuestas ?? {}) },
         leger:    { ...(analisis.leger ?? { palier: '' }) },
         realesF:    { ...analisis.realesF },
-        fisicas:    { ...analisis.fisicas },
         antropometricas: { ...analisis.antropometricas },
         cuestionarios:   { ...analisis.cuestionarios },
-        consolidado,
-        perfilesDeportivos,
-        rankingDeportes: rankingDeportes.slice(0, 5),
-        interpretacion,
         evaluacion,
       };
 

@@ -14,7 +14,7 @@
  */
 
 import { esNivelValido } from '../niveles.js';
-import { CAPACIDADES } from '../modulos/fisicas.js';
+import { CAPACIDADES_FISICAS } from '../capacidades.js';
 
 let motorRegistrado = null;
 
@@ -42,7 +42,7 @@ const CATEGORIAS_IPAQ = ['Bajo', 'Moderado', 'Alto'];
  * @returns {Object} entrada del motor. */
 export function construirEntradaDecisionEngine(perfil, reglas) {
   const capacidades = {};
-  for (const c of CAPACIDADES) {
+  for (const c of CAPACIDADES_FISICAS) {
     const nivel = perfil.compatibilidad.capacidades[c.id]?.nivel ?? null;
     capacidades[c.id] = c.requiereAutorizacion === 'prueba_maxima' && !reglas.pruebaMaxima.autorizada ? null : nivel;
   }
@@ -65,7 +65,7 @@ export function construirEntradaDecisionEngine(perfil, reglas) {
  * @returns {{ok: boolean, errores: string[]}} resultado de la validación. */
 export function validarEntradaDecisionEngine(entrada) {
   const errores = [];
-  for (const c of CAPACIDADES) {
+  for (const c of CAPACIDADES_FISICAS) {
     if (!(c.id in entrada.capacidades)) errores.push(`Falta la capacidad "${c.id}".`);
     else if (!esNivelValido(entrada.capacidades[c.id])) errores.push(`Nivel invalido para "${c.id}".`);
   }

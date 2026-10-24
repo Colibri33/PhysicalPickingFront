@@ -5,12 +5,12 @@
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): única razón de cambio es la evaluación de las variables antropométricas.
  *  - L (Sustitución de Liskov): cumple el contrato de módulo de ejecutarModulo.
- *  - D (Inversión de dependencias): reutiliza calcularIMC, calcularICC y RANGOS_ANTROPOMETRICOS de logic/modelo.js y el validador genérico.
+ *  - D (Inversión de dependencias): reutiliza calcularIMC, calcularICC y RANGOS_ANTROPOMETRICOS de evaluacion/antropometria.js y el validador genérico.
  * Notas: no entra al porcentaje de compatibilidad (DESTINO.INFORMATIVA). IMC según categorías OMS; ICC según cortes WHO 2008
  * (icc.pdf: ≥ 0,90 masculino, ≥ 0,85 femenino). Baremos definitivos pendientes.
  */
 
-import { calcularIMC, calcularICC, clasificarICC, RANGOS_ANTROPOMETRICOS } from '../../logic/modelo.js';
+import { calcularIMC, calcularICC, clasificarICC, RANGOS_ANTROPOMETRICOS } from '../antropometria.js';
 import { ORIGEN, TIPO_MODULO, DESTINO, ESTADO_MODULO } from '../trazabilidad.js';
 import { validarItems } from '../validacion/validarRespuestas.js';
 

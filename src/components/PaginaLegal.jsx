@@ -109,7 +109,7 @@ function PoliticaPrivacidad() {
       <Seccion titulo="2. Que datos recopila PhysicalPicking">
         <ul>
           <li><strong>Datos de cuenta:</strong> nombre, correo electronico, contraseña (almacenada como hash, nunca en texto plano).</li>
-          <li><strong>Datos del participante evaluado:</strong> nombre, edad (18-30 años), genero, tipo de perfil, actividad o deporte.</li>
+          <li><strong>Datos del participante evaluado:</strong> nombre, edad (18-30 años), sexo biológico, tipo de perfil, actividad o deporte.</li>
           <li><strong>Datos de las pruebas:</strong> mediciones fisicas (fuerza prensil, fuerza explosiva, resistencia aeróbica, flexibilidad, equilibrio), variables antropometricas, cuestionarios (PAR-Q+, BREQ-3, BBAQ-21, IPAQ, PSQI) y el resultado/interpretacion generado.</li>
           <li><strong>Metadatos tecnicos:</strong> direccion IP y fecha/hora al momento de aceptar el consentimiento, para dejar evidencia de la autorizacion.</li>
         </ul>
@@ -117,7 +117,7 @@ function PoliticaPrivacidad() {
 
       <Seccion titulo="3. Que datos se consideran personales y cuales sensibles">
         <p>
-          El nombre, correo, edad, genero y actividad son <strong>datos
+          El nombre, correo, edad, sexo biológico y actividad son <strong>datos
           personales</strong>. Las mediciones fisicas y antropometricas de las
           pruebas se relacionan con la condicion fisica del participante y se
           tratan con el mismo estandar de proteccion reforzada aplicable a
@@ -187,7 +187,7 @@ function PoliticaPrivacidad() {
 
       <Seccion titulo="10. Como solicitar correccion de tus datos">
         <p>
-          Puedes editar los datos del participante (nombre, edad, genero,
+          Puedes editar los datos del participante (nombre, edad, sexo biológico,
           perfil, actividad) directamente desde el historial de cada registro
           guardado.
         </p>
