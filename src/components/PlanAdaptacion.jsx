@@ -27,6 +27,29 @@ export function AlertaAntecedentes({ alertas = [] }) {
   );
 }
 
+/** Alertas de la regla R-SEG-05: condiciones declaradas en el PAR-Q+ que restringen familias o piden una precaución específica.
+ * @param {Object} props
+ * @param {Array} [props.alertas] - Alertas de seguridad del informe.
+ * @returns {JSX.Element|null} null si no hay alertas de esta regla. */
+export function AlertasSeguridad({ alertas = [] }) {
+  const lista = alertas.filter(a => a.regla === 'R-SEG-05');
+  if (lista.length === 0) return null;
+  return (
+    <>
+      {lista.map(a => (
+        <div key={a.codigo} className="alerta-lesion" role="alert">
+          <span className="alerta-lesion-icono" aria-hidden="true">!</span>
+          <div>
+            <p className="alerta-lesion-titulo">{a.titulo}</p>
+            <p className="alerta-lesion-texto">{a.mensaje}</p>
+          </div>
+        </div>
+      ))}
+      <p className="plan-fuente">Son precauciones a partir de tus respuestas, no un diagnóstico: la decisión final es de la persona evaluada y de su evaluador.</p>
+    </>
+  );
+}
+
 /** Tarjeta del plan de adaptación.
  * @param {Object} props
  * @param {Object} props.plan - Plan generado por el motor.
@@ -42,6 +65,20 @@ export default function PlanAdaptacion({ plan }) {
         {plan.faltantes?.length > 0 && (
           <div className="plan-chips">
             {plan.faltantes.map(c => <span key={c} className="plan-chip">{ETIQUETAS_CAPACIDAD[c] ?? c}</span>)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (plan.tipo === 'valoracion_medica' || plan.tipo === 'restricciones_seguridad') {
+    return (
+      <div className="plan-card plan-card--datos">
+        <span className="plan-badge">{plan.tipo === 'valoracion_medica' ? 'Valoración médica antes de recomendar' : 'Restricción por lo que manifestaste en el PAR-Q+'}</span>
+        <p className="plan-motivo">{plan.motivo}</p>
+        {plan.tipo === 'restricciones_seguridad' && plan.condiciones?.length > 0 && (
+          <div className="plan-chips">
+            {plan.condiciones.map(c => <span key={c} className="plan-chip">{c}</span>)}
           </div>
         )}
       </div>

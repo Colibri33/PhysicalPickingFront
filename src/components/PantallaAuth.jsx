@@ -62,9 +62,10 @@ export default function PantallaAuth({ onLoginExitoso, onInvitado, mostrarToast,
   /** Entra como invitado tras advertir sobre la pérdida de datos. */
   function handleInvitado() {
     const confirmado = window.confirm(
-      'En modo invitado, tus datos se guardan SOLO en este navegador, no en un servidor. ' +
+      'En modo invitado, tus datos se guardan SOLO en este navegador, no en un servidor, ' +
+      'y cada registro se borra automaticamente a los 5 dias. ' +
       'Si borras los datos del navegador, cambias de navegador o de dispositivo, ' +
-      'perderas ese historial de forma permanente.\n\n¿Deseas continuar como invitado?'
+      'perderas ese historial antes.\n\n¿Deseas continuar como invitado?'
     );
     if (confirmado) onInvitado();
   }

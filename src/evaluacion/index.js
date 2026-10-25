@@ -7,7 +7,7 @@
  *  - O (Abierto/Cerrado): módulos, baremos y motor se incorporan por registro o inyección sin modificar el orquestador.
  *  - D (Inversión de dependencias): baremos y DecisionEngine se inyectan mediante `opciones`; el flujo depende del puerto, no del motor.
  * Notas: etapas: 1 datos ingresados; 2 validación; 3 evaluación; 4 normalización; 5 perfil funcional; 6 reglas de preparación y seguridad;
- * 7 DecisionEngine; 8 ranking de las 13 familias; 9 informe. Función pura: misma entrada y recursos producen la misma salida; no usa React, DOM ni red.
+ * 7 DecisionEngine; 8 ranking de las 14 familias; 9 informe. Función pura: misma entrada y recursos producen la misma salida; no usa React, DOM ni red.
  * Sin baremos o motor inyectados, lo que depende de ellos queda como pendiente.
  */
 
@@ -75,7 +75,7 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
   const decision = ejecutarDecisionEngine(entradaMotor, motor);
 
   // 8. Ranking
-  const ranking = construirRanking(decision);
+  const ranking = construirRanking(decision, reglas.restriccionesPorCondicion);
 
   // 8b. Estado de preparación cuando ninguna familia es firme (R-DEC-03)
   const planAdaptacion = construirPlanAdaptacion({ ranking, capacidades: entradaMotor.capacidades });

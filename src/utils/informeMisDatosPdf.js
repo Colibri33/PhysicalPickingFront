@@ -126,6 +126,9 @@ export function resumirRegistro(registro = {}) {
       : texto(registro.interpretacion?.recomendacion, ''),
     planAdaptacion: registro.evaluacion?.etapas?.planAdaptacion?.aplica ? registro.evaluacion.etapas.planAdaptacion : null,
     variables,
+    empatadas: (registro.evaluacion?.etapas?.ranking?.empatadas ?? []).length > 1
+      ? registro.evaluacion.etapas.ranking.empatadas.map(f => texto(f.nombre ?? f.id))
+      : [],
     familias: familias.slice(0, 5).map(f => ({
       id: f.id,
       nombre: texto(f.nombre ?? f.id),
@@ -449,8 +452,8 @@ function bloqueRecomendacion(L, s) {
     L.doc.roundedRect(MARGEN, L.y - 2, ANCHO, 17, 3.5, 3.5, 'F');
     L.fuente('normal', 8, [214, 208, 245]);
     L.doc.text('Mayor compatibilidad', MARGEN + 6, L.y + 4);
-    L.fuente('titulo', 14, [255, 255, 255]);
-    L.doc.text(firme.nombre, MARGEN + 6, L.y + 11);
+    L.fuente('titulo', s.empatadas.join(' · ').length > 26 ? 10 : 14, [255, 255, 255]);
+    L.doc.text(s.empatadas.length > 1 ? s.empatadas.join(' · ') : firme.nombre, MARGEN + 6, L.y + 11);
     if (firme.porcentaje != null) {
       L.fuente('titulo', 18, [255, 255, 255]);
       L.doc.text(`${firme.porcentaje}%`, MARGEN + ANCHO - 6, L.y + 10.5, { align: 'right' });
@@ -478,7 +481,8 @@ function bloqueRecomendacion(L, s) {
 function bloquePrecauciones(L, s) {
   const mensajes = [];
   if (s.parq === 'consultar') mensajes.push('Se recomienda consultar a un profesional de la salud antes de realizar actividad física de esfuerzo.');
-  (s.alertasSeguridad || []).slice(0, 3).forEach(a => mensajes.push(String(a.mensaje ?? a)));
+  // Las alertas informativas (p. ej. Léger sin dato) no son precauciones; el resto se muestra completo, incluidas las del PAR-Q+ (R-SEG-05).
+  (s.alertasSeguridad || []).filter(a => a.severidad !== 'informativa').slice(0, 8).forEach(a => mensajes.push(String(a.mensaje ?? a)));
   if (mensajes.length === 0) return;
   const ancho = ANCHO - 14;
   const alto = mensajes.reduce((t, m) => t + L.lineas(m, ancho, 9) * 4.5 + 2, 0) + 6;
@@ -518,6 +522,9 @@ function bloqueInterpretacion(L, s) {
     L.y += 3;
   } else if (pl?.tipo === 'datos_insuficientes') {
     L.parrafo(`${pl.motivo} Faltan: ${(pl.faltantes || []).map(c => ETIQUETAS_CAPACIDAD[c] ?? c).join(', ')}.`, { tamano: 9 });
+    L.y += 3;
+  } else if (pl?.tipo === 'valoracion_medica' || pl?.tipo === 'restricciones_seguridad') {
+    L.parrafo(pl.motivo, { tamano: 9 });
     L.y += 3;
   }
 }

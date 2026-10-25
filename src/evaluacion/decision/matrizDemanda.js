@@ -1,6 +1,6 @@
 /**
  * @module evaluacion/decision/matrizDemanda
- * @description Matriz de demandas por capacidad de las 13 familias y su correspondencia Mitchell (configuración del DecisionEngine).
+ * @description Matriz de demandas por capacidad de las 14 familias y su correspondencia Mitchell (configuración del DecisionEngine).
  *
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): única razón de cambio es la configuración de demandas y relevancia Mitchell.
@@ -9,6 +9,9 @@
  * transcripción literal (Escalada/VO2max = Baja, confirmado). Mitchell: correspondencia ADOPTADA a partir del marco AHA/ACC (Levine et al.,
  * Circulation 2015; mitchell.pdf), no la clasificación original; p. ej. combate de golpeo/agarre → IIIA y danza → IIB. Relevancia v1
  * (configurable): dinámico C → VO2máx; estático III → fuerza.
+ * Tenis de mesa (2026-10): se separó de raqueta porque su demanda aeróbica es Baja frente a Media del tenis. Las demandas son las del Excel (que escribió
+ * "Bajo" y "Alto" en masculino; se leen como Baja y Alta). Su Mitchell no estaba definido: se adopta IB (la figura de Mitchell/Levine lo ubica junto a
+ * voleibol, esgrima y béisbol), pendiente de verificar con la figura; no afecta la relevancia (solo cuentan dinámico C y estático III).
  */
 
 /** Niveles de demanda. */
@@ -47,18 +50,19 @@ export const CAPACIDADES_MATRIZ = Object.freeze(
  * @returns {Object} familia. */
 const F = (id, mitchell, estatico, dinamico, demandas) => ({ id, mitchell, estatico, dinamico, demandas });
 
-/** Matriz de demandas de las 13 familias. */
+/** Matriz de demandas de las 14 familias. */
 export const MATRIZ_DEMANDA = Object.freeze([
   F('deportes_equipo', 'IC', 'I', 'C', { fuerza: 'Alta', fuerza_explosiva: 'Alta', vo2max: 'Alta', flexibilidad: 'Media', equilibrio: 'Media' }),
   F('voleibol', 'IB', 'I', 'B', { fuerza: 'Media', fuerza_explosiva: 'Muy alta', vo2max: 'Media', flexibilidad: 'Media', equilibrio: 'Alta' }),
   F('natacion', 'IIC', 'II', 'C', { fuerza: 'Alta', fuerza_explosiva: 'Media', vo2max: 'Muy alta', flexibilidad: 'Alta', equilibrio: 'Media' }),
   F('ciclismo', 'IIIC', 'III', 'C', { fuerza: 'Media', fuerza_explosiva: 'Media', vo2max: 'Muy alta', flexibilidad: 'Baja', equilibrio: 'Baja' }),
   F('atletismo_fondo', 'IC', 'I', 'C', { fuerza: 'Baja', fuerza_explosiva: 'Media', vo2max: 'Muy alta', flexibilidad: 'Media', equilibrio: 'Baja' }),
-  F('atletismo_velocidad', 'IIB', 'II', 'B', { fuerza: 'Baja', fuerza_explosiva: 'Muy alta', vo2max: 'Baja', flexibilidad: 'Media', equilibrio: 'Media' }),
+  F('atletismo_velocidad', 'IIB', 'II', 'B', { fuerza: 'Baja', fuerza_explosiva: 'Muy alta', vo2max: 'Muy alta', flexibilidad: 'Media', equilibrio: 'Media' }),
   F('senderismo_montanismo', 'IC', 'I', 'C', { fuerza: 'Alta', fuerza_explosiva: 'Baja', vo2max: 'Alta', flexibilidad: 'Media', equilibrio: 'Alta' }),
   F('combate_golpeo', 'IIIA', 'III', 'A', { fuerza: 'Media', fuerza_explosiva: 'Alta', vo2max: 'Media', flexibilidad: 'Alta', equilibrio: 'Alta' }),
   F('combate_agarre', 'IIIA', 'III', 'A', { fuerza: 'Muy alta', fuerza_explosiva: 'Alta', vo2max: 'Media', flexibilidad: 'Media', equilibrio: 'Alta' }),
   F('raqueta', 'IIC', 'II', 'C', { fuerza: 'Media', fuerza_explosiva: 'Alta', vo2max: 'Media', flexibilidad: 'Media', equilibrio: 'Alta' }),
+  F('tenis_de_mesa', 'IB', 'I', 'B', { fuerza: 'Baja', fuerza_explosiva: 'Alta', vo2max: 'Baja', flexibilidad: 'Media', equilibrio: 'Alta' }),
   F('danza', 'IIB', 'II', 'B', { fuerza: 'Media', fuerza_explosiva: 'Alta', vo2max: 'Media', flexibilidad: 'Muy alta', equilibrio: 'Muy alta' }),
   F('deportes_fuerza', 'IIIA', 'III', 'A', { fuerza: 'Muy alta', fuerza_explosiva: 'Alta', vo2max: 'Baja', flexibilidad: 'Media', equilibrio: 'Media' }),
   F('escalada', 'IIIA', 'III', 'A', { fuerza: 'Muy alta', fuerza_explosiva: 'Alta', vo2max: 'Baja', flexibilidad: 'Alta', equilibrio: 'Muy alta' }),

@@ -28,11 +28,11 @@ test('hay un motor de referencia registrado por defecto', () => {
   assert.ok(obtenerDecisionEngine() instanceof DecisionEngineReferencia);
 });
 
-test('flujo completo por defecto: motor ejecutado con ranking de 13 familias', () => {
+test('flujo completo por defecto: motor ejecutado con ranking de 14 familias', () => {
   const r = ejecutarFlujoEvaluacion(datos, { ahora: AHORA });
   assert.equal(r.etapas.decisionEngine.estado, 'ejecutado');
   assert.equal(r.etapas.ranking.estado, 'completo');
-  assert.equal(r.etapas.ranking.familias.length, 13);
+  assert.equal(r.etapas.ranking.familias.length, 14);
   for (const f of FAMILIAS_DEPORTIVAS) {
     assert.ok(r.etapas.ranking.familias.some(x => x.id === f.id), f.id);
   }

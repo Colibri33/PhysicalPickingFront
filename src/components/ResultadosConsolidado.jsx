@@ -15,12 +15,12 @@ import EstadoFlujoEvaluacion from './EstadoFlujoEvaluacion';
 import MapaCorporalBrechas from './MapaCorporalBrechas';
 import AsistenteIA from './AsistenteIA';
 import { construirResumenIA } from '../ia/resumenIA';
-import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
+import PlanAdaptacion, { AlertaAntecedentes, AlertasSeguridad } from './PlanAdaptacion';
 import { VARIABLES_CAPTURA, ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades';
 import { detalleCapacidades, mayorOportunidad } from '../evaluacion/informe/detalleCapacidades';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
-import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
+import { etiquetaNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
 
 /** Motivo de demanda según la clasificación de Mitchell.
  * @param {string} familiaId - Identificador de la familia.
@@ -162,7 +162,6 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
         <div className="ranking-list">
           {ranking.map((f, i) => {
             const noFirme = f.firme === false;
-            const severa = motivosNoFirme(f).some(m => m.tipo === 'brecha_severa');
             const destacada = !noFirme && i < 3;
             return (
               <button type="button" key={f.id}
@@ -173,7 +172,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
                 <span className="rank-pos">#{idsEmpate.has(f.id) ? 1 : i + 1}</span>
                 <span className="rank-nombre">
                   {f.nombre ?? f.id}
-                  {noFirme && <span className="rank-tag">{severa ? 'brecha severa' : 'faltan datos'}</span>}
+                  {noFirme && <span className="rank-tag">{etiquetaNoFirme(f)}</span>}
                 </span>
                 <div className="rank-bar-wrap">
                   <div className="rank-bar-track">
@@ -193,6 +192,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
 
       <h3 className="section-subtitle mt-lg">Interpretacion de la compatibilidad</h3>
       <AlertaAntecedentes alertas={flujo.informe.seguridad.alertas} />
+      <AlertasSeguridad alertas={flujo.informe.seguridad.alertas} />
       <div className="interp-block">
         {!top ? (
           plan?.aplica

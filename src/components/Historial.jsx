@@ -5,6 +5,7 @@
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): gestión visual del historial de evaluaciones.
  *  - D (Inversión de dependencias): persistencia y PDF mediante servicios importados; reutiliza ResultadosConsolidado y RecomendacionDeportes.
+ * Notas: el generador de PDF (jsPDF, ~336 KB) se descarga solo al pulsar "Descargar mis datos"; test/carga.test.js impide volver a importarlo al inicio.
  */
 import { useState } from 'react';
 import Icono from './Icono';
@@ -20,11 +21,10 @@ import {
   actualizarRegistroHistorial,
   descargarInformePdf,
 } from '../auth/authService';
-import { generarPdfMisDatos } from '../utils/informeMisDatosPdf';
-import { cargarRecursosPdf } from '../utils/recursosPdf';
-import { AlertaAntecedentes } from './PlanAdaptacion';
+import { AlertaAntecedentes, AlertasSeguridad } from './PlanAdaptacion';
 import { alertaAntecedenteLesion } from '../evaluacion/reglas/preparacionSeguridad';
 import { textoRecomendacion } from '../evaluacion/decision/ranking';
+import { DIAS_CADUCIDAD_INVITADO, textoCaducidad } from '../utils/caducidad';
 
 /** Pone en mayúscula la primera letra.
  * @param {string} s - Texto.
@@ -228,6 +228,7 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               (r.evaluacion?.informe?.seguridad?.alertas ?? []).find(a => a.codigo === 'ANTECEDENTE_LESION')
                 ?? alertaAntecedenteLesion(r.complementarias?.resultado?.antecedentes),
             ].filter(Boolean)} />
+            <AlertasSeguridad alertas={r.evaluacion?.informe?.seguridad?.alertas ?? []} />
 
             {(() => {
               // La recomendación proviene del DecisionEngine; el texto heredado solo aplica a registros sin ese bloque.
@@ -237,7 +238,7 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
                 ? (rk.recomendada
                   ? `Recomendación firme: ${textoRecomendacion(rk)}.`
                   : plan?.estado === 3 ? `Estado 3 · ${plan.nombre}: ${plan.motivo}`
-                    : plan?.tipo === 'datos_insuficientes' ? plan.motivo : null)
+                    : ['datos_insuficientes', 'valoracion_medica', 'restricciones_seguridad'].includes(plan?.tipo) ? plan.motivo : null)
                 : r.interpretacion?.recomendacion;
               return texto ? (
                 <div className="interp-recomendacion" style={{ marginBottom: '1rem' }}>
@@ -322,7 +323,11 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
   async function handleExportar() {
     try {
       mostrarToast?.('Preparando tu PDF…', 'info');
+      // El generador se descarga ahora (no al abrir la app) y en paralelo con la petición de los datos.
+      const generador = Promise.all([import('../utils/recursosPdf'), import('../utils/informeMisDatosPdf')])
+        .catch(() => { throw new Error('No se pudo cargar el generador de PDF. Revisa tu conexión e inténtalo de nuevo.'); });
       const datos = await exportarMisDatos();
+      const [{ cargarRecursosPdf }, { generarPdfMisDatos }] = await generador;
       const recursos = await cargarRecursosPdf(datos);
       const blob = generarPdfMisDatos(datos, recursos);
       descargarBlob(blob, 'mis-datos-physicalpicking.pdf');
@@ -383,8 +388,9 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
         <div className="rango-note" style={{ marginBottom: '1rem' }}>
           <span className="rango-note-icon"><Icono n="info" /></span>
           <span>
-            Estas en modo invitado: este historial vive solo en este navegador. Si lo
-            borras, cambias de navegador o de dispositivo, lo perderas de forma permanente.
+            Estas en modo invitado: este historial vive solo en este navegador y cada registro se borra
+            a los {DIAS_CADUCIDAD_INVITADO} dias. Si borras los datos, cambias de navegador o de dispositivo,
+            tambien lo perderas. Crea una cuenta para conservarlo.
           </span>
         </div>
       )}
@@ -408,7 +414,10 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
                 <span className="hist-num">#{historial.length - i}</span>
                 <div className="hist-info">
                   <div className="hist-name">{r.participante.nombre}</div>
-                  <div className="hist-meta">{r.participante.edad} años · {r.participante.perfil} · {r.fecha}</div>
+                  <div className="hist-meta">
+                    {r.participante.edad} años · {r.participante.perfil} · {r.fecha}
+                    {!usuarioActual && textoCaducidad(r) ? ` · ${textoCaducidad(r)}` : ''}
+                  </div>
                   {topNombre && (
                     <div className="hist-top-deporte">{topNombre}{topPct !== null && topPct !== undefined ? ` — ${topPct}%` : ''}</div>
                   )}

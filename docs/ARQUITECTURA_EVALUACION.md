@@ -13,7 +13,7 @@ Código en `src/evaluacion/`. Funciones puras (sin React, DOM ni red); se prueba
 | 5 | Perfil funcional | `perfil/construirPerfilFuncional.js` | Agrupa solo datos normalizados por capa. | No lee respuestas originales. |
 | 6 | Reglas de preparación/seguridad | `reglas/preparacionSeguridad.js` | R-SEG-01 a 04 (autorización de Léger, VO2max sin dato, limitaciones por prueba, alerta por antecedente de lesión). | No modifica niveles ni porcentaje. |
 | 7 | DecisionEngine | `decision/decisionEnginePort.js` | Construye y valida la entrada del motor; ejecuta el motor inyectado. | Sin motor → `pendiente_integracion`. |
-| 8 | Ranking | `decision/ranking.js` | Toma el ranking del motor, verifica las 13 familias y publica la recomendación firme (o ninguna, R-DEC-03). | No reordena ni recalcula. |
+| 8 | Ranking | `decision/ranking.js` | Toma el ranking del motor, verifica las 14 familias y publica la recomendación firme (o ninguna, R-DEC-03). | No reordena ni recalcula. |
 | 8b | Plan de adaptación | `reglas/planAdaptacion.js` | Sin familia firme: Estado 3 (Adaptación desde cero) con orientación ACSM, o datos faltantes. | No inventa cargas; Estados 1 y 2 siguen pendientes. |
 | 9 | Informe | `informe/construirInforme.js` | Seguridad primero, recomendación, estado de módulos, pendientes. | No calcula. |
 
@@ -50,7 +50,7 @@ se inyectan con `opciones.baremos = [ { id, capacidad, version, fuente: { refere
 **Calificación de cuestionarios.** En cada archivo de `modulos/cuestionarios/`, reemplazar `calificar: null` y `normalizar: null`. `normalizar` debe devolver el `contratoNormalizado` documentado en el mismo archivo.
 
 **Matriz de demanda + Mitchell (referencia del DecisionEngine).**
-`decision/matrizDemanda.js` transcribe la Matriz de capacidades (13 familias ×
+`decision/matrizDemanda.js` transcribe la Matriz de capacidades (14 familias ×
 5 capacidades, demandas Baja/Media/Alta/Muy alta) y la correspondencia Mitchell
 adoptada (marco AHA/ACC 2015, `mitchell.pdf`; no se presenta como clasificación
 original). `decision/compatibilidad.js` implementa la regla auditable sin
@@ -108,3 +108,23 @@ reconstrucción desde un registro están en `utils/analisisRegistro.js`.
 Resistencia/Potencia, ranking de 15 actividades e interpretación) se eliminó. Los registros nuevos guardan solo `evaluacion`; el perfil físico
 se muestra por nivel. Los registros anteriores se leen tal como se guardaron (Historial y PDF muestran su consolidado y su ranking antiguos) y el
 backend sigue exigiendo el bloque heredado cuando un registro no trae `evaluacion`. Despliegue: primero el backend y después el frontend.
+
+## R-SEG-05 · Condiciones del PAR-Q+
+
+Regla propia aprobada por el autor (2026-10), en `reglas/restriccionesPorCondicion.js`. Se activa cuando la persona declara una categoría de seguimiento (c1..c10, respuesta Sí) aunque sus subpreguntas estén en No, o responde Sí a una subpregunta concreta (c6b, c7d, c10a). Los mensajes nombran la afección: "Restricción: manifestaste tener ...". Antes decía: se activaba con una categoría que tenga al
+menos una subpregunta en Sí (criterio retirado: una condición declarada cuenta). Se aplica en `construirRanking`,
+no en el motor, así vale con cualquier DecisionEngine. No cambia porcentajes: deja la familia como no recomendable con su motivo y el ranking se reordena
+con el mismo comparador. Son precauciones, no un diagnóstico: la decisión final es de la persona evaluada y de su evaluador.
+
+| Condición | Efecto |
+|---|---|
+| Dolor en el pecho (p2) o mareo o pérdida de consciencia (p3) | Ninguna familia se recomienda hasta una valoración médica (plan `valoracion_medica`) |
+| Cardíaca (c3), hipertensión (c4), hipertensión pulmonar (c7d) | No recomendables las familias de carga cardiovascular alta (Mitchell dinámico C o estático III) o con demanda aeróbica Alta o Muy alta en la matriz |
+| Respiratoria o asma (c7) | No recomendables las familias con demanda aeróbica Alta o Muy alta |
+| Artritis, osteoporosis o columna (c1); Down con problema de espalda (c6b) | No recomendables las familias con fuerza explosiva Alta o Muy alta |
+| Lesión medular (c8), ACV (c9) | No recomendables las familias con equilibrio o fuerza explosiva Alta o Muy alta |
+| Conmoción cerebral (c10a) | No recomendables las familias de contacto y deportes de equipo (combate de golpeo, combate de agarre, deportes de equipo) |
+| Cáncer (c2), metabólica (c5), salud mental (c6), otras (c10b, c10c) | Solo alerta específica, sin tocar el ranking |
+
+Si las restricciones dejan sin familia firme y ninguna espera solo datos, el plan es `restricciones_seguridad`; si alguna familia solo espera datos se
+piden primero (`datos_insuficientes`); si todas tienen brecha severa sigue siendo el Estado 3. `test/restriccionesCondicion.test.js` cubre cada fila.

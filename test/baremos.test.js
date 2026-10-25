@@ -144,17 +144,19 @@ const EXCEL_MATRIZ = [
   ['natacion', 'IIC', 'Alta', 'Media', 'Muy alta', 'Alta', 'Media'],
   ['ciclismo', 'IIIC', 'Media', 'Media', 'Muy alta', 'Baja', 'Baja'],
   ['atletismo_fondo', 'IC', 'Baja', 'Media', 'Muy alta', 'Media', 'Baja'],
-  ['atletismo_velocidad', 'IIB', 'Baja', 'Muy alta', 'Baja', 'Media', 'Media'],
+  ['atletismo_velocidad', 'IIB', 'Baja', 'Muy alta', 'Muy alta', 'Media', 'Media'],
   ['senderismo_montanismo', 'IC', 'Alta', 'Baja', 'Alta', 'Media', 'Alta'],
   ['combate_golpeo', 'IIIA', 'Media', 'Alta', 'Media', 'Alta', 'Alta'],
   ['combate_agarre', 'IIIA', 'Muy alta', 'Alta', 'Media', 'Media', 'Alta'],
   ['raqueta', 'IIC', 'Media', 'Alta', 'Media', 'Media', 'Alta'],
+  // Tenis de mesa: el Excel no trae Mitchell (se adopta IB) y escribe "Bajo" y "Alto" en VO2máx y equilibrio, que se leen como Baja y Alta.
+  ['tenis_de_mesa', 'IB', 'Baja', 'Alta', 'Baja', 'Media', 'Alta'],
   ['danza', 'IIB', 'Media', 'Alta', 'Media', 'Muy alta', 'Muy alta'],
   ['deportes_fuerza', 'IIIA', 'Muy alta', 'Alta', 'Baja', 'Media', 'Media'],
   ['escalada', 'IIIA', 'Muy alta', 'Alta', 'Baja', 'Alta', 'Muy alta'],
 ];
 
-test('matriz: las 13 familias y sus 5 demandas coinciden con el Excel', () => {
+test('matriz: las 14 familias y sus 5 demandas coinciden con el Excel', () => {
   assert.equal(MATRIZ_DEMANDA.length, EXCEL_MATRIZ.length);
   for (const [id, mitchell, fuerza, fuerzaExp, vo2max, flexibilidad, equilibrio] of EXCEL_MATRIZ) {
     const f = MATRIZ_DEMANDA.find(m => m.id === id);

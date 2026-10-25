@@ -1,6 +1,6 @@
 /**
  * @module evaluacion/decision/familias
- * @description Catálogo de las 13 familias deportivas confirmadas (solo identificación).
+ * @description Catálogo de las 14 familias deportivas confirmadas (solo identificación).
  *
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): única razón de cambio es el catálogo de familias.
@@ -18,7 +18,8 @@ export const FAMILIAS_DEPORTIVAS = [
   { id: 'senderismo_montanismo', nombre: 'Senderismo / montanismo' },
   { id: 'combate_golpeo', nombre: 'Combate de golpeo' },
   { id: 'combate_agarre', nombre: 'Combate de agarre' },
-  { id: 'raqueta', nombre: 'Raqueta' },
+  { id: 'raqueta', nombre: 'Tenis, bádminton y squash' },
+  { id: 'tenis_de_mesa', nombre: 'Tenis de mesa' },
   { id: 'danza', nombre: 'Danza' },
   { id: 'deportes_fuerza', nombre: 'Deportes de fuerza' },
   { id: 'escalada', nombre: 'Escalada' },

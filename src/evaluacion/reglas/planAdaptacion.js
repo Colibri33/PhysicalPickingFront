@@ -6,7 +6,8 @@
  *  - S (Responsabilidad única): única razón de cambio es la regla R-DEC-03 y sus pautas generales.
  *  - O (Abierto/Cerrado): nuevas pautas se añaden en PAUTAS_POR_COMPONENTE sin modificar la función.
  *  - D (Inversión de dependencias): recibe el ranking y las capacidades como parámetros; no invoca al motor.
- * Notas: decisión propia 2026-10. Estado 3 (adaptación desde cero): todas las familias tienen al menos una brecha severa; no se recomienda
+ * R-SEG-05 (2026-10): si el PAR-Q+ exige valoración médica o las restricciones por condición dejan sin familia firme, el plan lo informa
+ * como `valoracion_medica` o `restricciones_seguridad` y no propone adaptación. Notas: decisión propia 2026-10. Estado 3 (adaptación desde cero): todas las familias tienen al menos una brecha severa; no se recomienda
  * deporte. Datos insuficientes: alguna familia queda sin recomendar solo por falta de datos; se solicitan en lugar de asignar el Estado 3.
  * Las pautas parafrasean ACSM's Guidelines for Exercise Testing and Prescription (11.ª ed., 2021), cap. 5 (Tablas 5.1, 5.5 y 5.6 y
  * "Progression of Aerobic Exercise"); no se inventan cargas ni semanas. Pendiente: los Estados 1 y 2 (base física + IPAQ + PSQI) sin regla definida.
@@ -72,6 +73,16 @@ function componenteDe(capacidad) {
  * @param {Object<string, string|null>} p.capacidades - niveles recibidos por el motor.
  * @returns {Object} plan con `aplica` y, según el caso, prioridades y pautas, o los datos faltantes. */
 export function construirPlanAdaptacion({ ranking, capacidades }) {
+  if (ranking?.bloqueoMedico) {
+    return {
+      aplica: true,
+      estado: null,
+      tipo: 'valoracion_medica',
+      regla: 'R-SEG-05',
+      motivo: ranking.bloqueoMedico.mensaje,
+      condiciones: ranking.bloqueoMedico.condiciones,
+    };
+  }
   if (!ranking?.sinFamiliaCompatible) {
     return {
       aplica: false,
@@ -81,7 +92,8 @@ export function construirPlanAdaptacion({ ranking, capacidades }) {
   }
   const familias = ranking.familias ?? [];
   const tieneSevera = (f) => (f.motivosNoFirme ?? []).some(m => m.tipo === 'brecha_severa');
-  const bloqueadasSoloPorDatos = familias.filter(f => !tieneSevera(f));
+  const tieneRestriccion = (f) => (f.motivosNoFirme ?? []).some(m => m.tipo === 'restriccion_seguridad');
+  const bloqueadasSoloPorDatos = familias.filter(f => !tieneSevera(f) && !tieneRestriccion(f));
 
   if (bloqueadasSoloPorDatos.length > 0) {
     const faltantes = [...new Set(bloqueadasSoloPorDatos.flatMap(f =>
@@ -93,6 +105,21 @@ export function construirPlanAdaptacion({ ranking, capacidades }) {
       regla: 'R-DEC-03',
       motivo: 'Faltan datos de capacidades que algunas familias exigen: complétalos para poder recomendar.',
       faltantes: ORDEN_CAPACIDADES.filter(c => faltantes.includes(c)),
+    };
+  }
+
+  // Familias que solo la seguridad deja fuera: se informa la restricción en lugar de proponer una adaptación.
+  const soloRestringidas = familias.filter(f => tieneRestriccion(f) && !tieneSevera(f));
+  if (soloRestringidas.length > 0) {
+    const condiciones = [...new Set(familias.flatMap(f => (f.motivosNoFirme ?? []).filter(m => m.tipo === 'restriccion_seguridad').map(m => m.condicion)))];
+    const quien = condiciones.length <= 1 ? (condiciones[0] ?? '') : `${condiciones.slice(0, -1).join(', ')} y ${condiciones[condiciones.length - 1]}`;
+    return {
+      aplica: true,
+      estado: null,
+      tipo: 'restricciones_seguridad',
+      regla: 'R-SEG-05',
+      motivo: `Restricción: manifestaste tener ${quien}. Por eso las familias que se ajustarían a tu perfil quedan restringidas: consulta con un profesional de la salud antes de elegir una actividad.`,
+      condiciones,
     };
   }
 

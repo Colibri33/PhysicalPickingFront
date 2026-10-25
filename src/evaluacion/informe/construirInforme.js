@@ -49,6 +49,7 @@ export function construirInforme({ resultados, reglas, decision, ranking, planAd
       ranking: ranking.familias,
       recomendada: ranking.recomendada ?? null,
       empatadas: ranking.empatadas ?? [],
+      bloqueoMedico: ranking.bloqueoMedico ?? null,
       sinFamiliaCompatible: ranking.sinFamiliaCompatible ?? false,
       estado: decision.salida?.estado ?? null,
       experiencia: decision.salida?.experiencia ?? null,

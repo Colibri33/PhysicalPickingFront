@@ -72,8 +72,9 @@ function TerminosCondiciones() {
         <p>
           El modo invitado permite usar la aplicacion sin crear una cuenta. Los
           datos generados en este modo se guardan unicamente en el navegador
-          del dispositivo utilizado y se pierden si se borran los datos del
-          navegador, se cambia de navegador o de dispositivo.
+          del dispositivo utilizado, se borran automaticamente a los 5 dias y
+          se pierden antes si se borran los datos del navegador, se cambia de
+          navegador o de dispositivo.
         </p>
       </Seccion>
       <Seccion titulo="6. Limitacion de responsabilidad">

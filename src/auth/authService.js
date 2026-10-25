@@ -13,6 +13,8 @@ import { supabase, API_URL } from '../supabaseClient';
 import { migrarRegistroLegado } from '../logic/registroLegado';
 import { errorRedAmigable } from '../utils/red';
 
+import { purgarCaducados, DIAS_CADUCIDAD_INVITADO } from '../utils/caducidad.js';
+
 const STORAGE_HISTORIAL_INVITADO = 'physicalpicking_historial_invitado';
 
 /* Tiempo máximo de espera del backend. En un celular el backend requiere URL pública: con localhost el fetch falla de inmediato y errorRedAmigable lo explica. */
@@ -204,7 +206,8 @@ export async function actualizarRegistroHistorial(usuarioId, id, registroActuali
       const prev = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]');
       const idx = prev.findIndex(r => r.id === id);
       if (idx === -1) return { ok: false, error: 'Registro no encontrado.' };
-      prev[idx] = registroActualizado;
+      // Corregir los datos no renueva el plazo de caducidad.
+      prev[idx] = { ...registroActualizado, guardadoEn: prev[idx].guardadoEn ?? prev[idx].id };
       localStorage.setItem(STORAGE_HISTORIAL_INVITADO, JSON.stringify(prev));
       return { ok: true };
     } catch {
@@ -256,15 +259,15 @@ export async function descargarInformePdf(usuarioId, registro) {
   return res.blob();
 }
 
-/** Agrega un registro al historial; en modo invitado lo guarda solo en este navegador.
+/** Agrega un registro al historial; en modo invitado lo guarda solo en este navegador y caduca a los 5 días.
  * @param {string|null} usuarioId - id del usuario; null para invitado.
  * @param {Object} registro - registro a guardar.
  * @returns {Promise<{ok: boolean, resultado?: Object, error?: string}>} resultado del guardado. */
 export async function guardarRegistroHistorial(usuarioId, registro) {
   if (usuarioId === null) {
     try {
-      const prev = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]');
-      prev.unshift(registro);
+      const prev = purgarCaducados(JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]'));
+      prev.unshift({ ...registro, guardadoEn: Date.now() });
       localStorage.setItem(STORAGE_HISTORIAL_INVITADO, JSON.stringify(prev));
     } catch { /* almacenamiento no disponible: se ignora */ }
     return { ok: true };
@@ -290,7 +293,11 @@ export async function guardarRegistroHistorial(usuarioId, registro) {
 export async function leerHistorial(usuarioId) {
   if (usuarioId === null) {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]').map(migrarRegistroLegado);
+      // Los registros de invitado caducados se borran del navegador al leer.
+      const guardados = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]');
+      const vigentes = purgarCaducados(guardados);
+      if (vigentes.length !== guardados.length) localStorage.setItem(STORAGE_HISTORIAL_INVITADO, JSON.stringify(vigentes));
+      return vigentes.map(migrarRegistroLegado);
     } catch {
       return [];
     }

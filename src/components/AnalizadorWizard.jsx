@@ -13,6 +13,7 @@ import { useState, useEffect, useRef } from 'react';
 import Icono from './Icono';
 import { leerBorrador, guardarBorrador, borrarBorrador } from '../utils/borrador';
 import { generarAnalisisDemo } from '../utils/rellenoDemo';
+import { DIAS_CADUCIDAD_INVITADO } from '../utils/caducidad';
 import Sidebar, { PASO_HISTORIAL } from './Sidebar';
 import StepParticipante      from './StepParticipante';
 import StepParq              from './StepParq';
@@ -175,7 +176,10 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
 
       setAnalisisGuardado(true);
       setHistorial(await leerHistorial(usuarioActual?.id ?? null));
-      mostrarToast(res.duplicado ? 'Este analisis ya estaba guardado.' : 'Analisis guardado en historial.', 'success');
+      const esInvitado = usuarioActual?.id == null;
+      mostrarToast(res.duplicado ? 'Este analisis ya estaba guardado.'
+        : esInvitado ? `Analisis guardado. En modo invitado se borra a los ${DIAS_CADUCIDAD_INVITADO} dias: crea una cuenta para conservarlo.`
+          : 'Analisis guardado en historial.', 'success');
     } finally {
       setGuardando(false);
     }

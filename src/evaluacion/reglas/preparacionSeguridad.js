@@ -9,13 +9,16 @@
  * Notas: R-SEG-01 (decisión propia): el Léger no se autoriza automáticamente con PAR-Q+ con seguimiento positivo o incompleto, sin responder o
  * con generales incompletas (extensión conservadora). R-SEG-02: sin autorización, VO2máx queda sin dato y no penaliza. R-SEG-03: las limitaciones
  * declaradas se reportan por prueba, solo como aviso. R-SEG-04 (2026-10): un antecedente de lesión declarado genera alerta de adaptación y
- * recuperación previa, sin excluir familias ni alterar el porcentaje. Los Estados 1-3 de preparación residen en el DecisionEngine. Ninguna regla
+ * recuperación previa, sin excluir familias ni alterar el porcentaje. R-SEG-05 (2026-10): las condiciones declaradas en el PAR-Q+ pueden exigir
+ * valoración médica previa, dejar familias como no recomendables o solo generar una alerta (ver restriccionesPorCondicion.js); tampoco
+ * altera el porcentaje. Los Estados 1-3 de preparación residen en el DecisionEngine. Ninguna regla
  * modifica niveles de capacidades ni el porcentaje de compatibilidad.
  */
 
 import { ORIGEN } from '../trazabilidad.js';
 import { CLASIFICACION_PARQ } from '../modulos/seguridad/parq.js';
 import { CAPACIDADES_FISICAS } from '../capacidades.js';
+import { aplicarRestriccionesPorCondicion } from './restriccionesPorCondicion.js';
 
 /** Catálogo de reglas de seguridad aplicadas. */
 export const REGLAS = [
@@ -23,6 +26,7 @@ export const REGLAS = [
   { id: 'R-SEG-02', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Sin autorizacion, resistencia aeróbica queda sin dato y no penaliza.' },
   { id: 'R-SEG-03', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Limitaciones declaradas se reportan por prueba (aviso).' },
   { id: 'R-SEG-04', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Antecedente de lesion → alerta de adaptacion y recuperacion previa antes de volver al deporte.' },
+  { id: 'R-SEG-05', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Condiciones declaradas en el PAR-Q+ → valoración médica previa, familias restringidas o alerta específica.' },
 ];
 
 const ANTECEDENTES_LESION = [
@@ -95,10 +99,15 @@ export function aplicarReglasPreparacionSeguridad(perfil) {
   const alertaLesion = alertaAntecedenteLesion(perfil.antecedentes);
   if (alertaLesion) alertas.push(alertaLesion);
 
+  // R-SEG-05
+  const restriccionesPorCondicion = aplicarRestriccionesPorCondicion(parq);
+  alertas.push(...restriccionesPorCondicion.alertas);
+
   return {
     reglasAplicadas: REGLAS,
     pruebaMaxima: { autorizada: autorizado, motivo, desbloqueoProfesional: null, legerAplicado: autorizado && legerAplicado },
     avisosPorPrueba,
+    restriccionesPorCondicion,
     alertas,
     advertencias,
     preparacion: { delegadoA: 'DecisionEngine.evaluarEstado', nota: 'Estados 1-3 se calculan dentro del DecisionEngine con IPAQ, PSQI y base fisica.' },

@@ -16,6 +16,7 @@ import {
 import { generarAnalisisDemo } from '../src/utils/rellenoDemo.js';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../src/evaluacion/index.js';
 import { NIVELES } from '../src/evaluacion/niveles.js';
+import { parqCon } from './ayudas/parq.js';
 
 const DATOS_EJEMPLO = {
   generadoEn: '2026-10-15T12:00:00.000Z',
@@ -80,6 +81,27 @@ describe('informeMisDatosPdf', () => {
     const evaluacion = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
     const blob = generarPdfMisDatos({ ...DATOS_EJEMPLO, resultados: [{ fecha: '01/02/2026', participante: analisis.participante, evaluacion }] });
     assert.ok(blob.size > 1000);
+  });
+
+  it('un registro con valoración médica pendiente se resume con su plan y su alerta, y se exporta a PDF', () => {
+    const analisis = generarAnalisisDemo(() => 0.6, 'femenino');
+    analisis.parq = { respuestas: parqCon('g2'), detalles: {} };
+    const evaluacion = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
+    const registro = { fecha: '01/02/2026', participante: analisis.participante, evaluacion };
+    const r = resumirRegistro(registro);
+    assert.equal(r.planAdaptacion.tipo, 'valoracion_medica');
+    assert.ok(r.alertasSeguridad.some(a => a.codigo === 'PARQ_VALORACION_MEDICA' && a.severidad === 'restriccion'));
+    assert.ok(r.familias.every(f => f.firme === false));
+    assert.ok(generarPdfMisDatos({ ...DATOS_EJEMPLO, resultados: [registro] }).size > 1000);
+  });
+
+  it('un registro con familias restringidas conserva las alertas del PAR-Q+ entre las precauciones', () => {
+    const analisis = generarAnalisisDemo(() => 0.6, 'masculino');
+    analisis.parq = { respuestas: parqCon('c7', 'c7c'), detalles: {} };
+    const evaluacion = ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
+    const r = resumirRegistro({ fecha: '01/02/2026', participante: analisis.participante, evaluacion });
+    assert.ok(r.alertasSeguridad.some(a => a.codigo === 'PARQ_RESTRICCION_RESPIRATORIA'));
+    assert.ok(generarPdfMisDatos({ ...DATOS_EJEMPLO, resultados: [{ fecha: 'x', participante: analisis.participante, evaluacion }] }).size > 1000);
   });
 
   it('genera un Blob PDF no vacío', () => {

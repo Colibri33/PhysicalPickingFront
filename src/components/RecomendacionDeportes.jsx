@@ -1,6 +1,6 @@
 /**
  * @module components/RecomendacionDeportes
- * @description Paso final: recomendación a partir del ranking de 13 familias del DecisionEngine.
+ * @description Paso final: recomendación a partir del ranking de 14 familias del DecisionEngine.
  *
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): presentar la recomendación; no calcula nada propio.
@@ -11,9 +11,9 @@ import { useMemo, useState } from 'react';
 import Icono from './Icono';
 import { ejecutarFlujoEvaluacion, datosEntradaDesdeAnalisis } from '../evaluacion';
 import { MATRIZ_DEMANDA } from '../evaluacion/decision/matrizDemanda';
-import { motivosNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
+import { etiquetaNoFirme, textoMotivosNoFirme } from '../evaluacion/decision/ranking';
 import MapaCorporalBrechas from './MapaCorporalBrechas';
-import PlanAdaptacion, { AlertaAntecedentes } from './PlanAdaptacion';
+import PlanAdaptacion, { AlertaAntecedentes, AlertasSeguridad } from './PlanAdaptacion';
 import { ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades';
 
 /** Motivo de demanda según la clasificación de Mitchell.
@@ -67,6 +67,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       </p>
 
       <AlertaAntecedentes alertas={flujo.informe.seguridad.alertas} />
+      <AlertasSeguridad alertas={flujo.informe.seguridad.alertas} />
 
       {top ? (
         <div className="rec-perfil-banner" style={{ borderColor: 'var(--purple, #5B3FE0)' }}>
@@ -104,7 +105,6 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
         {recomendaciones.map((fam, idx) => {
           const relevantes = (fam.brechas ?? []).filter(b => b.relevanteMitchell);
           const noFirme = fam.firme === false;
-          const severa = motivosNoFirme(fam).some(m => m.tipo === 'brecha_severa');
           return (
             <div key={fam.id}
               className={`rec-card rec-card--clic${familiaSel === fam.id ? ' rec-card--sel' : ''}${noFirme ? ' rec-card--no-firme' : ''}`}
@@ -122,7 +122,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
                   </span>
                   {noFirme && (
                     <span className="rec-card-no-firme">
-                      No recomendable ({severa ? 'brecha severa' : 'faltan datos'}): {textoMotivosNoFirme(fam).join('; ')}
+                      No recomendable ({etiquetaNoFirme(fam)}): {textoMotivosNoFirme(fam).join('; ')}
                     </span>
                   )}
                   {relevantes.length > 0 && (

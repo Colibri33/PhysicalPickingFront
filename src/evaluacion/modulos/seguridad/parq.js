@@ -141,6 +141,19 @@ export const MODULO_PARQ = {
           .map(c => c.id)
       : [];
 
+    // Categorías que la persona declaró tener (respuesta Sí a la categoría), aunque todas sus subpreguntas estén en No (R-SEG-05).
+    const categoriasDeclaradas = seguimientoRequerido
+      ? PARQ_CATEGORIAS_SEGUIMIENTO.filter(c => respuestas.seguimiento?.[c.id]?.aplica === true).map(c => c.id)
+      : [];
+
+    // Subpreguntas respondidas Sí dentro de las categorías que aplican (p. ej. c7d, c6b, c10a): la regla R-SEG-05 actúa sobre algunas de ellas.
+    const subpreguntasPositivas = seguimientoRequerido
+      ? PARQ_CATEGORIAS_SEGUIMIENTO.flatMap(c => {
+          const e = respuestas.seguimiento?.[c.id];
+          return e?.aplica === true ? Object.entries(e.respuestas ?? {}).filter(([, v]) => v === true).map(([k]) => k) : [];
+        })
+      : [];
+
     let clasificacion;
     if (generalesFaltantes.length > 0) clasificacion = CLASIFICACION_PARQ.GENERALES_INCOMPLETAS;
     else if (!seguimientoRequerido) clasificacion = CLASIFICACION_PARQ.SIN_POSITIVOS;
@@ -151,7 +164,7 @@ export const MODULO_PARQ = {
     return {
       resultadoEvaluacion: {
         generalesPositivas, generalesFaltantes, totalPositivosGenerales: generalesPositivas.length,
-        seguimientoRequerido, seguimientoCompleto, categoriasPositivas, clasificacion,
+        seguimientoRequerido, seguimientoCompleto, categoriasPositivas, categoriasDeclaradas, subpreguntasPositivas, clasificacion,
       },
       estado: ESTADO_MODULO.COMPLETO,
     };
@@ -170,6 +183,8 @@ export const MODULO_PARQ = {
           ? true : (resultado.generalesFaltantes.includes(i.id) ? null : false)])),
         generalesPositivas: resultado.generalesPositivas,
         categoriasPositivas: resultado.categoriasPositivas,
+        categoriasDeclaradas: resultado.categoriasDeclaradas ?? [],
+        subpreguntasPositivas: resultado.subpreguntasPositivas ?? [],
         seguimientoRequerido: resultado.seguimientoRequerido,
         seguimientoCompleto: resultado.seguimientoCompleto,
       },

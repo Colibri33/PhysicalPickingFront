@@ -96,7 +96,7 @@ test('baremo inyectado: nivel asignado y trazado; sin grupo para el sexo → nul
   assert.ok(m.advertencias.some(a => a.includes('no hay grupo')));
 });
 
-test('el motor recibe solo datos normalizados y el ranking se valida contra las 13 familias', () => {
+test('el motor recibe solo datos normalizados y el ranking se valida contra las 14 familias', () => {
   let recibida = null;
   const motorFalso = {
     evaluar(entrada) {
@@ -107,7 +107,7 @@ test('el motor recibe solo datos normalizados y el ranking se valida contra las 
   const r = flujo({ parq: parqNo }, { decisionEngine: motorFalso });
   assert.equal(r.etapas.decisionEngine.estado, 'ejecutado');
   assert.equal(r.etapas.ranking.estado, 'completo');
-  assert.equal(r.etapas.ranking.familias.length, 13);
+  assert.equal(r.etapas.ranking.familias.length, 14);
   const texto = JSON.stringify(recibida);
   assert.ok(!texto.includes('respuestaOriginal'));
   assert.deepEqual(Object.keys(recibida.capacidades).sort(), ['equilibrio', 'flexibilidad', 'fuerza', 'fuerza_explosiva', 'vo2max']);
@@ -254,10 +254,10 @@ test('AFISAL por defecto: dinamometria, salto, flexibilidad y equilibrio calific
   assert.equal(r.fisica_vo2max.nivel, null);
 });
 
-test('ranking: fondo con VO2 Bajo tiene brecha severa; velocidad es la firme', () => {
-  // Mujer 22: fuerza 80 (Bajo), salto 50 (Muy alto), flex 40 (Medio),
-  // equilibrio 6 (Medio), Léger nivel 3 → VO2 32,6 → Bajo.
-  // Velocidad exige: fuerza Baja ✓, explosiva Muy alta ✓, vo2max Baja ✓, flex Media ✓, equil Media ✓ → 100% firme.
+test('ranking: fondo con VO2 Bajo tiene brecha severa; deportes de fuerza es la firme', () => {
+  // Mujer 22: fuerza 80 (Muy alto), salto 50 (Muy alto), flex 40 (Medio),
+  // equilibrio 6 (Medio), Léger nivel 3 → VO2 29,6 → Bajo.
+  // Deportes de fuerza exige: fuerza Muy alta ✓, explosiva Alta ✓, vo2max Baja ✓, flex Media ✓, equil Media ✓ → 100% firme.
   // Fondo exige vo2max Muy alta → brecha severa (Bajo no cumple Muy alta).
   const datos = {
     participante,
@@ -274,10 +274,10 @@ test('ranking: fondo con VO2 Bajo tiene brecha severa; velocidad es la firme', (
   assert.equal(r.etapas.modulos.fisica_vo2max.estado, 'completo');
   assert.equal(r.etapas.modulos.fisica_vo2max.nivel, 'Bajo');
   const { familias, recomendada, advertencias } = r.etapas.ranking;
-  assert.equal(familias[0].id, 'atletismo_velocidad');
+  assert.equal(familias[0].id, 'deportes_fuerza');
   assert.equal(familias[0].compatibilidad, 1);
   assert.equal(familias[0].firme, true);
-  assert.equal(recomendada.id, 'atletismo_velocidad');
+  assert.equal(recomendada.id, 'deportes_fuerza');
   const fondo = familias.find(f => f.id === 'atletismo_fondo');
   assert.ok(fondo);
   assert.equal(fondo.compatibilidad, 0.8);
@@ -477,7 +477,7 @@ test('R-DEC-03: sin familia firme no hay recomendación; con brechas severas en 
   const ranking = construirRanking({ salida });
   assert.equal(ranking.recomendada, null);
   assert.equal(ranking.sinFamiliaCompatible, true);
-  assert.equal(ranking.familias[0].id, 'atletismo_velocidad'); // sigue listada con su 40%
+  assert.equal(ranking.familias[0].id, 'tenis_de_mesa'); // 40 %, empata con deportes de fuerza y tiene menos brechas severas (1 frente a 2)
   assert.equal(ranking.familias[0].porcentaje, 40);
   const plan = construirPlanAdaptacion({ ranking, capacidades });
   assert.equal(plan.estado, 3);

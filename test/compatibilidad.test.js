@@ -19,8 +19,8 @@ import {
 } from '../src/evaluacion/decision/compatibilidad.js';
 import { FAMILIAS_DEPORTIVAS } from '../src/evaluacion/decision/familias.js';
 
-test('la matriz cubre las 13 familias confirmadas', () => {
-  assert.equal(MATRIZ_DEMANDA.length, 13);
+test('la matriz cubre las 14 familias confirmadas', () => {
+  assert.equal(MATRIZ_DEMANDA.length, 14);
   for (const f of FAMILIAS_DEPORTIVAS) assert.ok(MATRIZ_DEMANDA.some(m => m.id === f.id), f.id);
 });
 
@@ -70,20 +70,24 @@ test('fondo con VO2 sin dato: 100% de lo evaluado pero no firme (carencia defini
   assert.deepEqual(r.carencias, [{ capacidad: 'vo2max', demanda: 'Muy alta', relevanteMitchell: true, demandaAlta: true }]);
 });
 
-test('empate al 100% sin VO2: gana la firme (velocidad sobre fondo/ciclismo)', () => {
+test('sin VO2: fondo, ciclismo y velocidad quedan al 100% de lo evaluado pero van después de las firmes', () => {
   const niveles = {
     fuerza: 'Medio', fuerza_explosiva: 'Muy alto', vo2max: null,
     flexibilidad: 'Medio', equilibrio: 'Medio',
   };
   const ord = ordenarFamilias(niveles, MATRIZ_DEMANDA);
-  const top3 = ord.slice(0, 3).map(r => r.familiaId);
-  // Las firmes van primero: velocidad (firme), voleibol (firme), deportes_fuerza (firme).
-  // Fondo y ciclismo son provisionales (carencia en vo2max Muy alta) y van después.
-  assert.deepEqual(top3, ['atletismo_velocidad', 'voleibol', 'deportes_fuerza']);
-  assert.equal(ord[0].firme, true);
-  // Las provisionales (fondo, ciclismo) no están entre las 3 primeras firmes.
-  const provisionalEnTop3 = ord.slice(0, 3).some(r => r.firme === false);
-  assert.equal(provisionalEnTop3, false);
+  // Las firmes van primero (voleibol, tenis de mesa y deportes de fuerza empatan al 75 %); las que exigen VO2 Alta o Muy alta quedan
+  // provisionales aunque cumplan el 100 % de lo evaluado.
+  assert.deepEqual(ord.slice(0, 3).map(r => r.familiaId), ['voleibol', 'tenis_de_mesa', 'deportes_fuerza']);
+  assert.ok(ord.slice(0, 3).every(r => r.firme === true));
+  for (const id of ['atletismo_fondo', 'ciclismo', 'atletismo_velocidad']) {
+    const r = ord.find(x => x.familiaId === id);
+    assert.equal(r.compatibilidad, 1, id);
+    assert.equal(r.firme, false, id);
+  }
+  const ultimaFirme = ord.map(r => r.firme).lastIndexOf(true);
+  const primeraProvisional = ord.findIndex(r => r.firme === false);
+  assert.ok(ultimaFirme < primeraProvisional, 'ninguna provisional antes de una firme');
 });
 
 test('sin ningún dato: compatibilidad null, cobertura 0', () => {
@@ -126,14 +130,15 @@ test('NIVELES tiene los 5 niveles usados por la regla', () => {
 });
 
 test('R-DEC-02: brecha severa en la demanda principal impide la recomendación firme', () => {
-  // Perfil de la captura: velocidad cumple 2/5 (VO2 Baja, equilibrio Media)
-  // pero tiene fuerza explosiva Muy bajo frente a Muy alta.
+  // Perfil de la captura: velocidad cumple 1/5 (solo equilibrio Media) y tiene brechas severas en fuerza explosiva y VO2
+  // (ambas Muy alta frente a Muy bajo y Bajo).
   const niveles = { fuerza: 'Muy bajo', fuerza_explosiva: 'Muy bajo', vo2max: 'Bajo', flexibilidad: 'Muy bajo', equilibrio: 'Alto' };
   const vel = evaluarFamilia(niveles, MATRIZ_DEMANDA.find(f => f.id === 'atletismo_velocidad'));
-  assert.equal(vel.compatibilidad, 0.4); // el porcentaje no cambia
+  assert.equal(vel.compatibilidad, 0.2); // el porcentaje no cambia por ser no firme
   assert.equal(vel.firme, false);
   assert.deepEqual(vel.motivosNoFirme, [
     { tipo: 'brecha_severa', capacidad: 'fuerza_explosiva', demanda: 'Muy alta', nivel: 'Muy bajo' },
+    { tipo: 'brecha_severa', capacidad: 'vo2max', demanda: 'Muy alta', nivel: 'Bajo' },
   ]);
   assert.equal(ordenarFamilias(niveles, MATRIZ_DEMANDA).filter(f => f.firme).length, 0);
 });
@@ -145,4 +150,16 @@ test('R-DEC-02: brecha no severa (Medio frente a Muy alta) no bloquea; sin dato 
   const sinVo2 = evaluarFamilia({ fuerza: 'Bajo', fuerza_explosiva: 'Medio', vo2max: null, flexibilidad: 'Medio', equilibrio: 'Medio' }, fondo);
   assert.equal(sinVo2.firme, false);
   assert.deepEqual(sinVo2.motivosNoFirme, [{ tipo: 'sin_dato', capacidad: 'vo2max', demanda: 'Muy alta' }]);
+});
+
+test('tenis y tenis de mesa se diferencian por su demanda aeróbica (Media frente a Baja)', () => {
+  const niveles = { fuerza: 'Medio', fuerza_explosiva: 'Alto', vo2max: 'Bajo', flexibilidad: 'Medio', equilibrio: 'Alto' };
+  const tenis = evaluarFamilia(niveles, MATRIZ_DEMANDA.find(f => f.id === 'raqueta'));
+  const mesa = evaluarFamilia(niveles, MATRIZ_DEMANDA.find(f => f.id === 'tenis_de_mesa'));
+  // Con VO2 Bajo: el tenis (VO2 Media) no cumple esa demanda; el tenis de mesa (VO2 Baja) sí.
+  assert.deepEqual(tenis.brechas.map(b => b.capacidad), ['vo2max']);
+  assert.equal(tenis.brechas[0].severa, false);
+  assert.deepEqual(mesa.brechas, []);
+  assert.equal(mesa.compatibilidad, 1);
+  assert.ok(tenis.compatibilidad < mesa.compatibilidad);
 });
