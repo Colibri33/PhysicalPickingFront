@@ -520,6 +520,13 @@ function bloqueInterpretacion(L, s) {
       L.parrafo(`Capacidades a priorizar: ${pl.prioridades.map(p => `${ETIQUETAS_CAPACIDAD[p.capacidad] ?? p.capacidad} (${p.nivel})`).join(', ')}.`, { tamano: 9 });
     }
     L.y += 3;
+  } else if (pl?.tipo === 'adaptacion_previa') {
+    L.asegurar(26, L.etiqueta);
+    L.seccion('Antes de empezar');
+    L.parrafo(pl.nombre, { estilo: 'negrita' });
+    if (pl.motivo) L.parrafo(pl.motivo, { tamano: 9 });
+    (pl.pautasGenerales || []).forEach(p => L.parrafo(`${p.titulo}: ${p.texto}`, { tamano: 9 }));
+    L.y += 3;
   } else if (pl?.tipo === 'datos_insuficientes') {
     L.parrafo(`${pl.motivo} Faltan: ${(pl.faltantes || []).map(c => ETIQUETAS_CAPACIDAD[c] ?? c).join(', ')}.`, { tamano: 9 });
     L.y += 3;

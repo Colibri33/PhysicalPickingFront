@@ -78,7 +78,7 @@ export function ejecutarFlujoEvaluacion(datosIngresados, opciones = {}) {
   const ranking = construirRanking(decision, reglas.restriccionesPorCondicion);
 
   // 8b. Estado de preparación cuando ninguna familia es firme (R-DEC-03)
-  const planAdaptacion = construirPlanAdaptacion({ ranking, capacidades: entradaMotor.capacidades });
+  const planAdaptacion = construirPlanAdaptacion({ ranking, capacidades: entradaMotor.capacidades, ipaq: entradaMotor.ipaq });
 
   // 9. Informe
   const informe = construirInforme({ resultados, reglas, decision, ranking, planAdaptacion });

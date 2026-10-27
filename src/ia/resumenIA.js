@@ -50,7 +50,7 @@ export function construirResumenIA(analisis, flujo) {
         nombre: f.nombre ?? f.id, porcentaje: f.porcentaje, firme: f.firme,
         brechas: (f.brechas ?? []).map(b => ({ capacidad: b.capacidad, demanda: b.demanda, nivel: b.nivel, severa: b.severa })),
       })),
-      planAdaptacion: plan.aplica ? { estado: plan.estado ?? null, motivo: plan.motivo ?? null } : null,
+      planAdaptacion: plan.aplica ? { estado: plan.estado ?? null, tipo: plan.tipo ?? null, motivo: plan.motivo ?? null } : null,
     },
     notas: ['Baremo de resistencia aeróbica (Léger) propio y provisional.', 'Las zonas del modelo 3D son brechas frente a un deporte, no diagnóstico médico.'],
   };

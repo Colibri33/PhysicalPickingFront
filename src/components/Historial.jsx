@@ -236,7 +236,7 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
               const plan = r.evaluacion?.etapas?.planAdaptacion;
               const texto = rk?.familias && 'recomendada' in rk
                 ? (rk.recomendada
-                  ? `Recomendación firme: ${textoRecomendacion(rk)}.`
+                  ? `Recomendación firme: ${textoRecomendacion(rk)}.${plan?.tipo === 'adaptacion_previa' ? ` ${plan.motivo}` : ''}`
                   : plan?.estado === 3 ? `Estado 3 · ${plan.nombre}: ${plan.motivo}`
                     : ['datos_insuficientes', 'valoracion_medica', 'restricciones_seguridad'].includes(plan?.tipo) ? plan.motivo : null)
                 : r.interpretacion?.recomendacion;

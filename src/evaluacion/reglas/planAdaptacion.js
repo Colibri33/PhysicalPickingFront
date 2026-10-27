@@ -10,7 +10,10 @@
  * como `valoracion_medica` o `restricciones_seguridad` y no propone adaptación. Notas: decisión propia 2026-10. Estado 3 (adaptación desde cero): todas las familias tienen al menos una brecha severa; no se recomienda
  * deporte. Datos insuficientes: alguna familia queda sin recomendar solo por falta de datos; se solicitan en lugar de asignar el Estado 3.
  * Las pautas parafrasean ACSM's Guidelines for Exercise Testing and Prescription (11.ª ed., 2021), cap. 5 (Tablas 5.1, 5.5 y 5.6 y
- * "Progression of Aerobic Exercise"); no se inventan cargas ni semanas. Pendiente: los Estados 1 y 2 (base física + IPAQ + PSQI) sin regla definida.
+ * "Progression of Aerobic Exercise"); no se inventan cargas ni semanas.
+ * R-DEC-05 (2026-10): si hay recomendación firme pero el IPAQ declara actividad física "Bajo", se antepone una fase de adaptación
+ * progresiva: las capacidades medidas pueden ser buenas, pero la persona no está habituada a la carga. No cambia el ranking.
+ * Pendiente: los Estados 1 y 2 (base física + IPAQ + PSQI) sin umbrales definidos.
  */
 
 /** Fuente bibliográfica de las pautas generales. */
@@ -57,6 +60,9 @@ export const PAUTAS_POR_COMPONENTE = Object.freeze({
   },
 });
 
+/** Categoría IPAQ que activa la fase de adaptación previa (R-DEC-05). */
+const IPAQ_SEDENTARIO = 'Bajo';
+
 const ORDEN_CAPACIDADES = ['fuerza', 'fuerza_explosiva', 'vo2max', 'flexibilidad', 'equilibrio'];
 const NIVELES_PRIORIDAD = ['Muy bajo', 'Bajo'];
 
@@ -71,8 +77,9 @@ function componenteDe(capacidad) {
  * @param {Object} p - parámetros.
  * @param {Object} p.ranking - salida de construirRanking().
  * @param {Object<string, string|null>} p.capacidades - niveles recibidos por el motor.
+ * @param {string|null} [p.ipaq] - categoría IPAQ ('Bajo' | 'Moderado' | 'Alto').
  * @returns {Object} plan con `aplica` y, según el caso, prioridades y pautas, o los datos faltantes. */
-export function construirPlanAdaptacion({ ranking, capacidades }) {
+export function construirPlanAdaptacion({ ranking, capacidades, ipaq = null }) {
   if (ranking?.bloqueoMedico) {
     return {
       aplica: true,
@@ -84,6 +91,18 @@ export function construirPlanAdaptacion({ ranking, capacidades }) {
     };
   }
   if (!ranking?.sinFamiliaCompatible) {
+    if (ipaq === IPAQ_SEDENTARIO && ranking?.recomendada) {
+      return {
+        aplica: true,
+        estado: null,
+        tipo: 'adaptacion_previa',
+        nombre: 'Adaptación progresiva antes de empezar',
+        regla: 'R-DEC-05',
+        motivo: 'Manifestaste tener poca actividad física. Aunque tus capacidades se ajustan a la familia recomendada, tu cuerpo aún no está habituado a la carga: empieza con una fase de adaptación progresiva antes de entrenar ese deporte de lleno.',
+        pautasGenerales: PAUTAS_GENERALES,
+        fuente: FUENTE_ACSM,
+      };
+    }
     return {
       aplica: false,
       estado: null,

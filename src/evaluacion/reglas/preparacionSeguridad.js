@@ -11,7 +11,8 @@
  * declaradas se reportan por prueba, solo como aviso. R-SEG-04 (2026-10): un antecedente de lesión declarado genera alerta de adaptación y
  * recuperación previa, sin excluir familias ni alterar el porcentaje. R-SEG-05 (2026-10): las condiciones declaradas en el PAR-Q+ pueden exigir
  * valoración médica previa, dejar familias como no recomendables o solo generar una alerta (ver restriccionesPorCondicion.js); tampoco
- * altera el porcentaje. Los Estados 1-3 de preparación residen en el DecisionEngine. Ninguna regla
+ * altera el porcentaje. R-SEG-06 (2026-10): un PSQI global de 5 o más (validación colombiana: "merece atención médica" en adelante)
+ * genera alerta de sueño, por el mayor riesgo de lesión y la menor energía; tampoco altera el porcentaje. Los Estados 1-3 de preparación residen en el DecisionEngine. Ninguna regla
  * modifica niveles de capacidades ni el porcentaje de compatibilidad.
  */
 
@@ -27,7 +28,29 @@ export const REGLAS = [
   { id: 'R-SEG-03', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Limitaciones declaradas se reportan por prueba (aviso).' },
   { id: 'R-SEG-04', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Antecedente de lesion → alerta de adaptacion y recuperacion previa antes de volver al deporte.' },
   { id: 'R-SEG-05', origen: ORIGEN.DECISION_PROPIA, descripcion: 'Condiciones declaradas en el PAR-Q+ → valoración médica previa, familias restringidas o alerta específica.' },
+  { id: 'R-SEG-06', origen: ORIGEN.DECISION_PROPIA, descripcion: 'PSQI global >= 5 → alerta de calidad de sueño antes de aumentar la carga.' },
 ];
+
+/** Puntaje global PSQI desde el que la validación colombiana indica atención médica. */
+const PSQI_CORTE_ATENCION = 5;
+
+/** R-SEG-06: genera la alerta por mala calidad de sueño (PSQI).
+ * @param {Object|null} psqi - dato normalizado del PSQI ({ puntajeGlobal, categoria }).
+ * @returns {Object|null} alerta, o null si no aplica o no hay dato. */
+export function alertaCalidadSueno(psqi) {
+  const global = psqi?.puntajeGlobal;
+  if (typeof global !== 'number' || global < PSQI_CORTE_ATENCION) return null;
+  return {
+    codigo: 'SUENO_DEFICIENTE',
+    regla: 'R-SEG-06',
+    severidad: 'precaucion',
+    titulo: 'Revisa tu descanso',
+    mensaje: `Según tus respuestas no estás durmiendo bien (PSQI ${global}/21${psqi.categoria ? `: ${psqi.categoria.toLowerCase()}` : ''}). ` +
+      'Dormir mal reduce la energía y la recuperación y aumenta el riesgo de lesiones: conviene revisarlo con un profesional de la salud ' +
+      'y mejorar el descanso antes de aumentar la carga de entrenamiento.',
+    puntajeGlobal: global,
+  };
+}
 
 const ANTECEDENTES_LESION = [
   { campo: 'lesion2anios', texto: 'lesión deportiva en los últimos 2 años' },
@@ -102,6 +125,10 @@ export function aplicarReglasPreparacionSeguridad(perfil) {
   // R-SEG-05
   const restriccionesPorCondicion = aplicarRestriccionesPorCondicion(parq);
   alertas.push(...restriccionesPorCondicion.alertas);
+
+  // R-SEG-06
+  const alertaSueno = alertaCalidadSueno(perfil.preparacion?.psqi);
+  if (alertaSueno) alertas.push(alertaSueno);
 
   return {
     reglasAplicadas: REGLAS,

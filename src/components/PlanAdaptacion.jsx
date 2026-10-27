@@ -5,7 +5,8 @@
  * Principios SOLID aplicados:
  *  - S (Responsabilidad única): presentación de la salida de evaluacion/reglas/planAdaptacion.js; no calcula.
  *  - I (Segregación de interfaces): cada componente recibe solo el plan o las alertas.
- * Notas: se muestra cuando ninguna familia es recomendación firme (R-DEC-03); alerta R-SEG-04.
+ * Notas: se muestra cuando ninguna familia es recomendación firme (R-DEC-03), o junto a la recomendación firme cuando el IPAQ
+ * declara actividad física baja (R-DEC-05); alerta R-SEG-04.
  */
 import { ETIQUETAS_CAPACIDAD } from '../evaluacion/capacidades';
 
@@ -27,12 +28,12 @@ export function AlertaAntecedentes({ alertas = [] }) {
   );
 }
 
-/** Alertas de la regla R-SEG-05: condiciones declaradas en el PAR-Q+ que restringen familias o piden una precaución específica.
+/** Alertas de las reglas R-SEG-05 (condiciones declaradas en el PAR-Q+) y R-SEG-06 (calidad de sueño según el PSQI).
  * @param {Object} props
  * @param {Array} [props.alertas] - Alertas de seguridad del informe.
  * @returns {JSX.Element|null} null si no hay alertas de esta regla. */
 export function AlertasSeguridad({ alertas = [] }) {
-  const lista = alertas.filter(a => a.regla === 'R-SEG-05');
+  const lista = alertas.filter(a => a.regla === 'R-SEG-05' || a.regla === 'R-SEG-06');
   if (lista.length === 0) return null;
   return (
     <>
@@ -81,6 +82,31 @@ export default function PlanAdaptacion({ plan }) {
             {plan.condiciones.map(c => <span key={c} className="plan-chip">{c}</span>)}
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (plan.tipo === 'adaptacion_previa') {
+    return (
+      <div className="plan-card">
+        <div className="plan-head">
+          <span className="plan-estado">Antes de empezar</span>
+          <h4 className="plan-titulo">{plan.nombre}</h4>
+        </div>
+        <p className="plan-motivo">{plan.motivo}</p>
+        <div className="plan-grid">
+          {(plan.pautasGenerales ?? []).map(p => (
+            <div key={p.id} className="plan-pauta">
+              <p className="plan-pauta-titulo">{p.titulo}</p>
+              <p className="plan-pauta-texto">{p.texto}</p>
+              <p className="plan-pauta-ref">{p.referencia}</p>
+            </div>
+          ))}
+        </div>
+        <p className="plan-fuente">
+          Orientación general basada en {String(plan.fuente?.referencia ?? '').replace(/\.$/, '')}. No reemplaza la prescripción individual
+          de un profesional en ciencias del deporte.
+        </p>
       </div>
     );
   }

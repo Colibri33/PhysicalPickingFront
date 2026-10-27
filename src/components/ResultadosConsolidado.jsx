@@ -200,6 +200,7 @@ export default function ResultadosConsolidado({ analisis, onGuardar, onNuevo, on
             : <p className="interp-parrafo">Sin compatibilidad calculada todavía.</p>
         ) : (
           <>
+            {plan?.tipo === 'adaptacion_previa' && <PlanAdaptacion plan={plan} />}
             <p className="interp-parrafo">
               Recomendación firme: {top.nombre ?? top.id}
               {top.porcentaje !== null && top.porcentaje !== undefined ? ` (${top.porcentaje}%, cobertura ${Math.round((top.cobertura ?? 0) * 5)}/5)` : ' (sin datos suficientes)'}.

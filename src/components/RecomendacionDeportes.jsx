@@ -78,6 +78,7 @@ export default function RecomendacionDeportes({ analisis, onNuevo, onGuardar, an
       ) : (
         <PlanAdaptacion plan={plan} />
       )}
+      {top && plan?.tipo === 'adaptacion_previa' && <PlanAdaptacion plan={plan} />}
       {top && hayEmpate && (
         <p className="panel-desc">
           Estas familias tienen la misma compatibilidad y los mismos criterios de desempate: el sistema no prioriza una sobre otra.
