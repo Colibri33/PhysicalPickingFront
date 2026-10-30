@@ -311,6 +311,29 @@ export async function leerHistorial(usuarioId) {
   }
 }
 
+/** Elimina un análisis del historial: del navegador en modo invitado o del servidor si hay cuenta.
+ * @param {string|null} usuarioId - id del usuario; null para invitado.
+ * @param {string|number} id - id del registro.
+ * @returns {Promise<{ok: boolean, error?: string}>} resultado de la eliminación. */
+export async function eliminarRegistroHistorial(usuarioId, id) {
+  if (usuarioId === null) {
+    try {
+      const prev = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL_INVITADO) || '[]');
+      localStorage.setItem(STORAGE_HISTORIAL_INVITADO, JSON.stringify(prev.filter(r => r.id !== id)));
+      return { ok: true };
+    } catch {
+      return { ok: false, error: 'No se pudo eliminar el registro local.' };
+    }
+  }
+
+  try {
+    await apiFetch(`/resultados/${id}`, { method: 'DELETE' });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 /** Borra el historial temporal del modo invitado.
  * @returns {void} */
 export function limpiarHistorialInvitado() {

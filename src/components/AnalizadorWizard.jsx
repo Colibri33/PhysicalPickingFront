@@ -247,6 +247,9 @@ export default function AnalizadorWizard({ usuarioActual, modoInvitado, mostrarT
           onHistorialActualizado={(registroActualizado) => {
             setHistorial(prev => prev.map(r => r.id === registroActualizado.id ? registroActualizado : r));
           }}
+          onRegistroEliminado={(id) => {
+            setHistorial(prev => prev.filter(r => r.id !== id));
+          }}
         />
       );
       default: return null;

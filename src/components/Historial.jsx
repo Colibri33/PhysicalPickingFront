@@ -19,6 +19,7 @@ import {
   exportarMisDatos,
   eliminarCuenta,
   actualizarRegistroHistorial,
+  eliminarRegistroHistorial,
   descargarInformePdf,
 } from '../auth/authService';
 import { AlertaAntecedentes, AlertasSeguridad } from './PlanAdaptacion';
@@ -48,8 +49,9 @@ function descargarBlob(blob, nombreArchivo) {
  * @param {Object} props.registro - Registro guardado.
  * @param {Function} props.onVolver - Regresa a la lista.
  * @param {Function} props.onEditarPdf - Abre edición y PDF.
+ * @param {Function} props.onEliminar - Elimina este análisis.
  * @returns {JSX.Element} */
-function DetalleAnalisis({ registro, onVolver, onEditarPdf }) {
+function DetalleAnalisis({ registro, onVolver, onEditarPdf, onEliminar }) {
   const [vista, setVista] = useState('informe');
   const analisis = analisisDesdeRegistro(registro);
   return (
@@ -57,6 +59,7 @@ function DetalleAnalisis({ registro, onVolver, onEditarPdf }) {
       <div className="action-row" style={{ marginBottom: '1rem', flexWrap: 'wrap' }}>
         <button className="btn btn-outline" onClick={onVolver} type="button"><Icono n="izquierda" /> Volver a la lista</button>
         <button className="btn btn-outline" onClick={onEditarPdf} type="button">Editar datos / PDF</button>
+        <button className="btn btn-outline btn-danger" onClick={onEliminar} type="button">Eliminar análisis</button>
         <span className="hist-count" style={{ marginLeft: 'auto' }}>{registro.participante.nombre} · {registro.fecha}</span>
       </div>
       <div className="action-row" style={{ marginBottom: '1rem' }}>
@@ -315,8 +318,9 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
  * @param {Function} props.mostrarToast - Muestra notificaciones.
  * @param {Function} props.onLogout - Cierra sesión.
  * @param {Function} props.onHistorialActualizado - Notifica un registro modificado.
+ * @param {Function} props.onRegistroEliminado - Notifica el id de un registro eliminado.
  * @returns {JSX.Element} */
-export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual, mostrarToast, onLogout, onHistorialActualizado }) {
+export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual, mostrarToast, onLogout, onHistorialActualizado, onRegistroEliminado }) {
   const [detalle, setDetalle] = useState(null);   // Modal de edición y PDF.
   const [verId, setVerId] = useState(null);         // Análisis completo.
 
@@ -348,6 +352,19 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
     }
   }
 
+  async function handleEliminarRegistro(registro) {
+    if (!window.confirm(`Se eliminará el análisis de ${registro.participante.nombre} (${registro.fecha}) de forma permanente. ¿Continuar?`)) return;
+    const r = await eliminarRegistroHistorial(usuarioActual?.id ?? null, registro.id);
+    if (!r.ok) {
+      mostrarToast?.(r.error || 'No se pudo eliminar el análisis.', 'error');
+      return;
+    }
+    setVerId(null);
+    setDetalle(null);
+    onRegistroEliminado?.(registro.id);
+    mostrarToast?.('Análisis eliminado.', 'success');
+  }
+
   function handleActualizado(registroActualizado) {
     setDetalle(registroActualizado);
     onHistorialActualizado?.(registroActualizado);
@@ -357,7 +374,7 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
   if (regVisto) {
     return (
       <div className="panel-card">
-        <DetalleAnalisis registro={regVisto} onVolver={() => setVerId(null)} onEditarPdf={() => setDetalle(regVisto)} />
+        <DetalleAnalisis registro={regVisto} onVolver={() => setVerId(null)} onEditarPdf={() => setDetalle(regVisto)} onEliminar={() => handleEliminarRegistro(regVisto)} />
         {detalle && (
           <ModalDetalle
             registro={detalle}
