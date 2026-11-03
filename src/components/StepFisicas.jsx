@@ -125,6 +125,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
     // La suma queda vacía si algún parcial es inválido.
     if (id === 'equilibrioDer' || id === 'equilibrioIzq') {
       const parciales = { equilibrioDer: analisis.realesF.equilibrioDer, equilibrioIzq: analisis.realesF.equilibrioIzq, [id]: valor };
+      // Intento válido de equilibrio (entero entre 0 y el máximo) o null.
       const num = k => {
         const n = Number(parciales[k]);
         return (parciales[k] === '' || parciales[k] == null || !Number.isInteger(n) || n < 0 || n > EQUILIBRIO_POR_PIERNA_MAX) ? null : n;
@@ -134,6 +135,7 @@ export default function StepFisicas({ analisis, updateAnalisis, onContinuar, mos
       updateAnalisis({ realesF: { ...analisis.realesF, [id]: valor, equilibrio: (d !== null && q !== null) ? String(d + q) : '' } });
     } else if (id === 'fuerzaDer' || id === 'fuerzaIzq') {
       const parciales = { fuerzaDer: analisis.realesF.fuerzaDer, fuerzaIzq: analisis.realesF.fuerzaIzq, [id]: valor };
+      // Medida válida de fuerza (número entre 0 y el máximo) o null.
       const num = k => {
         const n = Number(parciales[k]);
         return (parciales[k] === '' || parciales[k] == null || !Number.isFinite(n) || n < 0 || n > FUERZA_POR_MANO_MAX) ? null : n;

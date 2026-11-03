@@ -19,5 +19,13 @@ const datos = {
   antropometricas: { peso: '60', talla: '165' }, cuestionarios: { parq: { p1:false,p2:false,p3:false,p4:false,p5:false,p6:false,p7:false } }, leger: { palier: q.get('leger') || '5' },
 };
 const flujo = ejecutarFlujoEvaluacion(datos);
-function App() { const [f, setF] = useState(flujo.etapas.ranking.recomendada?.id ?? ''); return <div style={{ padding: 16, maxWidth: 1280, margin: '0 auto' }}><MapaCorporalBrechas flujo={flujo} familiaId={f} onFamiliaChange={setF} sexo={sexo} /></div>; }
+// Monta el mapa corporal con la familia recomendada como selección inicial.
+function App() {
+  const [f, setF] = useState(flujo.etapas.ranking.recomendada?.id ?? '');
+  return (
+    <div style={{ padding: 16, maxWidth: 1280, margin: '0 auto' }}>
+      <MapaCorporalBrechas flujo={flujo} familiaId={f} onFamiliaChange={setF} sexo={sexo} />
+    </div>
+  );
+}
 createRoot(document.getElementById('root')).render(<App />);

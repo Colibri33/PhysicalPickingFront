@@ -28,6 +28,7 @@ function flujoCon(...si) {
   return ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis(analisis));
 }
 
+// Familias que quedaron restringidas en el ranking.
 const restringidas = (flujo) => flujo.etapas.ranking.familias
   .filter(f => f.motivosNoFirme.some(m => m.tipo === 'restriccion_seguridad')).map(f => f.id).sort();
 
@@ -68,6 +69,7 @@ for (const [nombre, ids, esperadas] of [
 test('respiratoria o asma (c7): solo las familias con demanda aeróbica Alta o Muy alta, y voleibol y raqueta siguen disponibles', () => {
   const f = flujoCon('c7', 'c7c');
   assert.deepEqual(restringidas(f), RESPIRATORIA);
+  // Familia del ranking por id.
   const fam = (id) => f.etapas.ranking.familias.find(x => x.id === id);
   assert.ok(!fam('voleibol').motivosNoFirme.some(m => m.tipo === 'restriccion_seguridad'));
   assert.ok(!fam('raqueta').motivosNoFirme.some(m => m.tipo === 'restriccion_seguridad'));
@@ -158,6 +160,7 @@ test('una subpregunta concreta (c6b, c7d, c10a) exige su propio Sí: la categor�
 });
 
 test('los mensajes nombran la afección que la persona manifestó', () => {
+  // Alertas R-SEG-05 generadas para las condiciones dadas.
   const alertas = (...ids) => flujoCon(...ids).informe.seguridad.alertas.filter(a => a.regla === 'R-SEG-05');
   assert.match(alertas('c3').find(a => a.codigo === 'PARQ_RESTRICCION_CARDIOVASCULAR').titulo, /Restricción: manifestaste tener una enfermedad cardiovascular o cardíaca/);
   assert.match(alertas('c4').find(a => a.codigo === 'PARQ_RESTRICCION_CARDIOVASCULAR').titulo, /manifestaste tener hipertensión arterial/);
@@ -176,7 +179,9 @@ test('la regla ignora un PAR-Q+ ausente y las categorías sin seguimiento aplica
 
 /** Salida mínima del motor con tres familias firmes. */
 const motor = (...familias) => ({ salida: { compatibilidad: { ranking: familias } } });
+// Familia simulada del ranking con valores por defecto.
 const fam = (id, extra = {}) => ({ id, compatibilidad: 0.8, porcentaje: 80, cobertura: 1, carenciasRelevantes: 0, brechasRelevantes: 0, brechasSeveras: 0, firme: true, motivosNoFirme: [], ...extra });
+// Restricciones simuladas (R-SEG-05, respiratoria) para las familias dadas.
 const restr = (...ids) => ({ bloqueo: null, familias: Object.fromEntries(ids.map(id => [id, [{ regla: 'R-SEG-05', restriccion: 'respiratoria', condicion: 'una enfermedad respiratoria (EPOC, asma u otra)', motivo: 'demanda aeróbica Alta o Muy alta' }]])) });
 
 test('plan: si solo la seguridad deja fuera a todas las familias, se informa la restricción y no una adaptación', () => {
