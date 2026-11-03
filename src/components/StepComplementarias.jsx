@@ -128,6 +128,7 @@ export default function StepComplementarias({ analisis, updateAnalisis, onContin
     onContinuar();
   }
 
+  // Clase de la pregunta; resalta las que faltan por responder.
   const cls = id => `parq-pregunta${marcados.includes(id) ? ' pregunta-faltante' : ''}`;
   const lista = respuestas.experiencias ?? [];
 

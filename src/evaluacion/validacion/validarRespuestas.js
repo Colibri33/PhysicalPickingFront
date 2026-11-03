@@ -27,6 +27,7 @@ export function estaVacio(v) {
 export function esVisible(item, respuestas) {
   const c = item.visibleSi;
   if (!c) return true;
+  // Evalúa la condición de visibilidad sobre la respuesta del ítem id.
   const evaluar = (id) => {
     const v = respuestas?.[id];
     if ('igual' in c) return v === c.igual;

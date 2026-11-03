@@ -75,6 +75,7 @@ export function buscarGrupo(baremo, contexto) {
  * @param {string} limite - semántica del corte.
  * @returns {string} nivel de NIVELES. */
 function nivelPorCortes(valor, cortes, direccion, limite) {
+  // Indica si el valor alcanza el corte c según el tipo de límite del baremo.
   const supera = (c) => (limite === 'inferior_inclusivo' ? valor >= c : valor > c);
   const indice = cortes.filter(supera).length;
   return direccion === 'mayor_mejor' ? NIVELES[indice] : NIVELES[NIVELES.length - 1 - indice];

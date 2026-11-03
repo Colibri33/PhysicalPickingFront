@@ -238,6 +238,7 @@ test('Léger: los cortes se reproducen como media + z × DE de la muestra (méto
 });
 
 test('redondeo (R-BAR-03): los decimales se clasifican como el entero más cercano, mitades hacia arriba', () => {
+  // Nivel que asigna el baremo a un valor, sexo y edad.
   const nivel = (id, valor, sexo, edad) => aplicarBaremo(REGISTRO, id, valor, { sexo, edad }).nivel;
   // Dinamometría, hombre 20: "Muy alto > 111", Alto 98-111, Bajo 72-84, Medio 85-97, Muy bajo < 72.
   assert.equal(nivel('afisal_dinamometria', 111.4, 'masculino', 20), 'Alto');
