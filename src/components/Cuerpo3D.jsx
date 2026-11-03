@@ -178,10 +178,8 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     const uniformes = { uC: { value: uC }, uR: { value: uR }, uZ: { value: uZ }, uCol: { value: uCol }, uInt: { value: uInt } };
 
     const piso = new THREE.Group();
-    // Anillo de radio r y opacidad op para la base luminosa del modelo.
     const aro = (r, op) => new THREE.Mesh(new THREE.RingGeometry(r, r + 0.004, 96), new THREE.MeshBasicMaterial({ color: '#22D3EE', transparent: true, opacity: op, side: THREE.DoubleSide, depthWrite: false }));
-    const a1 = aro(0.42, 0.55);
-    const a2 = aro(0.3, 0.35);
+    const a1 = aro(0.42, 0.55); const a2 = aro(0.3, 0.35);
     const disco = new THREE.Mesh(new THREE.CircleGeometry(0.5, 64), new THREE.MeshBasicMaterial({ map: texturaSuelo(), transparent: true, depthWrite: false }));
     [a1, a2, disco].forEach(m => { m.rotation.x = -Math.PI / 2; piso.add(m); });
     piso.position.y = 0.002;
@@ -224,13 +222,10 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       (e) => { if (vivo) onError?.(e); },
     );
 
-    let ancho = 1;
-    let alto = 1;
-    // Ajusta renderer y cámara al tamaño actual del contenedor.
+    let ancho = 1; let alto = 1;
     const medir = () => {
       const r = host.getBoundingClientRect();
-      ancho = Math.max(1, r.width);
-      alto = Math.max(1, r.height);
+      ancho = Math.max(1, r.width); alto = Math.max(1, r.height);
       renderer.setSize(ancho, alto, false);
       camara.aspect = ancho / alto;
       camara.updateProjectionMatrix();
@@ -241,12 +236,10 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
     ro.observe(host);
     medir();
 
-    let objetivoAng = 0;
-    let ang = 0;
+    let objetivoAng = 0; let ang = 0;
     let arrastre = null;
     const ray = new THREE.Raycaster();
     const puntero = new THREE.Vector2();
-    // Convierte la posición del puntero a coordenadas normalizadas (-1..1) del canvas.
     const alPuntero = (e) => {
       const r = renderer.domElement.getBoundingClientRect();
       puntero.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
@@ -259,8 +252,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       const hit = ray.intersectObject(malla, false)[0];
       if (!hit) return null;
       const p = malla.worldToLocal(hit.point.clone());
-      let mejor = null;
-      let dMejor = 1.45;
+      let mejor = null; let dMejor = 1.45;
       let k = 0;
       ORDEN.forEach((id) => ZONAS_3D[id].forEach(([cx, cy, cz, rx, ry, rz]) => {
         const d = Math.hypot((p.x - cx) / rx, (p.y - cy) / ry, (p.z - cz) / rz);
@@ -269,20 +261,16 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       }));
       return mejor;
     };
-    // Inicia el arrastre que rota el modelo.
     const bajar = (e) => { arrastre = { x: e.clientX, mov: 0 }; renderer.domElement.setPointerCapture?.(e.pointerId); };
-    // Rota el modelo mientras se arrastra; sin arrastre solo actualiza el cursor.
     const mover = (e) => {
       if (arrastre) {
         const dx = e.clientX - arrastre.x;
-        arrastre.mov += Math.abs(dx);
-        arrastre.x = e.clientX;
+        arrastre.mov += Math.abs(dx); arrastre.x = e.clientX;
         objetivoAng += dx * 0.012;
       } else {
         renderer.domElement.style.cursor = zonaEn(e) ? 'pointer' : 'grab';
       }
     };
-    // Si el gesto fue un toque (casi sin movimiento) selecciona la zona bajo el puntero.
     const subir = (e) => {
       if (arrastre && arrastre.mov < 5) {
         const id = zonaEn(e);
@@ -291,8 +279,7 @@ export default function Cuerpo3D({ vista, items, sel, onSel, zoom = 1, compacto 
       arrastre = null;
     };
     const el = renderer.domElement;
-    el.style.cursor = 'grab';
-    el.style.touchAction = 'pan-y';
+    el.style.cursor = 'grab'; el.style.touchAction = 'pan-y';
     el.addEventListener('pointerdown', bajar);
     el.addEventListener('pointermove', mover);
     el.addEventListener('pointerup', subir);

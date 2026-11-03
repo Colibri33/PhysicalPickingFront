@@ -65,7 +65,6 @@ export function etiquetaNoFirme(fam) {
  * @returns {Object[]} familias empatadas (incluye la recomendada, primera); vacío si no hay recomendada. */
 function familiasEmpatadas(familias, recomendada) {
   if (!recomendada) return [];
-  // Solo las familias con compatibilidad numérica entran al orden.
   const comparable = (f) => typeof f.compatibilidad === 'number';
   if (!comparable(recomendada)) return [recomendada];
   return familias.filter(f => f === recomendada

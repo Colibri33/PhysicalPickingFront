@@ -39,7 +39,6 @@ async function aBase64(ruta) {
  * @returns {Promise<void>} */
 function fotogramas(n) {
   return new Promise((resolver) => {
-    // Espera k fotogramas antes de resolver, para que el DOM termine de pintar.
     const paso = (k) => (k <= 0 ? resolver() : requestAnimationFrame(() => paso(k - 1)));
     paso(n);
   });

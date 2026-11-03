@@ -68,7 +68,6 @@ export function datosEntradaDesdeAnalisis(analisis) {
   }
   const legerRaw = analisis?.leger?.palier;
   const realesRaw = analisis?.realesF?.resistencia;
-  // Convierte el valor capturado en un palier válido de Léger, o null.
   const aPalier = (raw) => {
     if (raw === '' || raw == null) return null;
     const n = Number(raw);

@@ -110,9 +110,7 @@ export function construirPlanAdaptacion({ ranking, capacidades, ipaq = null }) {
     };
   }
   const familias = ranking.familias ?? [];
-  // Familia con alguna brecha severa que justifica no recomendarla de forma firme.
   const tieneSevera = (f) => (f.motivosNoFirme ?? []).some(m => m.tipo === 'brecha_severa');
-  // Familia con una restricción de seguridad (PAR-Q+ u otra regla).
   const tieneRestriccion = (f) => (f.motivosNoFirme ?? []).some(m => m.tipo === 'restriccion_seguridad');
   const bloqueadasSoloPorDatos = familias.filter(f => !tieneSevera(f) && !tieneRestriccion(f));
 

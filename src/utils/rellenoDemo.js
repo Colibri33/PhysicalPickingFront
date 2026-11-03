@@ -26,13 +26,9 @@ const PERFILES = ['deportivo', 'general', 'entrenador'];
  * @param {'masculino'|'femenino'|null} [sexo] - sexo fijo; si es null se elige al azar.
  * @returns {Object} análisis con la misma forma que estadoAnalisisInicial(), listo para setAnalisis. */
 export function generarAnalisisDemo(rng = Math.random, sexo = null) {
-  // Entero aleatorio entre a y b.
   const ent = (a, b) => Math.round(a + rng() * (b - a));
-  // Decimal aleatorio entre a y b con d cifras.
   const dec = (a, b, d = 1) => Number((a + rng() * (b - a)).toFixed(d));
-  // Elemento aleatorio del arreglo.
   const elegir = arr => arr[Math.floor(rng() * arr.length)];
-  // Limita x al rango [a, b].
   const acota = (x, a, b) => Math.min(b, Math.max(a, x));
   /* Variación pequeña alrededor de una base para mantener la coherencia entre pruebas. */
   const ruido = amp => (rng() - 0.5) * 2 * amp;
@@ -92,7 +88,6 @@ export function generarAnalisisDemo(rng = Math.random, sexo = null) {
     i7: ent(240, 600),
   } };
 
-  // Número con dos dígitos (09, 10).
   const hh = n => String(n).padStart(2, '0');
   const acostarse = ent(22 * 60, 24 * 60 + 40) % (24 * 60);
   const levantarse = ent(5 * 60 + 30, 7 * 60 + 30);

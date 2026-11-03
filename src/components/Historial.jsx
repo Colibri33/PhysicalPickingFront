@@ -85,12 +85,10 @@ function FormularioEdicion({ registro, onCancelar, onGuardado, usuarioId, mostra
   const [form, setForm] = useState({ ...registro.participante });
   const [guardando, setGuardando] = useState(false);
 
-  // Actualiza un campo del formulario de edición.
   function set(campo, valor) {
     setForm(prev => ({ ...prev, [campo]: valor }));
   }
 
-  // Valida y guarda los datos editados del participante.
   async function handleGuardar() {
     const nombre = (form.nombre || '').trim();
     if (!nombre) return mostrarToast('El nombre no puede estar vacio.', 'error');
@@ -180,14 +178,8 @@ function ModalDetalle({ registro: r, onClose, usuarioId, mostrarToast, onActuali
   if (!r) return null;
   // Niveles del motor actual; los registros anteriores solo traen el consolidado heredado.
   const nivelesMotor = r.evaluacion?.etapas?.decisionEngine?.entrada?.capacidades ?? null;
-  // Total de una capacidad; los registros antiguos guardan un número y los nuevos un objeto.
-  const getTotal = id => {
-    const c = r.consolidado?.[id];
-    if (!c) return 0;
-    return typeof c === 'object' ? c.total : c;
-  };
+  const getTotal = id => { const c = r.consolidado?.[id]; if (!c) return 0; return typeof c === 'object' ? c.total : c; };
 
-  // Genera y descarga el informe PDF del registro abierto.
   async function handleDescargarPdf() {
     setDescargando(true);
     try {
@@ -332,7 +324,6 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
   const [detalle, setDetalle] = useState(null);   // Modal de edición y PDF.
   const [verId, setVerId] = useState(null);         // Análisis completo.
 
-  // Exporta todos los datos de la persona en un PDF (derecho de acceso).
   async function handleExportar() {
     try {
       mostrarToast?.('Preparando tu PDF…', 'info');
@@ -350,7 +341,6 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
     }
   }
 
-  // Elimina la cuenta y sus datos tras confirmación.
   async function handleEliminarCuenta() {
     if (!window.confirm('Esto eliminara tu cuenta y TODOS tus datos de forma permanente. ¿Continuar?')) return;
     try {
@@ -362,7 +352,6 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
     }
   }
 
-  // Elimina un análisis del historial tras confirmación.
   async function handleEliminarRegistro(registro) {
     if (!window.confirm(`Se eliminará el análisis de ${registro.participante.nombre} (${registro.fecha}) de forma permanente. ¿Continuar?`)) return;
     const r = await eliminarRegistroHistorial(usuarioActual?.id ?? null, registro.id);
@@ -376,7 +365,6 @@ export default function Historial({ historial, onLimpiar, onNuevo, usuarioActual
     mostrarToast?.('Análisis eliminado.', 'success');
   }
 
-  // Sincroniza el detalle abierto y el historial después de una edición.
   function handleActualizado(registroActualizado) {
     setDetalle(registroActualizado);
     onHistorialActualizado?.(registroActualizado);

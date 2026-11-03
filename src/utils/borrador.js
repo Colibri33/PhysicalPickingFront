@@ -15,7 +15,6 @@ const SESION_INVITADO = 'pp_modo_invitado';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PASO_MAX_VALIDO = 13;
 
-// Clave de almacenamiento del borrador por usuario (o invitado).
 const clave = id => PREFIJO + (id ?? 'invitado');
 
 /** Lee y sanea el borrador del usuario; lo elimina si caducó o es inválido.
@@ -33,7 +32,6 @@ export function leerBorrador(usuarioId, ahora = Date.now()) {
     }
     const base = estadoAnalisisInicial();
     const analisis = { ...base, ...(b.analisis && typeof b.analisis === 'object' ? b.analisis : {}) };
-    // Paso guardado si es un entero dentro del rango válido; si no, el valor por defecto d.
     const num = (n, d) => (Number.isInteger(n) && n >= 1 && n <= PASO_MAX_VALIDO ? n : d);
     const pasoMax = num(b.pasoMax, 1);
     const paso = Math.min(num(b.paso, 1), pasoMax);

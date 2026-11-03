@@ -29,7 +29,6 @@ const fam = (id, extra = {}) => ({
   id, compatibilidad: 0.75, porcentaje: 75, cobertura: 1,
   carenciasRelevantes: 0, brechasRelevantes: 0, brechasSeveras: 0, firme: true, ...extra,
 });
-// Salida simulada del motor con el ranking indicado.
 const motor = (...lista) => ({ salida: { compatibilidad: { ranking: lista } } });
 
 test('empate exacto: la recomendación incluye todas las familias empatadas', () => {

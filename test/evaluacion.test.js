@@ -24,9 +24,7 @@ const AHORA = '2026-10-05T00:00:00.000Z';
 const participante = { nombre: 'Prueba', edad: 22, genero: 'femenino', perfil: 'general', deporte: 'ninguno' };
 const realesF = { fuerza: '90', fuerzaExp: '35', resistencia: '8', flexibilidad: '10', equilibrio: '15' };
 const parqNo = { p1: false, p2: false, p3: false, p4: false, p5: false, p6: false, p7: false };
-// Entrada mínima de un análisis; cada prueba solo sobrescribe los cuestionarios.
 const base = (cuestionarios = {}) => ({ participante, realesF, antropometricas: { peso: '60', talla: '165' }, cuestionarios });
-// Ejecuta el flujo completo con la fecha fija AHORA.
 const flujo = (c, o = {}) => ejecutarFlujoEvaluacion(base(c), { ahora: AHORA, ...o });
 
 test('sin baremos ni motor: todo queda pendiente, sin inventar niveles ni ranking', () => {
@@ -64,7 +62,6 @@ test('PAR-Q+: un Si sin seguimiento → incompleto y no autoriza', () => {
   assert.equal(r.etapas.reglas.pruebaMaxima.autorizada, false);
 });
 
-// Respuestas de seguimiento del PAR-Q+, todas positivas o todas negativas.
 const seguimiento = (positiva) => Object.fromEntries(
   MODULO_PARQ.categoriasSeguimiento.map(c => [c.id, c.id === 'c3' ? { aplica: true, respuestas: { a: positiva } } : { aplica: false }]));
 
@@ -260,7 +257,7 @@ test('AFISAL por defecto: dinamometria, salto, flexibilidad y equilibrio calific
 test('ranking: fondo con VO2 Bajo tiene brecha severa; deportes de fuerza es la firme', () => {
   // Mujer 22: fuerza 80 (Muy alto), salto 50 (Muy alto), flex 40 (Medio),
   // equilibrio 6 (Medio), Léger nivel 3 → VO2 29,6 → Bajo.
-  // Deportes de fuerza exige: fuerza Muy alta, explosiva Alta, vo2max Baja, flex Media, equil Media → 100% firme.
+  // Deportes de fuerza exige: fuerza Muy alta ✓, explosiva Alta ✓, vo2max Baja ✓, flex Media ✓, equil Media ✓ → 100% firme.
   // Fondo exige vo2max Muy alta → brecha severa (Bajo no cumple Muy alta).
   const datos = {
     participante,
@@ -290,7 +287,6 @@ test('ranking: fondo con VO2 Bajo tiene brecha severa; deportes de fuerza es la 
 });
 
 test('resistencia aeróbica: solo se acepta el nivel máximo alcanzado como entero 1-21', () => {
-  // Flujo con un valor dado de VO2 máx.
   const vo2 = (valor) => ejecutarFlujoEvaluacion({
     participante,
     realesF: { ...realesF, resistencia: String(valor) },
@@ -351,7 +347,6 @@ test('AFISAL: equilibrio sin desglose por pierna → califica total con adverten
   assert.ok(m.advertencias.some(a => a.includes('sin desglose por pierna')));
 });
 test('AFISAL: equilibrio 1 intento → Muy alto; 12 intentos (mujer 22) → Muy bajo', () => {
-  // Datos de entrada con el equilibrio indicado.
   const datos = (eq) => ({
     participante, realesF: { ...realesF, equilibrio: String(eq) },
     antropometricas: {}, cuestionarios: {},
@@ -424,7 +419,6 @@ test('PAR-Q+ desde la UI: condicion respondida "No" no abre seguimiento; apto en
   const { evaluarParq } = await import('../src/logic/parq.js');
   const generales = { g1: 'si', g2: 'no', g3: 'no', g4: 'no', g5: 'no', g6: 'no', g7: 'no' };
   const condicionesNo = { c1: 'no', c2: 'no', c3: 'no', c5: 'no', c6: 'no', c7: 'no', c8: 'no', c9: 'no', c10: 'no' };
-  // Ejecuta el flujo a partir de las respuestas dadas.
   const correr = (respuestas) => ejecutarFlujoEvaluacion(datosEntradaDesdeAnalisis({
     participante, realesF, antropometricas: {}, parq: { respuestas, detalles: {} },
   }), { ahora: AHORA }).etapas;

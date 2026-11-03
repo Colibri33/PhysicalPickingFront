@@ -16,7 +16,6 @@
 export default function RadarChart({ datos, variables, textos }) {
   const cx = 150, cy = 155, r = 105;
   const n  = variables.length;
-  // Ángulo del eje i; el primero apunta hacia arriba.
   const angulo = i => (Math.PI * 2 * i / n) - Math.PI / 2;
   const punto  = (i, radio) => ({
     x: cx + radio * Math.cos(angulo(i)),

@@ -22,7 +22,6 @@ const ESTADOS = {
   sin_dato: { color: '#A9A4C4', etiqueta: 'Sin dato',      marca: 'vacio' },
 };
 const COLOR_NIVEL = { 'Muy bajo': '#FF5D6C', Bajo: '#F59E0B', Medio: '#8B7CF6', Alto: '#22D3EE', 'Muy alto': '#16C784' };
-// Color del marcador: el estado tiene prioridad sobre el nivel.
 const colorDe = (d) => (d.estado ? ESTADOS[d.estado].color : (COLOR_NIVEL[d.nivel] ?? '#A9A4C4'));
 
 const TRAZOS = {
@@ -186,7 +185,6 @@ function Cuerpo({ vista, detalles, sel, onSel, zoom, compacto }) {
   const foco = zoom > 1 && sel ? { x: zonas[sel].anc[0], y: zonas[sel].anc[1] } : { x: W / 2, y: H / 2 };
   const tx = W / 2 - zoom * foco.x;
   const ty = H / 2 - zoom * foco.y;
-  // Aplica zoom y desplazamiento a un punto del lienzo.
   const proyectar = ([x, y]) => [tx + zoom * x, ty + zoom * y];
 
   return (
@@ -297,14 +295,9 @@ function Cuerpo({ vista, detalles, sel, onSel, zoom, compacto }) {
  * @param {string} props.familiaNombre - Nombre de la familia.
  * @returns {JSX.Element} */
 function Radar({ detalles, sel, onSel, conFamilia, familiaNombre }) {
-  const cx = 180;
-  const cy = 142;
-  const R = 84;
-  // Ángulo del eje i (cinco ejes, el primero hacia arriba).
+  const cx = 180; const cy = 142; const R = 84;
   const ang = (i) => ((-90 + i * 72) * Math.PI) / 180;
-  // Punto del eje i en el anillo k (0 a 4).
   const pt = (i, k) => [cx + (R * (k + 1)) / 5 * Math.cos(ang(i)), cy + (R * (k + 1)) / 5 * Math.sin(ang(i))];
-  // Lista de pares [x, y] en formato del atributo points de SVG.
   const poli = (pares) => pares.map(p => p.join(',')).join(' ');
   const tuyos = detalles.map((d, i) => (d.nivelIndex >= 0 ? pt(i, d.nivelIndex) : null)).filter(Boolean);
   const exig = conFamilia ? detalles.map((d, i) => pt(i, Math.max(d.objetivoIndex, 0))) : null;
@@ -458,7 +451,6 @@ function fechaLegible(iso) {
 export default function MapaCorporalBrechas({ flujo, familiaId = '', onFamiliaChange, onDescargarPdf, sexo = 'masculino' }) {
   const [familiaInterna, setFamiliaInterna] = useState(familiaId);
   const seleccionFamilia = onFamiliaChange ? familiaId : familiaInterna;
-  // Delega en el padre si controla la familia; si no, usa el estado interno.
   const cambiarFamilia = (id) => (onFamiliaChange ? onFamiliaChange(id) : setFamiliaInterna(id));
 
   const ranking = flujo?.etapas?.ranking?.familias ?? [];
